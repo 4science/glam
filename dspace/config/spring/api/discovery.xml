@@ -2101,7 +2101,6 @@
                 <ref bean="searchFilterAuthor" />
                 <ref bean="searchFilterOrganizationalUnit"/>
                 <ref bean="searchFilterSubject" />
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterProject"/>
                 <ref bean="searchFilterFamily"/>
                 <ref bean="searchFilterPath"/>
@@ -2116,7 +2115,6 @@
                 <ref bean="searchFilterAuthor" />
                 <ref bean="searchFilterOrganizationalUnit"/>
                 <ref bean="searchFilterSubject" />
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterProject"/>
                 <ref bean="searchFilterFamily"/>
                 <ref bean="searchFilterPath"/>
@@ -2174,7 +2172,6 @@
             <list>
                 <ref bean="searchFilterEditor" />
                 <ref bean="searchFilterSubject" />
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterPersonJournalFonds"/>
                 <ref bean="searchFilterJournalFoundsDate"/>
             </list>
@@ -2187,7 +2184,6 @@
                 <ref bean="searchFilterTitle" />
                 <ref bean="searchFilterEditor" />
                 <ref bean="searchFilterSubject" />
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterPersonJournalFonds"/>
                 <ref bean="searchFilterJournalFoundsDate"/>
             </list>
@@ -2242,7 +2238,6 @@
         <!--Which sidebar facets are to be displayed-->
         <property name="sidebarFacets">
             <list>
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterType" />
                 <ref bean="searchFilterParent" />
             </list>
@@ -2254,7 +2249,6 @@
             <list>
                 <ref bean="searchFilterTitle" />
                 <ref bean="searchFilterSubject" />
-                <ref bean="searchFilterEntityType"/>
                 <ref bean="searchFilterType" />
                 <ref bean="searchFilterParent" />
             </list>
