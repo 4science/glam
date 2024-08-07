@@ -7,9 +7,16 @@
  */
 package org.dspace.app.scripts.handler.impl;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.dspace.scripts.handler.impl.CommandLineDSpaceRunnableHandler;
 
@@ -71,6 +78,34 @@ public class TestDSpaceRunnableHandler extends CommandLineDSpaceRunnableHandler 
     public void logError(String message) {
         super.logError(message);
         errorMessages.add(message);
+    }
+
+    @Override
+    public void printHelp(Options options, String name) {
+        if (options != null) {
+            HelpFormatter formatter = new HelpFormatter();
+            StringWriter out = new StringWriter();
+            try {
+                formatter.printHelp(
+                    new PrintWriter(out),
+                    formatter.getWidth(), name, (String) null, options, formatter.getLeftPadding(),
+                    formatter.getDescPadding(), (String) null, false
+                );
+                infoMessages.addAll(
+                    Arrays.asList(StringUtils.split(out.toString(),"\n"))
+                );
+            } catch (Exception e) {
+                System.err.println("Error while retrieving the print message!: " + e.getMessage());
+            } finally {
+                if (out != null) {
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        System.err.println("Cannot close StringWriter: " + e.getMessage());
+                    }
+                }
+            }
+        }
     }
 
     public List<String> getInfoMessages() {

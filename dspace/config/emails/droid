@@ -1,0 +1,13 @@
+## E-mail sent to DSpace-GLAM users after a droid validation.
+##
+## See org.dspace.core.Email for information on the format of this file.
+##
+#set($subject = "Digital Preservation Results - ${config.get('dspace.name')}")
+The digital-preservation process with DROID has been completed.
+
+You should find details about the status of the bitstream / files validated inside the .csv file that has been
+added to this email as attachment.
+
+If you need more information, please email ${config.get("mail.helpdesk")}.
+
+The ${config.get('dspace.name')} Team

@@ -171,4 +171,9 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.bulkaccesscontrol.BulkAccessControlCli"/>
     </bean>
 
+    <bean id="checksum-checker" class="org.dspace.checker.script.ChecksumCheckerScriptConfiguration" primary="true">
+        <property name="description" value="Checksum checker"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumChecker"/>
+    </bean>
+
 </beans>

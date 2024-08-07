@@ -9,11 +9,13 @@ package org.dspace.checker;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.logging.log4j.Logger;
 import org.dspace.checker.dao.MostRecentChecksumDAO;
 import org.dspace.checker.service.ChecksumResultService;
+import org.dspace.checker.service.DroidCheckResultService;
 import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.service.BitstreamService;
@@ -36,6 +38,9 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
 
     @Autowired(required = true)
     protected ChecksumResultService checksumResultService;
+
+    @Autowired(required = true)
+    protected DroidCheckResultService droidCheckResultService;
 
     @Autowired(required = true)
     protected BitstreamService bitstreamService;
@@ -111,11 +116,16 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
 //                + "from bitstream where not exists( "
 //                + "select 'x' from most_recent_checksum "
 //                + "where most_recent_checksum.bitstream_id = bitstream.bitstream_id )";
-
-        List<Bitstream> unknownBitstreams = bitstreamService.findBitstreamsWithNoRecentChecksum(context);
-        for (Bitstream bitstream : unknownBitstreams) {
-            log.info(bitstream + " " + bitstream.getID().toString() + " " + bitstream.getName());
-
+        int offset = 0;
+        int limit = 10;
+        Iterator<Bitstream> unknownBitstreams =
+            bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
+                            .iterator();
+        Bitstream bitstream;
+        int i = 0;
+        while (unknownBitstreams.hasNext() && (bitstream = unknownBitstreams.next()) != null) {
+            i++;
+            log.info("Processing bitstream {} - {}", bitstream.getID().toString(), bitstream.getName());
             MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
             mostRecentChecksum.setBitstream(bitstream);
             //Only process if our bitstream isn't deleted
@@ -144,12 +154,30 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
             mostRecentChecksum.setChecksumResult(checksumResult);
             mostRecentChecksumDAO.create(context, mostRecentChecksum);
             mostRecentChecksumDAO.save(context, mostRecentChecksum);
+
+            context.uncacheEntity(bitstream);
+
+            if (i % limit == 0) {
+                i = 0;
+                offset += limit;
+
+                context.commit();
+                log.info("Processed {} bitstreams", offset);
+
+                log.info("Fetching next {} bitstreams", limit);
+                unknownBitstreams =
+                    bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
+                                    .iterator();
+            }
         }
     }
 
     @Override
     public void deleteByBitstream(Context context, Bitstream bitstream) throws SQLException {
-        mostRecentChecksumDAO.deleteByBitstream(context, bitstream);
+        MostRecentChecksum found = mostRecentChecksumDAO.findByBitstream(context, bitstream);
+        if (found != null) {
+            mostRecentChecksumDAO.delete(context, found);
+        }
     }
 
     /**
@@ -180,6 +208,16 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
     }
 
     @Override
+    public Iterator<MostRecentChecksum> findAll(
+        Context context,
+        Date lessThanDate,
+        int offset,
+        int limit
+    ) throws SQLException {
+        return mostRecentChecksumDAO.findAll(context, lessThanDate, offset, limit);
+    }
+
+    @Override
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException {
         return mostRecentChecksumDAO.findNotInHistory(context);
     }
@@ -187,5 +225,15 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
     @Override
     public void update(Context context, MostRecentChecksum mostRecentChecksum) throws SQLException {
         mostRecentChecksumDAO.save(context, mostRecentChecksum);
+    }
+
+    @Override
+    public void setDroidResults(Context context, MostRecentChecksum checksum, List<DroidCheckResult> droidValidation)
+        throws SQLException {
+        // remove older droid validation file
+        checksum.getDroidCheckResults().clear();
+        if (droidValidation != null && !droidValidation.isEmpty()) {
+            checksum.getDroidCheckResults().addAll(droidValidation);
+        }
     }
 }

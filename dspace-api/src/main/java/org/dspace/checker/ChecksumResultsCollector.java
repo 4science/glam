@@ -27,4 +27,6 @@ public interface ChecksumResultsCollector {
      * @throws SQLException if database error
      */
     void collect(Context context, MostRecentChecksum info) throws SQLException;
+
+    default void complete(Context context) throws SQLException {}
 }

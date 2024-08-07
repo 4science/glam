@@ -36,6 +36,9 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
 
     public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException;
 
+    List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, Integer offset, Integer limit)
+        throws SQLException;
+
     public Iterator<Bitstream> findByCommunity(Context context, Community community) throws SQLException;
 
     public Iterator<Bitstream> findByCollection(Context context, Collection collection) throws SQLException;

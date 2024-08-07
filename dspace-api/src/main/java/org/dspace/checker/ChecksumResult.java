@@ -15,6 +15,8 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.dspace.core.ReloadableEntity;
+
 /**
  * Database entity representation of the checksum_results table
  *
@@ -23,7 +25,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "checksum_results")
 public class ChecksumResult
-    implements Serializable {
+    implements Serializable, ReloadableEntity<ChecksumResultCode> {
     @Id
     @Column(name = "result_code")
     @Enumerated(EnumType.STRING)
@@ -45,5 +47,10 @@ public class ChecksumResult
 
     public String getResultDescription() {
         return resultDescription;
+    }
+
+    @Override
+    public ChecksumResultCode getID() {
+        return resultCode;
     }
 }

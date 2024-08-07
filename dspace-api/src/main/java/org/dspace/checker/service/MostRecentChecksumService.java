@@ -9,9 +9,11 @@ package org.dspace.checker.service;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.dspace.checker.ChecksumResultCode;
+import org.dspace.checker.DroidCheckResult;
 import org.dspace.checker.MostRecentChecksum;
 import org.dspace.content.Bitstream;
 import org.dspace.core.Context;
@@ -43,7 +45,17 @@ public interface MostRecentChecksumService {
 
     public MostRecentChecksum findOldestRecord(Context context, Date lessThanDate) throws SQLException;
 
+    Iterator<MostRecentChecksum> findAll(
+        Context context,
+        Date lessThanDate,
+        int offset,
+        int limit
+    ) throws SQLException;
+
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException;
 
     public void update(Context context, MostRecentChecksum mostRecentChecksum) throws SQLException;
+
+    void setDroidResults(Context context, MostRecentChecksum checksum, List<DroidCheckResult> droidValidation)
+        throws SQLException;
 }

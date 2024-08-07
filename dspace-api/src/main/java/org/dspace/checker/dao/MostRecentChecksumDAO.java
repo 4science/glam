@@ -9,6 +9,7 @@ package org.dspace.checker.dao;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.dspace.checker.ChecksumResultCode;
@@ -38,6 +39,8 @@ public interface MostRecentChecksumDAO extends GenericDAO<MostRecentChecksum> {
     public MostRecentChecksum getOldestRecord(Context context) throws SQLException;
 
     public MostRecentChecksum getOldestRecord(Context context, Date lessThanDate) throws SQLException;
+
+    Iterator<MostRecentChecksum> findAll(Context context, Date lessThanDate, int offset, int limit) throws SQLException;
 
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException;
 

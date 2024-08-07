@@ -124,5 +124,10 @@
 
         <mapping class="org.dspace.unpaywall.model.Unpaywall" />
 
+        <!-- DROID Entities -->
+        <mapping class="org.dspace.checker.DroidCheckStatus"/>
+        <mapping class="org.dspace.checker.DroidCheckHistory"/>
+        <mapping class="org.dspace.checker.DroidCheckResult"/>
+
     </session-factory>
 </hibernate-configuration>

@@ -8,11 +8,17 @@
 package org.dspace.checker;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -22,6 +28,7 @@ import javax.persistence.Transient;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.dspace.content.Bitstream;
+import org.dspace.core.ReloadableEntity;
 
 /**
  * Database entity representation of the most_recent_checksum table
@@ -30,7 +37,8 @@ import org.dspace.content.Bitstream;
  */
 @Entity
 @Table(name = "most_recent_checksum")
-public class MostRecentChecksum implements Serializable {
+public class MostRecentChecksum implements Serializable, ReloadableEntity<java.util.UUID> {
+
     @Id
     @OneToOne
     @JoinColumn(name = "bitstream_id", nullable = false)
@@ -68,6 +76,18 @@ public class MostRecentChecksum implements Serializable {
     @OneToOne
     @JoinColumn(name = "result", referencedColumnName = "result_code")
     private ChecksumResult checksumResult;
+
+    @OneToOne
+    @JoinColumn(name = "droid_status", referencedColumnName = "status_code")
+    private DroidCheckStatus droidCheckStatus;
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "mostRecentChecksum",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List<DroidCheckResult> droidCheckResults = new ArrayList<>();
 
     /**
      * Protected constructor, create handled by the
@@ -206,5 +226,28 @@ public class MostRecentChecksum implements Serializable {
             .append(bitstreamFound)
             .append(checksumResult)
             .toHashCode();
+    }
+
+    @Override
+    public UUID getID() {
+        return this.bitstream.getID();
+    }
+
+    public List<DroidCheckResult> getDroidCheckResults() {
+        return droidCheckResults;
+    }
+
+    public MostRecentChecksum setDroidCheckResults(List<DroidCheckResult> droidCheckResults) {
+        this.droidCheckResults = droidCheckResults;
+        return this;
+    }
+
+    public DroidCheckStatus getDroidCheckStatus() {
+        return droidCheckStatus;
+    }
+
+    public MostRecentChecksum setDroidCheckStatus(DroidCheckStatus droidCheckStatus) {
+        this.droidCheckStatus = droidCheckStatus;
+        return this;
     }
 }

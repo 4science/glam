@@ -90,4 +90,8 @@
     <bean class="org.dspace.content.dao.impl.ItemForMetadataEnhancementUpdateDAOImpl"/>
     <bean class="org.dspace.unpaywall.dao.impl.UnpaywallDAOImpl" />
 
+    <bean class="org.dspace.checker.dao.impl.DroidCheckResultDAOImpl" />
+    <bean class="org.dspace.checker.dao.impl.DroidCheckStatusDAOImpl" />
+    <bean class="org.dspace.checker.dao.impl.DroidCheckHistoryDAOImpl" />
+
 </beans>

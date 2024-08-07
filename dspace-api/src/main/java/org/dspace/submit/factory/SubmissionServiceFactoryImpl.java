@@ -18,8 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @author paulo.graca at fccn.pt
  */
 public class SubmissionServiceFactoryImpl extends SubmissionServiceFactory {
-    @Autowired(required = true)
+
     private SubmissionConfigService submissionConfigService;
+
+    public SubmissionServiceFactoryImpl(@Autowired SubmissionConfigService submissionConfigService) {
+        this.submissionConfigService = submissionConfigService;
+    }
 
     @Override
     public SubmissionConfigService getSubmissionConfigService() throws SubmissionConfigReaderException {

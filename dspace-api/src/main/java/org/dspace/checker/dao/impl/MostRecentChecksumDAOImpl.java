@@ -9,12 +9,14 @@ package org.dspace.checker.dao.impl;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import javax.persistence.Query;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
@@ -40,6 +42,14 @@ import org.dspace.core.Context;
  */
 public class MostRecentChecksumDAOImpl extends AbstractHibernateDAO<MostRecentChecksum>
     implements MostRecentChecksumDAO {
+
+    private static List<Order> getDefaultOrder(HibernateQuery hq) {
+        return List.of(
+            hq.criteriaBuilder.asc(hq.root.get(MostRecentChecksum_.processEndDate)),
+            hq.criteriaBuilder.asc(hq.root.get(MostRecentChecksum_.bitstream))
+        );
+    }
+
     protected MostRecentChecksumDAOImpl() {
         super();
     }
@@ -72,6 +82,7 @@ public class MostRecentChecksumDAOImpl extends AbstractHibernateDAO<MostRecentCh
         CriteriaBuilder criteriaBuilder = getCriteriaBuilder(context);
         CriteriaQuery<MostRecentChecksum> criteriaQuery = getCriteriaQuery(criteriaBuilder, MostRecentChecksum.class);
         Root<MostRecentChecksum> mostRecentChecksumRoot = criteriaQuery.from(MostRecentChecksum.class);
+        mostRecentChecksumRoot.fetch(MostRecentChecksum_.BITSTREAM, JoinType.INNER);
         criteriaQuery.select(mostRecentChecksumRoot);
         criteriaQuery
             .where(criteriaBuilder.equal(mostRecentChecksumRoot.get(MostRecentChecksum_.bitstream), bitstream));
@@ -113,37 +124,79 @@ public class MostRecentChecksumDAOImpl extends AbstractHibernateDAO<MostRecentCh
 
     @Override
     public MostRecentChecksum getOldestRecord(Context context) throws SQLException {
-        CriteriaBuilder criteriaBuilder = getCriteriaBuilder(context);
-        CriteriaQuery<MostRecentChecksum> criteriaQuery = getCriteriaQuery(criteriaBuilder, MostRecentChecksum.class);
-        Root<MostRecentChecksum> mostRecentChecksumRoot = criteriaQuery.from(MostRecentChecksum.class);
-        criteriaQuery.select(mostRecentChecksumRoot);
-        criteriaQuery.where(criteriaBuilder.equal(mostRecentChecksumRoot.get(MostRecentChecksum_.toBeProcessed), true));
-        List<Order> orderList = new LinkedList<>();
-        orderList.add(criteriaBuilder.asc(mostRecentChecksumRoot.get(MostRecentChecksum_.processEndDate)));
-        orderList.add(criteriaBuilder.asc(mostRecentChecksumRoot.get(MostRecentChecksum_.bitstream)));
-        criteriaQuery.orderBy(orderList);
-        return singleResult(context, criteriaQuery);
+        HibernateQuery hq = buildHq(context);
+        return singleResult(
+            context,
+            hq.criteriaQuery
+                .where(hq.criteriaBuilder.equal(hq.root.get(MostRecentChecksum_.toBeProcessed), true))
+                .orderBy(getDefaultOrder(hq))
+        );
     }
 
     @Override
     public MostRecentChecksum getOldestRecord(Context context, Date lessThanDate) throws SQLException {
+        HibernateQuery hq = buildHq(context);
+        return singleResult(
+            context,
+            hq.criteriaQuery
+                .where(
+                    hq.criteriaBuilder.and(
+                        hq.criteriaBuilder.equal(hq.root.get(MostRecentChecksum_.toBeProcessed), true),
+                        hq.criteriaBuilder.lessThan(hq.root.get(MostRecentChecksum_.processStartDate), lessThanDate)
+                    )
+                )
+                .orderBy(getDefaultOrder(hq))
+        );
+    }
+
+    @Override
+    public Iterator<MostRecentChecksum> findAll(Context context, Date lessThanDate, int offset, int limit)
+        throws SQLException {
+        HibernateQuery hq = buildHq(context);
+        return iterate(
+            getHibernateSession(context)
+                .createQuery(
+                    hq.criteriaQuery
+                        .where(
+                            hq.criteriaBuilder.and(
+                                hq.criteriaBuilder.equal(hq.root.get(MostRecentChecksum_.toBeProcessed), true),
+                                hq.criteriaBuilder.lessThan(hq.root.get(MostRecentChecksum_.processStartDate),
+                                                            lessThanDate)
+                            )
+                        )
+                        .orderBy(getDefaultOrder(hq))
+                )
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+        );
+    }
+
+    private HibernateQuery buildHq(Context context) throws SQLException {
         CriteriaBuilder criteriaBuilder = getCriteriaBuilder(context);
         CriteriaQuery<MostRecentChecksum> criteriaQuery = getCriteriaQuery(criteriaBuilder, MostRecentChecksum.class);
-        Root<MostRecentChecksum> mostRecentChecksumRoot = criteriaQuery.from(MostRecentChecksum.class);
-        criteriaQuery.select(mostRecentChecksumRoot);
-        criteriaQuery.where(criteriaBuilder.and(
-            criteriaBuilder.equal(mostRecentChecksumRoot.get(MostRecentChecksum_.toBeProcessed), true),
-            criteriaBuilder.lessThan(mostRecentChecksumRoot.get(MostRecentChecksum_.processStartDate), lessThanDate)
-                            )
-        );
-
-        List<Order> orderList = new LinkedList<>();
-        orderList.add(criteriaBuilder.asc(mostRecentChecksumRoot.get(MostRecentChecksum_.processEndDate)));
-        orderList.add(criteriaBuilder.asc(mostRecentChecksumRoot.get(MostRecentChecksum_.bitstream)));
-        criteriaQuery.orderBy(orderList);
-
-        return singleResult(context, criteriaQuery);
+        Root<MostRecentChecksum> root = criteriaQuery.from(MostRecentChecksum.class);
+        // JOIN FETCH Bitstream
+        root.fetch(MostRecentChecksum_.BITSTREAM, JoinType.INNER);
+        criteriaQuery.select(root);
+        return new HibernateQuery(criteriaBuilder, criteriaQuery, root);
     }
+
+    private static class HibernateQuery {
+        public final CriteriaBuilder criteriaBuilder;
+        public final CriteriaQuery<MostRecentChecksum> criteriaQuery;
+        public final Root<MostRecentChecksum> root;
+
+        public HibernateQuery(
+            CriteriaBuilder criteriaBuilder,
+            CriteriaQuery<MostRecentChecksum> criteriaQuery,
+            Root<MostRecentChecksum> root
+        ) {
+            this.criteriaBuilder = criteriaBuilder;
+            this.criteriaQuery = criteriaQuery;
+            this.root = root;
+        }
+    }
+
 
     @Override
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException {

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.cli.CommandLine;
@@ -26,18 +27,26 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.checker.BitstreamDispatcher;
 import org.dspace.checker.CheckerCommand;
+import org.dspace.checker.CsvDroidChecksumCollector;
 import org.dspace.checker.HandleDispatcher;
 import org.dspace.checker.IteratorDispatcher;
 import org.dspace.checker.LimitedCountDispatcher;
 import org.dspace.checker.LimitedDurationDispatcher;
-import org.dspace.checker.ResultsLogger;
 import org.dspace.checker.ResultsPruner;
 import org.dspace.checker.SimpleDispatcher;
+import org.dspace.checker.script.ChecksumCheckerScriptConfiguration;
 import org.dspace.content.Bitstream;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.dspace.core.Utils;
+import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.scripts.factory.ScriptServiceFactory;
+import org.dspace.scripts.handler.DSpaceRunnableHandler;
+import org.dspace.scripts.handler.impl.CommandLineDSpaceRunnableHandler;
+import org.dspace.scripts.service.ProcessService;
+import org.dspace.services.ConfigurationService;
+import org.dspace.services.factory.DSpaceServicesFactory;
 
 /**
  * Command line access to the checksum checker. Options are listed in the
@@ -47,16 +56,19 @@ import org.dspace.core.Utils;
  * @author Grace Carpenter
  * @author Nathan Sarr
  */
-public final class ChecksumChecker {
+public final class ChecksumChecker extends DSpaceRunnable<ChecksumCheckerScriptConfiguration> {
     private static final Logger LOG = LogManager.getLogger(ChecksumChecker.class);
 
     private static final BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+
+    private ConfigurationService configurationService;
+    private ProcessService processService;
 
     /**
      * Blanked off constructor, this class should be used as a command line
      * tool.
      */
-    private ChecksumChecker() {
+    public ChecksumChecker() {
     }
 
     /**
@@ -86,67 +98,28 @@ public final class ChecksumChecker {
      */
     public static void main(String[] args) throws SQLException {
         // set up command line parser
-        CommandLineParser parser = new DefaultParser();
-        CommandLine line = null;
+        Options options = getOptions();
 
-        // create an options object and populate it
-        Options options = new Options();
+        CommandLine line = parse(options, args);
 
-        options.addOption("l", "looping", false, "Loop once through bitstreams");
-        options.addOption("L", "continuous", false,
-                          "Loop continuously through bitstreams");
-        options.addOption("h", "help", false, "Help");
-        options.addOption("d", "duration", true, "Checking duration");
-        options.addOption("c", "count", true, "Check count");
-        options.addOption("a", "handle", true, "Specify a handle to check");
-        options.addOption("v", "verbose", false, "Report all processing");
+        internalRun(line, options, new CommandLineDSpaceRunnableHandler());
+    }
 
-        Option option;
-
-        option = Option.builder("b")
-                .longOpt("bitstream-ids")
-                .hasArgs()
-                .desc("Space separated list of bitstream ids")
-                .build();
-        options.addOption(option);
-
-        option = Option.builder("p")
-                .longOpt("prune")
-                .optionalArg(true)
-                .desc("Prune old results (optionally using specified properties file for configuration)")
-                .build();
-        options.addOption(option);
-
-        try {
-            line = parser.parse(options, args);
-        } catch (ParseException e) {
-            LOG.fatal(e);
-            System.exit(1);
-        }
-
+    private static void internalRun(CommandLine line, Options options, DSpaceRunnableHandler handler)
+        throws SQLException {
         // user asks for help
         if (line.hasOption('h')) {
             printHelp(options);
+            return;
         }
         Context context = null;
         try {
             context = new Context();
 
-
             // Prune stage
             if (line.hasOption('p')) {
-                ResultsPruner rp = null;
-                try {
-                    rp = (line.getOptionValue('p') != null) ? ResultsPruner
-                        .getPruner(context, line.getOptionValue('p')) : ResultsPruner
-                        .getDefaultPruner(context);
-                } catch (FileNotFoundException e) {
-                    LOG.error("File not found", e);
-                    System.exit(1);
-                }
-                int count = rp.prune();
-                System.out.println("Pruned " + count
-                                       + " old results from the database.");
+                int count = getResultsPruner(line, context, handler).prune();
+                handler.logInfo("Pruned " + count + " old results from the database.");
             }
 
             Date processStart = Calendar.getInstance().getTime();
@@ -162,15 +135,24 @@ public final class ChecksumChecker {
             } else if (line.hasOption('b')) {
                 // check only specified bitstream(s)
                 String[] ids = line.getOptionValues('b');
+                if (ids.length == 1 && ids[0].contains(",")) {
+                    ids = ids[0].split("\\,");
+                }
                 List<Bitstream> bitstreams = new ArrayList<>(ids.length);
 
                 for (int i = 0; i < ids.length; i++) {
                     try {
                         bitstreams.add(bitstreamService.find(context, UUID.fromString(ids[i])));
                     } catch (NumberFormatException nfe) {
-                        System.err.println("The following argument: " + ids[i]
-                                               + " is not an integer");
-                        System.exit(0);
+                        LOG.error(
+                            "The following argument: " + ids[i]
+                                + " is not an integer", nfe
+                        );
+                        handler.handleException(
+                            "The following argument: " + ids[i]
+                                + " is not an integer",
+                            nfe
+                        );
                     }
                 }
                 dispatcher = new IteratorDispatcher(bitstreams.iterator());
@@ -179,38 +161,46 @@ public final class ChecksumChecker {
             } else if (line.hasOption('d')) {
                 // run checker process for specified duration
                 try {
-                    dispatcher = new LimitedDurationDispatcher(
-                        new SimpleDispatcher(context, processStart, true), new Date(
-                        System.currentTimeMillis()
-                            + Utils.parseDuration(line
-                                                      .getOptionValue('d'))));
+                    dispatcher =
+                        new LimitedDurationDispatcher(
+                            new SimpleDispatcher(context, processStart, true),
+                            new Date(System.currentTimeMillis() + Utils.parseDuration(line.getOptionValue('d')))
+                        );
                 } catch (Exception e) {
                     LOG.fatal("Couldn't parse " + line.getOptionValue('d')
                                   + " as a duration: ", e);
-                    System.exit(0);
+                    handler.handleException("Couldn't parse " + line.getOptionValue('d')
+                                                + " as a duration: ", e);
                 }
             } else if (line.hasOption('c')) {
                 int count = Integer.valueOf(line.getOptionValue('c'));
 
                 // run checker process for specified number of bitstreams
-                dispatcher = new LimitedCountDispatcher(new SimpleDispatcher(
-                    context, processStart, false), count);
+                dispatcher =
+                    new LimitedCountDispatcher(
+                        new SimpleDispatcher(context, processStart, false),
+                        count
+                    );
             } else {
-                dispatcher = new LimitedCountDispatcher(new SimpleDispatcher(
-                    context, processStart, false), 1);
+                dispatcher =
+                    new LimitedCountDispatcher(
+                        new SimpleDispatcher(context, processStart, false),
+                        1
+                    );
             }
 
-            ResultsLogger logger = new ResultsLogger(processStart);
-            CheckerCommand checker = new CheckerCommand(context);
-            // verbose reporting
-            if (line.hasOption('v')) {
-                checker.setReportVerbose(true);
-            }
+            boolean isDroidCheck = line.hasOption('D');
 
-            checker.setProcessStartDate(processStart);
-            checker.setDispatcher(dispatcher);
-            checker.setCollector(logger);
+            CheckerCommand checker =
+                new CheckerCommand(context)
+                    .setProcessStartDate(processStart)
+                    .setDispatcher(dispatcher)
+                    .setDroidCheck(isDroidCheck)
+                    .setReportVerbose(line.hasOption('v'))
+                    .setCollector(isDroidCheck ? new CsvDroidChecksumCollector() : null);
+
             checker.process();
+
             context.complete();
             context = null;
         } finally {
@@ -218,6 +208,74 @@ public final class ChecksumChecker {
                 context.abort();
             }
         }
+    }
+
+    private static ResultsPruner getResultsPruner(
+        final CommandLine line, final Context finalContext, DSpaceRunnableHandler handler
+    ) {
+        return Optional.of(isPruner(line))
+                       .filter(Boolean::booleanValue)
+                       .map(r -> getPruner(line, finalContext, handler))
+                       .orElseGet(() -> ResultsPruner.getDefaultPruner(finalContext));
+    }
+
+    private static ResultsPruner getPruner(CommandLine line, Context context, DSpaceRunnableHandler handler) {
+        try {
+            return ResultsPruner.getPruner(context, line.getOptionValue('p'));
+        } catch (FileNotFoundException e) {
+            LOG.error("File not found", e);
+            handler.handleException("File not found: " + e.getMessage());
+            throw new RuntimeException("File not found", e);
+        }
+    }
+
+    private static CommandLine parse(Options options, String[] args) {
+        CommandLineParser parser = new DefaultParser();
+        CommandLine line = null;
+        try {
+            line = parser.parse(options, args);
+        } catch (ParseException e) {
+            LOG.fatal(e);
+            System.exit(1);
+        }
+        return line;
+    }
+
+    private static boolean isPruner(CommandLine line) {
+        return line.getOptionValue('p') != null;
+    }
+
+    public static Options getOptions() {
+        // create an options object and populate it
+        return new Options()
+            .addOption("l", "looping", false, "Loop once through bitstreams")
+            .addOption("L", "continuous", false,
+                       "Loop continuously through bitstreams")
+            .addOption("h", "help", false, "Help")
+            .addOption("d", "duration", true, "Checking duration")
+            .addOption("c", "count", true, "Check count")
+            .addOption("a", "handle", true, "Specify a handle to check")
+            .addOption("v", "verbose", false, "Report all processing")
+            .addOption("b", "bitstream-ids", true, "Comma separated list of bitstream ids")
+            .addOption(
+                Option.builder("p")
+                      .longOpt("prune")
+                      .optionalArg(true)
+                      .desc("Prune old results (optionally using specified properties file for configuration)")
+                      .build()
+            );
+    }
+
+    @Override
+    public ChecksumCheckerScriptConfiguration getScriptConfiguration() {
+        return DSpaceServicesFactory.getInstance().getServiceManager()
+                                    .getServiceByName("checksum-checker", ChecksumCheckerScriptConfiguration.class);
+    }
+
+    @Override
+    public void setup() throws ParseException {
+        this.configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+        this.processService = ScriptServiceFactory.getInstance().getProcessService();
     }
 
     /**
@@ -240,7 +298,12 @@ public final class ChecksumChecker {
         System.out.println("\nCheck a defined number of bitstreams: ChecksumChecker -c 10");
         System.out.println("\nReport all processing (verbose)(default reports only errors): ChecksumChecker -v");
         System.out.println("\nDefault (no arguments) is equivalent to '-c 1'");
-        System.exit(0);
+        System.out.println("\nPerform DROID verification with: ChecksumChecker -D");
+    }
+
+    @Override
+    public void internalRun() throws Exception {
+        internalRun(this.commandLine, this.getScriptConfiguration().getOptions(), this.handler);
     }
 
 }

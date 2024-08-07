@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.dspace.authorize.ResourcePolicy;
+import org.dspace.checker.MostRecentChecksum;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
@@ -332,6 +333,18 @@ public class HibernateDBConnection implements DBConnection<Session> {
                 if (Hibernate.isInitialized(collection.getTemplateItem())) {
                     uncacheEntity(collection.getTemplateItem());
                 }
+            } else if (entity instanceof MostRecentChecksum) {
+
+                MostRecentChecksum mostRecentChecksum = (MostRecentChecksum) entity;
+
+                if (Hibernate.isInitialized(mostRecentChecksum.getBitstream())) {
+                    uncacheEntity(mostRecentChecksum.getBitstream());
+                }
+
+                if (Hibernate.isInitialized(mostRecentChecksum.getChecksumResult())) {
+                    uncacheEntity(mostRecentChecksum.getChecksumResult());
+                }
+
             }
 
             // Unless this object exists in the session, we won't do anything
