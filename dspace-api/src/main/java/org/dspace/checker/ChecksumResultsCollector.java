@@ -7,7 +7,9 @@
  */
 package org.dspace.checker;
 
+import java.io.File;
 import java.sql.SQLException;
+import java.util.Optional;
 
 import org.dspace.core.Context;
 
@@ -29,4 +31,8 @@ public interface ChecksumResultsCollector {
     void collect(Context context, MostRecentChecksum info) throws SQLException;
 
     default void complete(Context context) throws SQLException {}
+
+    default Optional<File> output(Context context) throws Exception {
+        return Optional.empty();
+    }
 }

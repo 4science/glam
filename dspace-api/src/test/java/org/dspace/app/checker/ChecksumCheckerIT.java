@@ -63,6 +63,8 @@ import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.Item;
 import org.dspace.core.Email;
+import org.dspace.services.ConfigurationService;
+import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
 import org.junit.After;
@@ -77,6 +79,8 @@ import org.mockito.Mockito;
  **/
 public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
 
+    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
+
     private final DroidCheckResultService droidCheckResultService =
         DroidServiceFactory.getInstance().getDroidCheckResultService();
     private final MostRecentChecksumService mostRecentChecksumService =
@@ -87,6 +91,8 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
         DroidServiceFactory.getInstance().getDroidHistoryService();
     private final ChecksumHistoryService checksumHistoryService =
         CheckerServiceFactory.getInstance().getChecksumHistoryService();
+    private final ConfigurationService configurationService =
+        DSpaceServicesFactory.getInstance().getConfigurationService();
     private Community community;
     private Collection collection;
 
@@ -100,6 +106,10 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
         mockedEmail = Mockito.mock(Email.class);
         fileArgumentCaptor = ArgumentCaptor.forClass(File.class);
         emailMockedStatic.when(() -> Email.getEmail(any())).thenReturn(this.mockedEmail);
+
+        // force output folder
+        configurationService.setProperty("droid.csv.checksum.outputfile.tempdir", TEST_OUTPUT);
+
         context.turnOffAuthorisationSystem();
         community = createCommunity(context).build();
         collection = createCollection(context, community).withAdminGroup(eperson).build();
@@ -126,8 +136,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
-    public void testBitstreamValidation()
-        throws Exception {
+    public void testBitstreamValidation() throws Exception {
 
         context.turnOffAuthorisationSystem();
         Item item =
@@ -285,29 +294,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             BufferedReader reader = new BufferedReader(ir);
         ) {
             String line = reader.readLine();
-            assertThat(
-                line,
-                allOf(
-                    containsString("bitstream_id"),
-                    containsString("id"),
-                    containsString("uri"),
-                    containsString("filepath"),
-                    containsString("filename"),
-                    containsString("method"),
-                    containsString("status"),
-                    containsString("filesize"),
-                    containsString("type"),
-                    containsString("file_extension"),
-                    containsString("last_modified_date"),
-                    containsString("extension_mismatch"),
-                    containsString("hash"),
-                    containsString("file_format_count"),
-                    containsString("PUID"),
-                    containsString("mime_type"),
-                    containsString("file_format_name"),
-                    containsString("file_format_version")
-                )
-            );
+            assertIsCsvHeader(line);
             line = reader.readLine();
             assertThat(
                 line,
@@ -439,53 +426,9 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             BufferedReader reader = new BufferedReader(ir);
         ) {
             String line = reader.readLine();
-            assertThat(
-                line,
-                allOf(
-                    containsString("bitstream_id"),
-                    containsString("id"),
-                    containsString("uri"),
-                    containsString("filepath"),
-                    containsString("filename"),
-                    containsString("method"),
-                    containsString("status"),
-                    containsString("filesize"),
-                    containsString("type"),
-                    containsString("file_extension"),
-                    containsString("last_modified_date"),
-                    containsString("extension_mismatch"),
-                    containsString("hash"),
-                    containsString("file_format_count"),
-                    containsString("PUID"),
-                    containsString("mime_type"),
-                    containsString("file_format_name"),
-                    containsString("file_format_version")
-                )
-            );
+            assertIsCsvHeader(line);
             line = reader.readLine();
-            assertThat(
-                line,
-                allOf(
-                    containsString(bitstream.getID().toString()),
-                    containsString(checkResult.getID().toString()),
-                    containsString(checkResult.getURI().toString()),
-                    containsString(checkResult.getPath()),
-                    containsString(checkResult.getFilename()),
-                    containsString("file"),
-                    containsString(checkResult.getStatus().getStatusCode().name()),
-                    containsString(checkResult.getFileSize().toString()),
-                    containsString(checkResult.getType()),
-                    containsString(checkResult.getFileExtension()),
-                    containsString(String.valueOf(checkResult.getLastModifiedDate())),
-                    containsString(String.valueOf(checkResult.isExtensionMismatch())),
-                    containsString(checksum.getCurrentChecksum()),
-                    containsString("1"),
-                    containsString(checkResult.getPUID()),
-                    containsString(checkResult.getMimeType()),
-                    containsString(checkResult.getFileFormat()),
-                    containsString(String.valueOf(checkResult.getFormatVersion()))
-                )
-            );
+            assertLine(line, bitstream, checkResult, checksum);
             line = reader.readLine();
             assertThat(
                 line,
@@ -513,5 +456,58 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             line = reader.readLine();
             assertThat(line, nullValue());
         }
+    }
+
+    private static void assertLine(String line, Bitstream bitstream, DroidCheckResult checkResult,
+                                  MostRecentChecksum checksum) {
+        assertThat(
+            line,
+            allOf(
+                containsString(bitstream.getID().toString()),
+                containsString(checkResult.getID().toString()),
+                containsString(checkResult.getURI().toString()),
+                containsString(checkResult.getPath()),
+                containsString(checkResult.getFilename()),
+                containsString("file"),
+                containsString(checkResult.getStatus().getStatusCode().name()),
+                containsString(checkResult.getFileSize().toString()),
+                containsString(checkResult.getType()),
+                containsString(checkResult.getFileExtension()),
+                containsString(String.valueOf(checkResult.getLastModifiedDate())),
+                containsString(String.valueOf(checkResult.isExtensionMismatch())),
+                containsString(checksum.getCurrentChecksum()),
+                containsString("1"),
+                containsString(checkResult.getPUID()),
+                containsString(checkResult.getMimeType()),
+                containsString(checkResult.getFileFormat()),
+                containsString(String.valueOf(checkResult.getFormatVersion()))
+            )
+        );
+    }
+
+    public static void assertIsCsvHeader(String line) {
+        assertThat(
+            line,
+            allOf(
+                containsString("bitstream_id"),
+                containsString("id"),
+                containsString("uri"),
+                containsString("filepath"),
+                containsString("filename"),
+                containsString("method"),
+                containsString("status"),
+                containsString("filesize"),
+                containsString("type"),
+                containsString("file_extension"),
+                containsString("last_modified_date"),
+                containsString("extension_mismatch"),
+                containsString("hash"),
+                containsString("file_format_count"),
+                containsString("PUID"),
+                containsString("mime_type"),
+                containsString("file_format_name"),
+                containsString("file_format_version")
+            )
+        );
     }
 }

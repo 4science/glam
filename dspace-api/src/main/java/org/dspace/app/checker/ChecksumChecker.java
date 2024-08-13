@@ -7,7 +7,10 @@
  */
 package org.dspace.app.checker;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,15 +26,19 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.authorize.AuthorizeException;
 import org.dspace.checker.BitstreamDispatcher;
 import org.dspace.checker.CheckerCommand;
+import org.dspace.checker.ChecksumResultsCollector;
 import org.dspace.checker.CsvDroidChecksumCollector;
 import org.dspace.checker.HandleDispatcher;
 import org.dspace.checker.IteratorDispatcher;
 import org.dspace.checker.LimitedCountDispatcher;
 import org.dspace.checker.LimitedDurationDispatcher;
+import org.dspace.checker.ResultsLogger;
 import org.dspace.checker.ResultsPruner;
 import org.dspace.checker.SimpleDispatcher;
 import org.dspace.checker.script.ChecksumCheckerScriptConfiguration;
@@ -191,15 +198,20 @@ public final class ChecksumChecker extends DSpaceRunnable<ChecksumCheckerScriptC
 
             boolean isDroidCheck = line.hasOption('D');
 
+            ChecksumResultsCollector collector =
+                isDroidCheck ? new CsvDroidChecksumCollector() : new ResultsLogger(processStart);
             CheckerCommand checker =
                 new CheckerCommand(context)
                     .setProcessStartDate(processStart)
                     .setDispatcher(dispatcher)
                     .setDroidCheck(isDroidCheck)
                     .setReportVerbose(line.hasOption('v'))
-                    .setCollector(isDroidCheck ? new CsvDroidChecksumCollector() : null);
+                    .setHandler(handler)
+                    .setCollector(collector);
 
             checker.process();
+
+            handleCollectorOutput(handler, collector, context);
 
             context.complete();
             context = null;
@@ -207,6 +219,42 @@ public final class ChecksumChecker extends DSpaceRunnable<ChecksumCheckerScriptC
             if (context != null) {
                 context.abort();
             }
+        }
+    }
+
+    private static void handleCollectorOutput(
+        DSpaceRunnableHandler handler, ChecksumResultsCollector collector, Context context
+    ) throws SQLException {
+        Optional<File> output = Optional.empty();
+        try {
+            output = collector.output(context);
+        } catch (Exception e) {
+            LOG.error("Cannot retrieve the output file of the collector!", e);
+            handler.logError("Cannot retrieve the output file of the collector!", e);
+        } finally {
+            writeOutputFile(handler, context, output);
+        }
+    }
+
+    private static void writeOutputFile(DSpaceRunnableHandler handler, Context context, Optional<File> output)
+        throws SQLException {
+        if (output.isEmpty()) {
+            return;
+        }
+        File file = output.get();
+        try (FileInputStream fis = new FileInputStream(file)) {
+            context.turnOffAuthorisationSystem();
+            handler.writeFilestream(
+                context,
+                file.getName(),
+                fis,
+                FilenameUtils.getExtension(file.getName())
+            );
+        } catch (IOException | AuthorizeException e) {
+            LOG.error("Cannot retrieve the output of the process!", e);
+            handler.logError("Cannot retrieve the output of the process!", e);
+        } finally {
+            context.restoreAuthSystemState();
         }
     }
 

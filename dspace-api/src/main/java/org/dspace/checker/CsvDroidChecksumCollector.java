@@ -192,6 +192,14 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
         }
     }
 
+    @Override
+    public Optional<File> output(Context context) throws Exception {
+        if (outputFile == null || !outputFile.exists()) {
+            return ChecksumResultsCollector.super.output(context);
+        }
+        return Optional.of(outputFile);
+    }
+
     protected Collection<Collection<String>> rows(MostRecentChecksum info) {
         if (info == null) {
             return List.of();

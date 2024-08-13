@@ -9,16 +9,20 @@ package org.dspace.app.rest;
 
 import static com.jayway.jsonpath.JsonPath.read;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
+import static org.dspace.builder.CollectionBuilder.createCollection;
+import static org.dspace.builder.CommunityBuilder.createCommunity;
 import static org.dspace.builder.ItemBuilder.createItem;
 import static org.dspace.core.CrisConstants.PLACEHOLDER_PARENT_METADATA_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -31,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,14 +43,18 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import net.minidev.json.JSONArray;
+import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.dspace.app.checker.ChecksumCheckerIT;
 import org.dspace.app.rest.converter.DSpaceRunnableParameterConverter;
 import org.dspace.app.rest.matcher.BitstreamMatcher;
 import org.dspace.app.rest.matcher.PageMatcher;
@@ -57,6 +66,8 @@ import org.dspace.app.rest.test.AbstractControllerIntegrationTest;
 import org.dspace.app.util.SubmissionConfigReaderException;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.service.ResourcePolicyService;
+import org.dspace.builder.BitstreamBuilder;
+import org.dspace.builder.BundleBuilder;
 import org.dspace.builder.CollectionBuilder;
 import org.dspace.builder.CommunityBuilder;
 import org.dspace.builder.EPersonBuilder;
@@ -64,6 +75,7 @@ import org.dspace.builder.GroupBuilder;
 import org.dspace.builder.ItemBuilder;
 import org.dspace.builder.ProcessBuilder;
 import org.dspace.content.Bitstream;
+import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.Item;
@@ -1501,6 +1513,201 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
             }
         }
 
+    }
+
+    @Test
+    public void checksumCheckerExportProcessTest() throws Exception {
+
+        context.turnOffAuthorisationSystem();
+
+        Community community = createCommunity(context).build();
+        Collection collection = createCollection(context, community).withAdminGroup(eperson).build();
+
+        Item item =
+            ItemBuilder.createItem(context, collection)
+                       .withTitle("Custom Item")
+                       .build();
+
+        Bundle bundle =
+            BundleBuilder.createBundle(context, item)
+                         .withName("ORIGINAL")
+                         .build();
+
+        String bitstreamContent = "Dummy content";
+        Bitstream bitstream;
+        try (InputStream is = IOUtils.toInputStream(bitstreamContent, CharEncoding.UTF_8)) {
+            bitstream = BitstreamBuilder.createBitstream(context, bundle, is)
+                                        .withName("Bitstream")
+                                        .withMimeType("text/plain")
+                                        .withFormat("text")
+                                        .build();
+        }
+        bitstreamContent = "Custom dummy content";
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream(bitstreamContent, CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, bundle, is)
+                                         .withName("Bitstream1")
+                                         .withMimeType("text/plain")
+                                         .withFormat("text")
+                                         .build();
+        }
+        context.restoreAuthSystemState();
+        context.commit();
+
+        String token = getAuthToken(admin.getEmail(), password);
+
+        getClient(token).perform(get("/api/system/scripts/checksum-checker"))
+                        .andExpect(status().isOk())
+                        .andExpect(
+                            jsonPath(
+                                "$", ScriptMatcher
+                                    .matchScript(
+                                        "checksum-checker",
+                                        "Checksum checker"
+                                    )
+                            )
+                        )
+                        .andExpect(
+                            jsonPath(
+                                "$.parameters", containsInAnyOrder(
+                                    allOf(
+                                        hasJsonPath("$.name", is("-D")),
+                                        hasJsonPath("$.description",
+                                                    is("Execute verification with DROID (i.e. digital preservation)")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--droid"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-l")),
+                                        hasJsonPath("$.description", is("Loop once through bitstreams")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--looping"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-L")),
+                                        hasJsonPath("$.description", is("Loop continuously through bitstreams")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--continuous"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-h")),
+                                        hasJsonPath("$.description", is("Help")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--help"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-d")),
+                                        hasJsonPath("$.description", is("Checking duration")),
+                                        hasJsonPath("$.type", is("String")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--duration"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-c")),
+                                        hasJsonPath("$.description", is("Check count")),
+                                        hasJsonPath("$.type", is("String")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--count"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-a")),
+                                        hasJsonPath("$.description", is("Specify a handle to check")),
+                                        hasJsonPath("$.type", is("String")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--handle"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-v")),
+                                        hasJsonPath("$.description", is("Report all processing")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--verbose"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-b")),
+                                        hasJsonPath("$.description", is("Comma separated list of bitstream ids")),
+                                        hasJsonPath("$.type", is("String")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--bitstream-ids"))
+                                    ),
+                                    allOf(
+                                        hasJsonPath("$.name", is("-p")),
+                                        hasJsonPath("$.description",
+                                                    is("Prune old results (optionally using specified properties file" +
+                                                           " for configuration)")),
+                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath("$.mandatory", is(false)),
+                                        hasJsonPath("$.nameLong", is("--prune"))
+                                    )
+                                )
+                            )
+                        );
+        List<DSpaceCommandLineParameter> parameters = new LinkedList<>();
+
+        parameters.add(
+            new DSpaceCommandLineParameter("-b", bitstream.getID() + "," + bitstream1.getID())
+        );
+        parameters.add(
+            new DSpaceCommandLineParameter("-D", "true")
+        );
+
+        List<ParameterValueRest> list =
+            parameters.stream()
+                      .map(dSpaceCommandLineParameter -> dSpaceRunnableParameterConverter
+                          .convert(dSpaceCommandLineParameter, Projection.DEFAULT))
+                      .collect(Collectors.toList());
+
+        AtomicReference<Integer> idRef = new AtomicReference<>();
+
+        try {
+
+            getClient(token).perform(post("/api/system/scripts/checksum-checker/processes")
+                                    .contentType("multipart/form-data")
+                                    .param("properties", new Gson().toJson(list)))
+                       .andExpect(status().isAccepted())
+                       .andDo(result -> idRef.set(read(result.getResponse().getContentAsString(), "$.processId")));
+
+            Process process = processService.find(context, idRef.get());
+
+            UUID outputID = process.getBitstreams().get(0).getID();
+            MvcResult mvcResult =
+                    getClient(token)
+                        .perform(get("/api/system/processes/" + idRef.get() + "/files"))
+                        .andReturn();
+
+            String processFiles = mvcResult.getResponse().getContentAsString();
+            JSONArray processFilesId =
+                read(
+                    processFiles,
+                    "$._embedded.files[?(@.name=~/.+csv$/)].id"
+                );
+
+            String csvId = processFilesId.get(0).toString();
+
+            mvcResult =
+                getClient(token)
+                    .perform(get("/api/core/bitstreams/" + csvId + "/content"))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            String csvContent = mvcResult.getResponse().getContentAsString();
+
+            assertThat(csvContent, notNullValue());
+
+            String[] split = csvContent.split("\n");
+            assertThat(split.length, equalTo(3));
+
+            ChecksumCheckerIT.assertIsCsvHeader(split[0]);
+
+        } finally {
+            if (idRef.get() != null) {
+                ProcessBuilder.deleteProcess(idRef.get());
+            }
+        }
     }
 
     private void checkExportOutput(
