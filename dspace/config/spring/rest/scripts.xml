@@ -124,9 +124,8 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.packager.Packager"/>
     </bean>
 
-    <bean id="checksum-checker" class="org.dspace.checker.script.ChecksumCheckerScriptConfiguration" primary="true">
-        <property name="description" value="Checksum checker"/>
-        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumChecker"/>
+    <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerScriptConfiguration" primary="true">
+        <property name="description" value="Verifies the checksum of every item within DSpace"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerScript"/>
     </bean>
-
 </beans>
