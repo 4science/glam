@@ -48,6 +48,7 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
     private String filePath;
     private File outputFile;
     private String dateSuffix;
+    private PrintWriter printWriter;
 
     private Map<String, EvaluationContextMapper> rowMappers =
         Stream.of(
@@ -125,6 +126,7 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
     @Override
     public void collect(Context context, MostRecentChecksum info) throws SQLException {
         if (this.outputFile == null) {
+            log.info("Trying to create the output file for droid output.");
             this.dateSuffix = getDateSuffix();
             try {
                 Path directoryPath = getDirectoryPath();
@@ -138,6 +140,7 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
                         "_" + dateSuffix + ".csv",
                         tempDirectory
                     );
+                log.info("The results will be saved to {}: ", outputFile.getAbsolutePath());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -146,18 +149,25 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
             log.error("Cannot open find the csv file for the export!");
             return;
         }
-        try (
-            FileWriter fw = new FileWriter(outputFile, true);
-            BufferedWriter bw = new BufferedWriter(fw);
-            PrintWriter pw = new PrintWriter(bw);
-        ) {
+        if (this.printWriter == null) {
+            try {
+                FileWriter fw = new FileWriter(outputFile, true);
+                BufferedWriter bw = new BufferedWriter(fw);
+                printWriter = new PrintWriter(bw);
+            } catch (IOException e) {
+                log.error("Cannot open the output file for the export!", e);
+                throw new RuntimeException(e);
+            }
+        }
+        try {
             if (outputFile.length() == 0) {
-                pw.println(String.join(getFieldsSeparator(), getHeader()));
+                printWriter.println(String.join(getFieldsSeparator(), getHeader()));
             }
             for (Collection<String> row : rows(info)) {
-                pw.println(String.join(getFieldsSeparator(), row));
+                printWriter.println(String.join(getFieldsSeparator(), row));
             }
-        } catch (IOException e) {
+            printWriter.flush();
+        } catch (Exception e) {
             log.error("Cannot add elements to the configured output file!", e);
             throw new RuntimeException(e);
         }
@@ -169,6 +179,13 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
 
     @Override
     public void complete(Context context) {
+        if (this.printWriter != null) {
+            try {
+                printWriter.close();
+            } catch (Exception e) {
+                log.error("Cannot close the export writer!", e);
+            }
+        }
         if (this.outputFile == null || !this.outputFile.exists() || outputFile.length() == 0) {
             return;
         }
@@ -185,6 +202,7 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
             for (String recipient : recipients) {
                 email.addRecipient(recipient);
             }
+            log.info("Sending the email with the droid output as attachment.");
             email.send();
         } catch (IOException | MessagingException e) {
             log.error("Cannot create the email using the configured template!", e);
