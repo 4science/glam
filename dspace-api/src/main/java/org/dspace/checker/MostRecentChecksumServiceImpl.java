@@ -125,8 +125,9 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
                 bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
                                 .iterator();
             Bitstream bitstream;
+            int fetched = 0;
             while (unknownBitstreams.hasNext() && (bitstream = unknownBitstreams.next()) != null) {
-                offset++;
+                fetched++;
                 log.info("Processing bitstream {} - {}", bitstream.getID().toString(), bitstream.getName());
                 MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
                 mostRecentChecksum.setBitstream(bitstream);
@@ -161,7 +162,8 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
                 context.uncacheEntity(bitstream);
             }
             context.commit();
-            canFetch = offset > 0 && offset % limit == 0;
+            offset += fetched;
+            canFetch = fetched > 0 && offset % limit == 0;
             log.info("Processed {} bitstreams", offset);
         }
     }

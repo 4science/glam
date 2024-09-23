@@ -1572,16 +1572,19 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
                                 "$.parameters", containsInAnyOrder(
                                     allOf(
                                         hasJsonPath("$.name", is("-m")),
-                                        hasJsonPath("$.description",
-                                                    is("Sends mail report after the checksum verification to configured users")),
+                                        hasJsonPath(
+                                            "$.description",
+                                            is("Sends mail report after the checksum verification to configured " +
+                                                   "users")),
                                         hasJsonPath("$.type", is("boolean")),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--mail-report"))
                                     ),
                                     allOf(
                                         hasJsonPath("$.name", is("-D")),
-                                        hasJsonPath("$.description",
-                                                    is("Execute verification with DROID (i.e. digital preservation)")),
+                                        hasJsonPath(
+                                            "$.description",
+                                            is("Execute verification with DROID (i.e. digital preservation)")),
                                         hasJsonPath("$.type", is("boolean")),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--droid"))
@@ -1637,7 +1640,11 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
                                     ),
                                     allOf(
                                         hasJsonPath("$.name", is("-b")),
-                                        hasJsonPath("$.description", is("Repeatable arguments for specify bitstreams on which evaluate the script.")),
+                                        hasJsonPath(
+                                            "$.description",
+                                            is("Repeatable arguments for specify bitstreams on which evaluate the " +
+                                                   "script.")
+                                        ),
                                         hasJsonPath("$.type", is("String")),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--bitstream-ids"))
