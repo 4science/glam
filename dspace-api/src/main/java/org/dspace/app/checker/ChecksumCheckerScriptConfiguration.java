@@ -64,7 +64,7 @@ public class ChecksumCheckerScriptConfiguration<T extends ChecksumCheckerScript>
         option = Option.builder("b")
                 .longOpt("bitstream-ids")
                 .hasArgs()
-                .desc("Space separated list of bitstream ids")
+                .desc("Repeatable arguments for specify bitstreams on which evaluate the script.")
                 .build();
         options.addOption(option);
 
@@ -74,6 +74,13 @@ public class ChecksumCheckerScriptConfiguration<T extends ChecksumCheckerScript>
                 .desc("Prune old results (optionally using specified properties file for configuration)")
                 .build();
         options.addOption(option);
+        options.addOption(
+            Option.builder("m")
+                  .longOpt("mail-report")
+                  .optionalArg(true)
+                  .desc("Sends mail report after the checksum verification to configured users")
+                  .build()
+        );
         options.addOption(
             Option.builder("D")
                   .longOpt("droid")

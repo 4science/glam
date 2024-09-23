@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.TimeZone;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
@@ -25,9 +27,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.checker.BitstreamDispatcher;
+import org.dspace.checker.CSVChecksumResultMailCollector;
+import org.dspace.checker.CSVDroidChecksumCollector;
 import org.dspace.checker.CheckerCommand;
 import org.dspace.checker.ChecksumResultsCollector;
-import org.dspace.checker.CsvDroidChecksumCollector;
 import org.dspace.checker.HandleDispatcher;
 import org.dspace.checker.IteratorDispatcher;
 import org.dspace.checker.LimitedCountDispatcher;
@@ -60,6 +63,56 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
     public void setup() throws ParseException {
     }
 
+    protected void handleCollectorOutput(
+        DSpaceRunnableHandler handler,
+        List<ChecksumResultsCollector> collectors,
+        Context context
+    ) throws SQLException {
+        List<File> files = null;
+        try {
+            files =
+                collectors.stream()
+                          .flatMap(collector -> {
+                              try {
+                                  return collector.output(context).stream();
+                              } catch (Exception e) {
+                                  LOG.error("Cannot retrieve the files file of the collectors!", e);
+                                  handler.logError("Cannot retrieve the files file of the collectors!", e);
+                              }
+                              return Stream.empty();
+                          })
+                          .collect(Collectors.toList());
+        } catch (Exception e) {
+            LOG.error("Cannot retrieve the files file of the collectors!", e);
+            handler.logError("Cannot retrieve the files file of the collectors!", e);
+        } finally {
+            for (File output : files) {
+                writeOutputFile(handler, context, output);
+            }
+        }
+    }
+
+    protected void writeOutputFile(DSpaceRunnableHandler handler, Context context, File file)
+        throws SQLException {
+        if (file == null || !file.exists() || !file.isFile()) {
+            return;
+        }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            context.turnOffAuthorisationSystem();
+            handler.writeFilestream(
+                context,
+                file.getName(),
+                fis,
+                FilenameUtils.getExtension(file.getName())
+            );
+        } catch (IOException | AuthorizeException e) {
+            LOG.error("Cannot retrieve the output of the process!", e);
+            handler.logError("Cannot retrieve the output of the process!", e);
+        } finally {
+            context.restoreAuthSystemState();
+        }
+    }
+
     @Override
     public void internalRun() throws Exception {
         // user asks for help
@@ -85,7 +138,7 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
                 System.out.println("Pruned " + count + " old results from the database.");
             }
 
-            Date processStart = Calendar.getInstance().getTime();
+            Date processStart = Calendar.getInstance(TimeZone.getDefault()).getTime();
 
             BitstreamDispatcher dispatcher = null;
 
@@ -135,22 +188,36 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
                         context, processStart, false), 1);
             }
 
+            List<ChecksumResultsCollector> collectors = new ArrayList<>();
             boolean isDroidCheck = commandLine.hasOption('D');
+            boolean isReportVerbose = commandLine.hasOption('v');
+            boolean isMailReport = commandLine.hasOption('m');
 
-            ChecksumResultsCollector collector =
-                isDroidCheck ? new CsvDroidChecksumCollector() : new ResultsLogger(processStart);
+            if (isReportVerbose) {
+                collectors.add(new ResultsLogger(processStart));
+            }
+
+            if (isDroidCheck) {
+                collectors.add(new CSVDroidChecksumCollector());
+            }
+
+            if (isMailReport) {
+                collectors.add(new CSVChecksumResultMailCollector());
+            }
+
             CheckerCommand checker =
                 new CheckerCommand(context)
                     .setProcessStartDate(processStart)
                     .setDispatcher(dispatcher)
                     .setDroidCheck(isDroidCheck)
-                    .setReportVerbose(commandLine.hasOption('v'))
+                    .setReportVerbose(isReportVerbose)
+                    .setMailReport(isMailReport)
                     .setHandler(handler)
-                    .setCollector(collector);
+                    .setCollectors(collectors);
 
             checker.process();
 
-            handleCollectorOutput(handler, collector, context);
+            handleCollectorOutput(handler, collectors, context);
 
             context.complete();
             context = null;
@@ -158,42 +225,6 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
             if (context != null) {
                 context.abort();
             }
-        }
-    }
-
-    private static void handleCollectorOutput(
-        DSpaceRunnableHandler handler, ChecksumResultsCollector collector, Context context
-    ) throws SQLException {
-        Optional<File> output = Optional.empty();
-        try {
-            output = collector.output(context);
-        } catch (Exception e) {
-            LOG.error("Cannot retrieve the output file of the collector!", e);
-            handler.logError("Cannot retrieve the output file of the collector!", e);
-        } finally {
-            writeOutputFile(handler, context, output);
-        }
-    }
-
-    private static void writeOutputFile(DSpaceRunnableHandler handler, Context context, Optional<File> output)
-        throws SQLException {
-        if (output.isEmpty()) {
-            return;
-        }
-        File file = output.get();
-        try (FileInputStream fis = new FileInputStream(file)) {
-            context.turnOffAuthorisationSystem();
-            handler.writeFilestream(
-                context,
-                file.getName(),
-                fis,
-                FilenameUtils.getExtension(file.getName())
-            );
-        } catch (IOException | AuthorizeException e) {
-            LOG.error("Cannot retrieve the output of the process!", e);
-            handler.logError("Cannot retrieve the output of the process!", e);
-        } finally {
-            context.restoreAuthSystemState();
         }
     }
 

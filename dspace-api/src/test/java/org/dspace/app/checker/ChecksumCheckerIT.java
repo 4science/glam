@@ -34,11 +34,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.dspace.AbstractIntegrationTestWithDatabase;
 import org.dspace.app.launcher.ScriptLauncher;
 import org.dspace.app.scripts.handler.impl.TestDSpaceRunnableHandler;
@@ -301,12 +301,14 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
                 allOf(
                     containsString(bitstream.getID().toString()),
                     containsString(foundResult.getID().toString()),
-                    containsString(foundResult.getURI().toString()),
-                    containsString(foundResult.getPath()),
+                    containsString(String.valueOf(foundResult.getURI())),
+                    containsString(String.valueOf(foundResult.getPath())),
                     containsString(foundResult.getFilename()),
                     containsString("file"),
-                    containsString(foundResult.getStatus().getStatusCode().name()),
-                    containsString(foundResult.getFileSize().toString()),
+                    containsString(Optional.ofNullable(foundResult.getStatus())
+                                    .map(status -> status.getStatusCode().toString())
+                                    .orElse("")),
+                    containsString(String.valueOf(foundResult.getFileSize())),
                     containsString(foundResult.getType()),
                     containsString(foundResult.getFileExtension()),
                     containsString(String.valueOf(foundResult.getLastModifiedDate())),
@@ -316,7 +318,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
                     containsString(foundResult.getPUID()),
                     containsString(foundResult.getMimeType()),
                     containsString(foundResult.getFileFormat()),
-                    containsString(String.valueOf(foundResult.getFormatVersion()))
+                    containsString(Optional.ofNullable(foundResult.getFormatVersion()).orElse(""))
                 )
             );
             line = reader.readLine();
@@ -369,11 +371,10 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
 
         String[] args =
             new String[] {
-                "checksum-checker", "-b",
-                StringUtils.join(
-                    List.of(bitstream.getID().toString(), bitstream1.getID().toString()),
-                    ','
-                ), "-D"
+                "checksum-checker",
+                "-b", bitstream.getID().toString(),
+                "-b", bitstream1.getID().toString(),
+                "-D"
             };
         TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
 
@@ -425,34 +426,16 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             InputStreamReader ir = new InputStreamReader(is, "UTF-8");
             BufferedReader reader = new BufferedReader(ir);
         ) {
+            // header
             String line = reader.readLine();
             assertIsCsvHeader(line);
+            // first line
             line = reader.readLine();
             assertLine(line, bitstream, checkResult, checksum);
+            // second line
             line = reader.readLine();
-            assertThat(
-                line,
-                allOf(
-                    containsString(bitstream1.getID().toString()),
-                    containsString(checkResult1.getID().toString()),
-                    containsString(checkResult1.getURI().toString()),
-                    containsString(checkResult1.getPath()),
-                    containsString(checkResult1.getFilename()),
-                    containsString("file"),
-                    containsString(checkResult1.getStatus().getStatusCode().name()),
-                    containsString(checkResult1.getFileSize().toString()),
-                    containsString(checkResult1.getType()),
-                    containsString(checkResult1.getFileExtension()),
-                    containsString(String.valueOf(checkResult1.getLastModifiedDate())),
-                    containsString(String.valueOf(checkResult1.isExtensionMismatch())),
-                    containsString(checksum1.getCurrentChecksum()),
-                    containsString("1"),
-                    containsString(checkResult1.getPUID()),
-                    containsString(checkResult1.getMimeType()),
-                    containsString(checkResult1.getFileFormat()),
-                    containsString(String.valueOf(checkResult1.getFormatVersion()))
-                )
-            );
+            assertLine(line, bitstream1, checkResult1, checksum1);
+            // end of line
             line = reader.readLine();
             assertThat(line, nullValue());
         }
@@ -480,7 +463,11 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
                 containsString(checkResult.getPUID()),
                 containsString(checkResult.getMimeType()),
                 containsString(checkResult.getFileFormat()),
-                containsString(String.valueOf(checkResult.getFormatVersion()))
+                containsString(
+                    Optional.ofNullable(checkResult.getFormatVersion())
+                        .map(String::valueOf)
+                        .orElse("")
+                )
             )
         );
     }

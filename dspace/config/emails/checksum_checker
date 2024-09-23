@@ -1,0 +1,19 @@
+## E-mail sent to DSpace-GLAM users after a checksum validation.
+##
+## Parameters: {0} total bitstream validated
+##             {1} valid bitstream
+##
+## See org.dspace.core.Email for information on the format of this file.
+##
+#set($subject = "Checksum Validation Results - ${config.get('dspace.name')}")
+The checksum-checker process has been completed.
+
+Here is the recap of the bitstreams checksum validation:
+  - Total processed ${params[0]}
+  - Successfully validated ${params[1]}
+
+Any failed bitstreams' validation detail would be provided as attachment.
+
+If you need more information, please email ${config.get("mail.helpdesk")}.
+
+The ${config.get('dspace.name')} Team

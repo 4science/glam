@@ -118,57 +118,51 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
 //                + "where most_recent_checksum.bitstream_id = bitstream.bitstream_id )";
         int offset = 0;
         int limit = 10;
-        Iterator<Bitstream> unknownBitstreams =
-            bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
-                            .iterator();
-        Bitstream bitstream;
-        int i = 0;
-        while (unknownBitstreams.hasNext() && (bitstream = unknownBitstreams.next()) != null) {
-            i++;
-            log.info("Processing bitstream {} - {}", bitstream.getID().toString(), bitstream.getName());
-            MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
-            mostRecentChecksum.setBitstream(bitstream);
-            //Only process if our bitstream isn't deleted
-            mostRecentChecksum.setToBeProcessed(!bitstream.isDeleted());
-            if (bitstream.getChecksum() == null) {
-                mostRecentChecksum.setCurrentChecksum("");
-                mostRecentChecksum.setExpectedChecksum("");
-            } else {
-                mostRecentChecksum.setCurrentChecksum(bitstream.getChecksum());
-                mostRecentChecksum.setExpectedChecksum(bitstream.getChecksum());
-            }
-            mostRecentChecksum.setProcessStartDate(new Date());
-            mostRecentChecksum.setProcessEndDate(new Date());
-            if (bitstream.getChecksumAlgorithm() == null) {
-                mostRecentChecksum.setChecksumAlgorithm("MD5");
-            } else {
-                mostRecentChecksum.setChecksumAlgorithm(bitstream.getChecksumAlgorithm());
-            }
-            mostRecentChecksum.setMatchedPrevChecksum(true);
-            ChecksumResult checksumResult;
-            if (bitstream.isDeleted()) {
-                checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.BITSTREAM_MARKED_DELETED);
-            } else {
-                checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.CHECKSUM_MATCH);
-            }
-            mostRecentChecksum.setChecksumResult(checksumResult);
-            mostRecentChecksumDAO.create(context, mostRecentChecksum);
-            mostRecentChecksumDAO.save(context, mostRecentChecksum);
+        boolean canFetch = true;
+        while (canFetch) {
+            log.info("Fetching next {} bitstreams", limit);
+            Iterator<Bitstream> unknownBitstreams =
+                bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
+                                .iterator();
+            Bitstream bitstream;
+            while (unknownBitstreams.hasNext() && (bitstream = unknownBitstreams.next()) != null) {
+                offset++;
+                log.info("Processing bitstream {} - {}", bitstream.getID().toString(), bitstream.getName());
+                MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
+                mostRecentChecksum.setBitstream(bitstream);
+                //Only process if our bitstream isn't deleted
+                mostRecentChecksum.setToBeProcessed(!bitstream.isDeleted());
+                if (bitstream.getChecksum() == null) {
+                    mostRecentChecksum.setCurrentChecksum("");
+                    mostRecentChecksum.setExpectedChecksum("");
+                } else {
+                    mostRecentChecksum.setCurrentChecksum(bitstream.getChecksum());
+                    mostRecentChecksum.setExpectedChecksum(bitstream.getChecksum());
+                }
+                mostRecentChecksum.setProcessStartDate(new Date());
+                mostRecentChecksum.setProcessEndDate(new Date());
+                if (bitstream.getChecksumAlgorithm() == null) {
+                    mostRecentChecksum.setChecksumAlgorithm("MD5");
+                } else {
+                    mostRecentChecksum.setChecksumAlgorithm(bitstream.getChecksumAlgorithm());
+                }
+                mostRecentChecksum.setMatchedPrevChecksum(true);
+                ChecksumResult checksumResult;
+                if (bitstream.isDeleted()) {
+                    checksumResult =
+                        checksumResultService.findByCode(context, ChecksumResultCode.BITSTREAM_MARKED_DELETED);
+                } else {
+                    checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.CHECKSUM_MATCH);
+                }
+                mostRecentChecksum.setChecksumResult(checksumResult);
+                mostRecentChecksumDAO.create(context, mostRecentChecksum);
+                mostRecentChecksumDAO.save(context, mostRecentChecksum);
 
-            context.uncacheEntity(bitstream);
-
-            if (i % limit == 0) {
-                i = 0;
-                offset += limit;
-
-                context.commit();
-                log.info("Processed {} bitstreams", offset);
-
-                log.info("Fetching next {} bitstreams", limit);
-                unknownBitstreams =
-                    bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
-                                    .iterator();
+                context.uncacheEntity(bitstream);
             }
+            context.commit();
+            canFetch = offset > 0 && offset % limit == 0;
+            log.info("Processed {} bitstreams", offset);
         }
     }
 

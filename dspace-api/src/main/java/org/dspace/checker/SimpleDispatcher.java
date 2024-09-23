@@ -8,9 +8,7 @@
 package org.dspace.checker;
 
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.Optional;
 
 import org.dspace.checker.factory.CheckerServiceFactory;
@@ -48,14 +46,6 @@ public class SimpleDispatcher implements BitstreamDispatcher {
 
     protected final Context context;
 
-    protected int fetchSize = 10;
-
-    private int offset = 0;
-
-    private MostRecentChecksum lastChecksum;
-
-    private Iterator<MostRecentChecksum> toProcess = null;
-
     /**
      * Creates a new SimpleDispatcher.
      *
@@ -84,33 +74,17 @@ public class SimpleDispatcher implements BitstreamDispatcher {
     public synchronized Bitstream next() throws SQLException {
         // should process loop infinitely through the
         // bitstreams in most_recent_checksum table?
-        if (toProcess == null ||
-            (!toProcess.hasNext() && offset % fetchSize == 0)
-        ) {
-            findRecentChecksumToProcess();
-        }
-
-        Bitstream bitstream = null;
-        if (
-            toProcess.hasNext()
-        ) {
-            if (toProcess.next() != null) {
-                context.uncacheEntity(lastChecksum);
-                lastChecksum = toProcess.next();
-                bitstream = lastChecksum.getBitstream();
-            }
-            offset++;
-        }
-
-        return bitstream;
-    }
-
-    private void findRecentChecksumToProcess() throws SQLException {
-        if (fetchByDate) {
-            // will retrieve the bitstreams to process.
-            this.toProcess = checksumService.findAll(context, processStartTime, 0, fetchSize);
+        MostRecentChecksum oldestRecord;
+        if (!loopContinuously && (processStartTime != null)) {
+            oldestRecord = checksumService.findOldestRecord(context, processStartTime);
         } else {
-            this.toProcess = checksumService.findAll(context, Date.from(Instant.MAX), offset, fetchSize);
+            oldestRecord = checksumService.findOldestRecord(context);
         }
+        if (oldestRecord != null) {
+            return oldestRecord.getBitstream();
+        } else {
+            return null;
+        }
+
     }
 }

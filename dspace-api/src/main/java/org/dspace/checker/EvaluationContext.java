@@ -14,6 +14,7 @@ import java.util.function.Function;
  **/
 final class EvaluationContext {
 
+    @FunctionalInterface
     interface EvaluationContextMapper
         extends Function<EvaluationContext, String> {
     }

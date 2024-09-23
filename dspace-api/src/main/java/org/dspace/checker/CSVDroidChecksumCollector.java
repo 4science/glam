@@ -7,20 +7,15 @@
  */
 package org.dspace.checker;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,19 +33,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * This class is responsible to collect Droid related entities and then organize them as a CSV file.
+ *
  * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
  **/
-public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
+public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
 
-    private static final Logger log = LoggerFactory.getLogger(CsvDroidChecksumCollector.class);
+    private static final Logger log = LoggerFactory.getLogger(CSVDroidChecksumCollector.class);
+
     private final ConfigurationService configurationService =
         DSpaceServicesFactory.getInstance().getConfigurationService();
-    private String filePath;
-    private File outputFile;
-    private String dateSuffix;
-    private PrintWriter printWriter;
 
-    private Map<String, EvaluationContextMapper> rowMappers =
+    private String filePath;
+    private final CSVTempFileWriter csvWriter = new CSVTempFileWriter(getTempDir(), getPrefix(), getDateSuffix());
+    public static Map<String, EvaluationContextMapper> rowMappers =
         Stream.of(
             Map.entry("bitstream_id", (EvaluationContextMapper) (ec) -> ec.checksum.getBitstream().getID().toString()),
             Map.entry("id", (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getID().toString()),
@@ -66,7 +62,7 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
                       (EvaluationContextMapper) (ec) ->
                           Optional.ofNullable(ec.droidCheckResult.getStatus())
                                   .map(status -> status.getStatusCode().toString())
-                                  .orElse(null)
+                                  .orElse("")
             ),
             Map.entry("filesize",
                       (EvaluationContextMapper) (ec) -> String.valueOf(ec.droidCheckResult.getFileSize())),
@@ -89,15 +85,25 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
             Map.entry("file_format_name",
                       (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getFileFormat()),
             Map.entry("file_format_version",
-                      (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getFormatVersion())
+                      (EvaluationContextMapper) (ec) ->
+                          Optional.ofNullable(ec.droidCheckResult.getFormatVersion()).orElse(""))
 
-        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        ).collect(Collectors.toMap(
+            Map.Entry::getKey, Map.Entry::getValue,
+            (e1, e2) -> {
+                throw new RuntimeException();
+            }, LinkedHashMap::new)
+        );
+    private final CSVCollectorWriter<EvaluationContext> collectorWriter =
+        new CSVCollectorWriter<EvaluationContext>()
+            .with(new CSVCollector<EvaluationContext>().with(getFieldsSeparator()).with(rowMappers))
+            .with(csvWriter);
 
-    public CsvDroidChecksumCollector() {
+    public CSVDroidChecksumCollector() {
         this(null);
     }
 
-    public CsvDroidChecksumCollector(String outputFile) {
+    public CSVDroidChecksumCollector(String outputFile) {
         this.filePath = outputFile;
     }
 
@@ -111,94 +117,65 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
             );
     }
 
-    private String getPrefix() {
-        return configurationService.getProperty("droid.csv.checksum.outputfile.prefix");
+    public static String getPrefix() {
+        return DSpaceServicesFactory.getInstance().getConfigurationService()
+                                    .getProperty("droid.csv.checksum.outputfile.prefix");
+    }
+
+    private static Stream<EvaluationContext> mapToEvaluationContext(MostRecentChecksum info) {
+        return info.getDroidCheckResults()
+                   .stream()
+                   .map(droid -> new EvaluationContext(info, droid));
+    }
+
+    public static String getFieldsSeparator() {
+        return DSpaceServicesFactory.getInstance().getConfigurationService()
+                                    .getProperty("droid.csv.checksum.separator");
     }
 
     private String getTempDir() {
-        return configurationService.getProperty("droid.csv.checksum.outputfile.tempdir");
+        return Optional.ofNullable(this.filePath)
+                       .orElseGet(() -> configurationService.getProperty("droid.csv.checksum.outputfile.tempdir"));
     }
 
-    private String getFieldsSeparator() {
-        return configurationService.getProperty("droid.csv.checksum.separator");
+    private String[] getRecipients() {
+        return configurationService.getArrayProperty("droid.csv.checksum.mail.recipients");
     }
+
+    private String getEmailTemplate() {
+        return configurationService.getProperty("droid.csv.checksum.mail.template");
+    }
+
 
     @Override
     public void collect(Context context, MostRecentChecksum info) throws SQLException {
-        if (this.outputFile == null) {
-            log.info("Trying to create the output file for droid output.");
-            this.dateSuffix = getDateSuffix();
-            try {
-                Path directoryPath = getDirectoryPath();
-                File tempDirectory = directoryPath.toFile();
-                if (!tempDirectory.exists()) {
-                    tempDirectory = Files.createDirectory(directoryPath).toFile();
-                }
-                this.outputFile =
-                    File.createTempFile(
-                        getPrefix() + "_",
-                        "_" + dateSuffix + ".csv",
-                        tempDirectory
-                    );
-                log.info("The results will be saved to {}: ", outputFile.getAbsolutePath());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (!this.outputFile.exists()) {
-            log.error("Cannot open find the csv file for the export!");
-            return;
-        }
-        if (this.printWriter == null) {
-            try {
-                FileWriter fw = new FileWriter(outputFile, true);
-                BufferedWriter bw = new BufferedWriter(fw);
-                printWriter = new PrintWriter(bw);
-            } catch (IOException e) {
-                log.error("Cannot open the output file for the export!", e);
-                throw new RuntimeException(e);
-            }
-        }
         try {
-            if (outputFile.length() == 0) {
-                printWriter.println(String.join(getFieldsSeparator(), getHeader()));
-            }
-            for (Collection<String> row : rows(info)) {
-                printWriter.println(String.join(getFieldsSeparator(), row));
-            }
-            printWriter.flush();
+            this.collectorWriter.writeRows(
+                mapToEvaluationContext(info)
+                    .collect(Collectors.toList())
+            );
         } catch (Exception e) {
             log.error("Cannot add elements to the configured output file!", e);
-            throw new RuntimeException(e);
+            throw new RuntimeException("Cannot add elements to the configured output file!", e);
         }
-    }
-
-    private Path getDirectoryPath() {
-        return Paths.get(Optional.ofNullable(this.filePath).orElseGet(() -> getTempDir()));
     }
 
     @Override
     public void complete(Context context) {
-        if (this.printWriter != null) {
-            try {
-                printWriter.close();
-            } catch (Exception e) {
-                log.error("Cannot close the export writer!", e);
-            }
-        }
-        if (this.outputFile == null || !this.outputFile.exists() || outputFile.length() == 0) {
-            return;
+        try {
+            collectorWriter.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot close the csv writer", e);
         }
         try {
             Email email = Email.getEmail(
                 I18nUtil.getEmailFilename(
                     context.getCurrentLocale(),
-                    configurationService.getProperty("droid.csv.checksum.mail.template"))
+                    getEmailTemplate()
+                )
             );
-            if (this.outputFile.exists()) {
-                email.addAttachment(this.outputFile,  getPrefix() + ".csv");
-            }
-            String[] recipients = configurationService.getArrayProperty("droid.csv.checksum.mail.recipients");
+            email.addAttachment(csvWriter.outputFile, getPrefix() + ".csv");
+            String[] recipients = getRecipients();
             for (String recipient : recipients) {
                 email.addRecipient(recipient);
             }
@@ -211,26 +188,11 @@ public class CsvDroidChecksumCollector implements ChecksumResultsCollector {
     }
 
     @Override
-    public Optional<File> output(Context context) throws Exception {
-        if (outputFile == null || !outputFile.exists()) {
+    public List<File> output(Context context) throws Exception {
+        if (csvWriter.outputFile == null || !csvWriter.outputFile.exists()) {
             return ChecksumResultsCollector.super.output(context);
         }
-        return Optional.of(outputFile);
-    }
-
-    protected Collection<Collection<String>> rows(MostRecentChecksum info) {
-        if (info == null) {
-            return List.of();
-        }
-        Collection<String> header = this.getHeader();
-        return info.getDroidCheckResults()
-            .stream()
-            .map(droid -> new EvaluationContext(info, droid))
-            .map(ec -> header.stream()
-                             .map(entry -> rowMappers.get(entry).apply(ec))
-                             .collect(Collectors.toList())
-            )
-            .collect(Collectors.toList());
+        return List.of(csvWriter.outputFile);
     }
 
     protected Collection<String> getHeader() {

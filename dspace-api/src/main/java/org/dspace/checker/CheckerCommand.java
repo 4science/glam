@@ -9,7 +9,9 @@ package org.dspace.checker;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -81,7 +83,7 @@ public final class CheckerCommand {
     /**
      * Container/logger with details about each bitstream and checksum results.
      */
-    private ChecksumResultsCollector collector = null;
+    private List<ChecksumResultsCollector> collectors = new ArrayList<>();
 
     /**
      * Report all processing
@@ -92,6 +94,11 @@ public final class CheckerCommand {
      * Report all processing
      */
     private boolean droidCheck = false;
+
+    /**
+     * Configured to send mail
+     */
+    private boolean mailReport = false;
 
     /**
      * Handler of the process
@@ -238,8 +245,8 @@ public final class CheckerCommand {
             throw new IllegalStateException("No BitstreamDispatcher provided");
         }
 
-        if (collector == null) {
-            collector = new ResultsLogger(processStartDate.get());
+        if (collectors.isEmpty()) {
+            collectors.add(new ResultsLogger(processStartDate.get()));
         }
 
         // update missing bitstreams that were entered into the
@@ -254,16 +261,30 @@ public final class CheckerCommand {
             MostRecentChecksum info = checkBitstream(bitstream);
 
             if (
-                isDroidCheck() || reportVerbose ||
+                    isDroidCheck() ||
+                    isMailReport() ||
+                    reportVerbose ||
                     !ChecksumResultCode.CHECKSUM_MATCH.equals(info.getChecksumResult().getResultCode())
             ) {
-                collector.collect(context, info);
+                collectors.forEach(collector -> {
+                    try {
+                        collector.collect(context, info);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
 
             bitstream = dispatcher.next();
         }
 
-        collector.complete(context);
+        collectors.forEach(collector -> {
+            try {
+                collector.complete(context);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
@@ -375,17 +396,17 @@ public final class CheckerCommand {
      *
      * @return The ChecksumResultsCollector being used.
      */
-    public ChecksumResultsCollector getCollector() {
-        return collector;
+    public List<ChecksumResultsCollector> getCollectors() {
+        return collectors;
     }
 
     /**
-     * Set the collector that holds/logs the results for this process run.
+     * Set the collectors that holds/logs the results for this process run.
      *
-     * @param collector the collector to be used for this run
+     * @param collectors the collectors to be used for this run
      */
-    public CheckerCommand setCollector(ChecksumResultsCollector collector) {
-        this.collector = collector;
+    public CheckerCommand setCollectors(List<ChecksumResultsCollector> collectors) {
+        this.collectors = collectors;
         return this;
     }
 
@@ -438,6 +459,15 @@ public final class CheckerCommand {
 
     public CheckerCommand setHandler(DSpaceRunnableHandler handler) {
         this.handler = handler;
+        return this;
+    }
+
+    public boolean isMailReport() {
+        return mailReport;
+    }
+
+    public CheckerCommand setMailReport(boolean mailReport) {
+        this.mailReport = mailReport;
         return this;
     }
 }
