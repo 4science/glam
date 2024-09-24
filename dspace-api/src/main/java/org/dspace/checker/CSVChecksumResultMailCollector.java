@@ -167,7 +167,7 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
                 // "total",
                 email.addArgument(results.values().stream().reduce(0, Integer::sum));
                 // "valid"
-                email.addArgument(results.get(ChecksumResultCode.CHECKSUM_MATCH));
+                email.addArgument(results.getOrDefault(ChecksumResultCode.CHECKSUM_MATCH, 0));
 
                 File attachment = csvWriter.outputFile;
                 if (attachment != null && attachment.exists() && attachment.length() > 0) {
