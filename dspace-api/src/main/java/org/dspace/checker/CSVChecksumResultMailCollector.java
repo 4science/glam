@@ -131,7 +131,7 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
 
     public static String getPrefix() {
         return DSpaceServicesFactory.getInstance().getConfigurationService()
-                                    .getProperty("checksum-checker.csv.checksum.outputfile.prefix");
+                                    .getProperty("checksum-checker.csv.checksum.error.outputfile.prefix");
     }
 
     private String getTempDir() {
@@ -165,9 +165,13 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
             try {
                 Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), getEmailTemplate()));
                 // "total",
-                email.addArgument(results.values().stream().reduce(0, Integer::sum));
+                Integer total = results.values().stream().reduce(0, Integer::sum);
+                email.addArgument(total);
                 // "valid"
-                email.addArgument(results.getOrDefault(ChecksumResultCode.CHECKSUM_MATCH, 0));
+                Integer valid = results.getOrDefault(ChecksumResultCode.CHECKSUM_MATCH, 0);
+                email.addArgument(valid);
+                // "not valid"
+                email.addArgument(total - valid);
 
                 File attachment = csvWriter.outputFile;
                 if (attachment != null && attachment.exists() && attachment.length() > 0) {

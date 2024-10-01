@@ -11,6 +11,7 @@ The checksum-checker process has been completed.
 Here is the recap of the bitstreams checksum validation:
   - Total processed ${params[0]}
   - Successfully validated ${params[1]}
+  - Unsuccesfull ${params[2]}
 
 Any failed bitstreams' validation detail would be provided as attachment.
 
