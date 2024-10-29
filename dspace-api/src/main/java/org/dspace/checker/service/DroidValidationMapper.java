@@ -87,7 +87,7 @@ public class DroidValidationMapper extends AbstractDroidValidationMapper {
                 );
             }
             droidCheckResult.setPUID(apiResult.getPuid());
-            droidCheckResult.setType(apiResult.getMethod().getMethod());
+            droidCheckResult.setMethod(apiResult.getMethod().getMethod());
             droidCheckResult.setExtensionMismatch(apiResult.isFileExtensionMismatch());
             try {
                 Path filePath = Paths.get(storageService.absolutePath(context, state.bitstream));

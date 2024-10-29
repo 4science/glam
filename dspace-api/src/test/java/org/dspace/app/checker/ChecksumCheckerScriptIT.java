@@ -116,12 +116,12 @@ public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase
             equalTo(String.valueOf(droidCheckResult.getURI())),
             equalTo(String.valueOf(droidCheckResult.getPath())),
             equalTo(droidCheckResult.getFilename()),
-            equalTo("file"),
+            equalTo(droidCheckResult.getMethod()),
             equalTo(Optional.ofNullable(droidCheckResult.getStatus())
                             .map(status -> status.getStatusCode().toString())
                             .orElse("")),
             equalTo(String.valueOf(droidCheckResult.getFileSize())),
-            equalTo(droidCheckResult.getType()),
+            equalTo("file"),
             equalTo(droidCheckResult.getFileExtension()),
             equalTo(String.valueOf(droidCheckResult.getLastModifiedDate())),
             equalTo(String.valueOf(droidCheckResult.isExtensionMismatch())),

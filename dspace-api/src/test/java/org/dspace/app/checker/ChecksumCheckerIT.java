@@ -258,7 +258,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
         assertThat(foundResult.getFileFormat(), equalTo("Plain Text File"));
         assertThat(foundResult.getMimeType(), equalTo("text/plain"));
         assertThat(foundResult.getPUID(), equalTo("x-fmt/111"));
-        assertThat(foundResult.getType(), equalTo("Extension"));
+        assertThat(foundResult.getMethod(), equalTo("Extension"));
         assertThat(foundResult.getFileSize(), equalTo(bitstream.getSizeBytes()));
         assertThat(foundResult.getStatus().getStatusCode(), equalTo(DroidResultCode.VALIDATED));
 
@@ -274,7 +274,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
         assertThat(historyFound.getFileFormat(), equalTo(foundResult.getFileFormat()));
         assertThat(historyFound.getMimeType(), equalTo(foundResult.getMimeType()));
         assertThat(historyFound.getPUID(), equalTo(foundResult.getPUID()));
-        assertThat(historyFound.getType(), equalTo(foundResult.getType()));
+        assertThat(historyFound.getMethod(), equalTo(foundResult.getMethod()));
         assertThat(historyFound.getFileSize(), equalTo(foundResult.getFileSize()));
         assertThat(historyFound.getStatus().getStatusCode(), equalTo(foundResult.getStatus().getStatusCode()));
 
@@ -309,7 +309,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
                                     .map(status -> status.getStatusCode().toString())
                                     .orElse("")),
                     containsString(String.valueOf(foundResult.getFileSize())),
-                    containsString(foundResult.getType()),
+                    containsString(foundResult.getMethod()),
                     containsString(foundResult.getFileExtension()),
                     containsString(String.valueOf(foundResult.getLastModifiedDate())),
                     containsString(String.valueOf(foundResult.isExtensionMismatch())),
@@ -454,7 +454,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
                 containsString("file"),
                 containsString(checkResult.getStatus().getStatusCode().name()),
                 containsString(checkResult.getFileSize().toString()),
-                containsString(checkResult.getType()),
+                containsString(checkResult.getMethod()),
                 containsString(checkResult.getFileExtension()),
                 containsString(String.valueOf(checkResult.getLastModifiedDate())),
                 containsString(String.valueOf(checkResult.isExtensionMismatch())),

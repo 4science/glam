@@ -57,8 +57,8 @@ public class DroidCheckResult implements ReloadableEntity<Long> {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "method")
+    private String method;
 
     @Column(name = "file_extension")
     private String fileExtension;
@@ -148,12 +148,12 @@ public class DroidCheckResult implements ReloadableEntity<Long> {
         return this;
     }
 
-    public String getType() {
-        return type;
+    public String getMethod() {
+        return method;
     }
 
-    public DroidCheckResult setType(String type) {
-        this.type = type;
+    public DroidCheckResult setMethod(String type) {
+        this.method = type;
         return this;
     }
 

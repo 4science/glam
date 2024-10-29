@@ -45,7 +45,7 @@ public class DroidHistoryServiceImpl implements DroidHistoryService {
                 .setPath(droidCheckResult.getPath())
                 .setPUID(droidCheckResult.getPUID())
                 .setExtensionMismatch(droidCheckResult.isExtensionMismatch())
-                .setType(droidCheckResult.getType())
+                .setMethod(droidCheckResult.getMethod())
                 .setStatus(droidCheckResult.getStatus())
                 .setFormatVersion(droidCheckResult.getFormatVersion())
                 .setMimeType(droidCheckResult.getMimeType())

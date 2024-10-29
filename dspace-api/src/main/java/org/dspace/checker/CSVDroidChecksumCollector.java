@@ -57,7 +57,7 @@ public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
             Map.entry("filename",
                       (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getFilename()),
             Map.entry("method",
-                      (EvaluationContextMapper) (ec) -> "file"),
+                      (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getMethod()),
             Map.entry("status",
                       (EvaluationContextMapper) (ec) ->
                           Optional.ofNullable(ec.droidCheckResult.getStatus())
@@ -67,7 +67,7 @@ public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
             Map.entry("filesize",
                       (EvaluationContextMapper) (ec) -> String.valueOf(ec.droidCheckResult.getFileSize())),
             Map.entry("type",
-                      (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getType()),
+                      (EvaluationContextMapper) (ec) -> "file"),
             Map.entry("file_extension",
                       (EvaluationContextMapper) (ec) -> ec.droidCheckResult.getFileExtension()),
             Map.entry("last_modified_date",
