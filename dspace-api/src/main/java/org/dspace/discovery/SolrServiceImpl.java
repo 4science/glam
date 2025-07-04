@@ -33,9 +33,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.mail.MessagingException;
 
+import jakarta.mail.MessagingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.Transformer;
@@ -122,6 +123,12 @@ public class SolrServiceImpl implements SearchService, IndexingService {
     // Suffix of the solr field used to index the facet/filter so that the facet search can search all word in a
     // facet by indexing "each word to end of value' partial value
     public static final String SOLR_FIELD_SUFFIX_FACET_PREFIXES = "_prefix";
+    // each point is issued as this [ 16.826866113744146, 41.134281200631847 ]
+    // multiple points are listed as a matrix
+    // [[642957.5168454978,4546150.636464767],[642957.5168454978,4561411.808859862]]
+    public static final Pattern SOLR_GEO_FILTER_PATTERN =
+        Pattern.compile("(?:\\[\\s*)(\\d+.\\d+)(?:\\s*,\\s*)(\\d+.\\d+)(?:\\s*\\])");
+    public static final String SOLR_INTERSECT_FILTER = "\"Intersects(%s)\"";
 
     @Autowired
     protected ContentServiceFactory contentServiceFactory;
@@ -135,6 +142,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
     protected ConfigurationService configurationService;
     @Autowired
     protected IndexObjectFactoryFactory indexObjectFactoryFactory;
+    @Autowired
+    protected SolrGeomapFilterService geomapFilterService;
 
     protected SolrServiceImpl() {
 
@@ -1107,6 +1116,8 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             // Otherwise, the query is valid and the results are returned.
             if (!zombieDocs.isEmpty()) {
                 log.info("Cleaning " + zombieDocs.size() + " stale objects from Discovery Index");
+                log.info("ZombieDocs ");
+                zombieDocs.forEach(log::info);
                 solrSearchCore.getSolr().deleteById(zombieDocs);
                 solrSearchCore.getSolr().commit();
             } else {
@@ -1159,7 +1170,7 @@ public class SolrServiceImpl implements SearchService, IndexingService {
     }
 
     private void resolveFacetFields(Context context, DiscoverQuery query, DiscoverResult result,
-                                    boolean zombieFound, QueryResponse solrQueryResponse) throws SQLException {
+            boolean zombieFound, QueryResponse solrQueryResponse) throws SQLException {
         List<FacetField> facetFields = solrQueryResponse.getFacetFields();
         if (facetFields != null && !zombieFound) {
             for (int i = 0; i < facetFields.size(); i++) {
@@ -1424,7 +1435,12 @@ public class SolrServiceImpl implements SearchService, IndexingService {
 
 
             filterQuery.append(":");
-            if ("equals".equals(operator) || "notequals".equals(operator)) {
+            if (
+                    StringUtils.isNotBlank(operator) &&
+                    SolrGeomapFilterService.isValidOperator(operator.toUpperCase())
+            ) {
+                filterQuery.append(geomapFilterService.generateFilter(context, field, operator, value));
+            } else if ("equals".equals(operator) || "notequals".equals(operator)) {
                 //DO NOT ESCAPE RANGE QUERIES !
                 if (!value.matches("\\[.*TO.*\\]")) {
                     value = ClientUtils.escapeQueryChars(value);
@@ -1569,8 +1585,6 @@ public class SolrServiceImpl implements SearchService, IndexingService {
             } else {
                 return field + "_acid";
             }
-        } else if (facetFieldConfig.getType().equals(DiscoveryConfigurationParameters.TYPE_STANDARD)) {
-            return field;
         } else if (StringUtils.startsWith(facetFieldConfig.getType(), GraphDiscoverSearchFilterFacet.TYPE_PREFIX)) {
             if (removePostfix) {
                 return field.lastIndexOf("_filter") != -1 ? field.substring(0, field.lastIndexOf("_filter")) : field;
