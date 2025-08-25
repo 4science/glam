@@ -230,11 +230,11 @@
         <field>
           <dc-schema>dc</dc-schema>
           <dc-element>description</dc-element>
-          <label>Descrizione fisica</label>
+          <label>Descrizione</label>
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Descrivere le caratteristiche fisiche della risorsa.</hint>
+          <hint>Inserire ulteriori informazioni sulla risorsa</hint>
         </field>
       </row>
       <row>
@@ -319,6 +319,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -453,7 +454,8 @@
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire il nome del fondo cui appartiene la risorsa.</hint>
+          <hint>Inserire il nome del fondo cui appartiene la risorsa; si prega inserire il collegamento solo ad un fondo già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -498,7 +500,7 @@
         <field>
           <dc-schema>dc</dc-schema>
           <dc-element>type</dc-element>
-          <label>Tipologia della risorsa</label>
+          <label>Tipologia</label>
           <input-type value-pairs-name="unit_of_description_types">dropdown</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -522,7 +524,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>contributor</dc-element>
           <dc-qualifier>corporatebody</dc-qualifier>
-          <label>Soggetto produttore/Organizzazione</label>
+          <label>Organizzazione</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -534,7 +536,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>contributor</dc-element>
           <dc-qualifier>family</dc-qualifier>
-          <label>Soggettto produttore/Famiglia</label>
+          <label>Famiglia</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -557,7 +559,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>title</dc-element>
           <dc-qualifier>alternative</dc-qualifier>
-          <label>Titolo o denominazione alternativo/a, incerto/a o attribuito/a della risorsa</label>
+          <label>Titolo alternativo</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -628,7 +630,7 @@
         <field>
           <dc-schema>dc</dc-schema>
           <dc-element>identifier</dc-element>
-          <label>Identificativi della risorsa</label>
+          <label>Identificativo</label>
           <input-type value-pairs-name="archival_material_identifiers">qualdrop_value</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -675,7 +677,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>format</dc-element>
           <dc-qualifier>medium</dc-qualifier>
-          <label>Indicare il supporto fisico della risorsa</label>
+          <label>Supporto fisico</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -686,7 +688,7 @@
         <field>
           <dc-schema>dcterms</dc-schema>
           <dc-element>accessRights</dc-element>
-          <label>Condizione di accesso</label>
+          <label>Condizioni di accesso</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -697,7 +699,7 @@
         <field>
           <dc-schema>dc</dc-schema>
           <dc-element>rights</dc-element>
-          <label>Condizioni di riproduzione</label>
+          <label>Diritti</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -761,6 +763,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -819,7 +822,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>project</dc-qualifier>
-          <label>Progetti</label>
+          <label>Progetto</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -831,7 +834,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>conference</dc-qualifier>
-          <label>Evento collegato</label>
+          <label>Evento</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -847,7 +850,8 @@
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire il nome del fondo cui appartiene la risorsa.</hint>
+          <hint>Inserire il nome del fondo cui appartiene la risorsa; si prega inserire il collegamento solo ad un fondo già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -866,7 +870,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>description</dc-element>
           <dc-qualifier>archivist</dc-qualifier>
-          <label>Inserire qualsiasi ulteriore annotazione di servizio a cura dell'archivista</label>
+          <label>Descrizione archivistica</label>
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -902,7 +906,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>description</dc-element>
           <dc-qualifier>note</dc-qualifier>
-          <label>Altre note</label>
+          <label>Note</label>
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -1125,6 +1129,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -1180,7 +1185,7 @@
           <dc-schema>glamperson</dc-schema>
           <dc-element>link</dc-element>
           <dc-qualifier>ei</dc-qualifier>
-          <label>Enciclopedia Italiana link</label>
+          <label>Link all'Enciclopedia Italiana</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -1418,6 +1423,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -1648,6 +1654,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -1679,7 +1686,7 @@
         <field>
           <dc-schema>oairecerif</dc-schema>
           <dc-element>acronym</dc-element>
-          <label>Acronym</label>
+          <label>Acronimo</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -1765,7 +1772,7 @@
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire la fescrizione dell'evento</hint>
+          <hint>Inserire la descrizione dell'evento</hint>
         </field>
       </row>
       <row>
@@ -1789,6 +1796,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -2140,7 +2148,7 @@
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire informazioni relativa alla condizione di accesso dell'archivio</hint>
+          <hint>Inserire informazioni relative alla condizione di accesso dell'archivio</hint>
         </field>
       </row>
       <row>
@@ -2215,11 +2223,11 @@
         <field>
           <dc-schema>glam</dc-schema>
           <dc-element>leaf</dc-element>
-          <label>Foglia</label>
+          <label>Sottoserie</label>
           <input-type value-pairs-name="truefalse">dropdown</input-type>
           <repeatable>false</repeatable>
-          <required>Indicare se si tratta del livello inferiore delle gerarchia archivistica</required>
-          <hint>Indicare se si tratta del livello inferiore delle gerarchia archivistica</hint>
+          <required>Indicare se si tratta del livello inferiore della gerarchia archivistica</required>
+          <hint>Indicare se si tratta del livello inferiore della gerarchia archivistica</hint>
         </field>
       </row>
       <row>
@@ -2416,11 +2424,11 @@
         <field>
           <dc-schema>cris</dc-schema>
           <dc-element>priority</dc-element>
-          <label>Posizione</label>
-          <input-type>onebox</input-type>
+          <label>Ordine</label>
+          <input-type>number</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>I percorsi sono mostrati in ordine crescente di posizione</hint>
+          <hint>Inserire l'ordine</hint>
         </field>
       </row>
     </form>
@@ -2601,6 +2609,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -2707,6 +2716,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -2821,11 +2831,11 @@
         <field>
           <dc-schema>glam</dc-schema>
           <dc-element>leaf</dc-element>
-          <label>Accetta record</label>
+          <label>Sottoserie</label>
           <input-type value-pairs-name="truefalse">dropdown</input-type>
           <repeatable>false</repeatable>
-          <required>Indicare se si tratta del livello inferiore delle gerarchia archivistica</required>
-          <hint>Indicare se si tratta del livello inferiore delle gerarchia archivistica</hint>
+          <required>Indicare se si tratta del livello inferiore della gerarchia archivistica</required>
+          <hint>Indicare se si tratta del livello inferiore della gerarchia archivistica</hint>
         </field>
       </row>
       <row>
@@ -2869,7 +2879,7 @@
           <dc-schema>cris</dc-schema>
           <dc-element>news</dc-element>
           <dc-qualifier>enabled</dc-qualifier>
-          <label>Mostra</label>
+          <label>Visualizzazione</label>
           <input-type value-pairs-name="truefalse">dropdown</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -2893,7 +2903,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>description</dc-element>
           <dc-qualifier>abstract</dc-qualifier>
-          <label>Testo</label>
+          <label>Abstract</label>
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -3014,6 +3024,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint />
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
@@ -3046,7 +3057,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>issueother</dc-qualifier>
-          <label>Numero del fascicolo, supplemento e/o altro</label>
+          <label>Numero del fascicolo</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -3070,7 +3081,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>stpieceperstart</dc-qualifier>
-          <label>Annata</label>
+          <label>Da</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -3082,7 +3093,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>stpieceperend</dc-qualifier>
-          <label>Annata</label>
+          <label>A</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
@@ -3106,7 +3117,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>stpieceperotherstart</dc-qualifier>
-          <label>Volume</label>
+          <label>Da</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -3118,7 +3129,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>stpieceperotherend</dc-qualifier>
-          <label>Volume</label>
+          <label>A</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -3205,7 +3216,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Nome della testata di riferimento</hint>
+          <hint>Nome della testata di riferimento; si prega inserire il collegamento solo ad una testata già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">journalfondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -3265,6 +3277,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
@@ -3447,11 +3460,11 @@
         <field>
           <dc-schema>glam</dc-schema>
           <dc-element>leaf</dc-element>
-          <label>Foglia</label>
+          <label>Sottoserie</label>
           <input-type value-pairs-name="truefalse">dropdown</input-type>
           <repeatable>false</repeatable>
-          <required>Indicare se si tratta del livello inferiore delle gerarchia archivistica</required>
-          <hint>Indicare se si tratta del livello inferiore delle gerarchia archivistica</hint>
+          <required>Indicare se si tratta del livello inferiore della gerarchia archivistica</required>
+          <hint>Indicare se si tratta del livello inferiore della gerarchia archivistica</hint>
         </field>
       </row>
       <row>
@@ -3504,11 +3517,11 @@
         <field>
           <dc-schema>cris</dc-schema>
           <dc-element>priority</dc-element>
-          <label>Posizione</label>
-          <input-type>onebox</input-type>
+          <label>Ordine</label>
+          <input-type>number</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>I percorsi sono mostrati in ordine crescente di posizione</hint>
+          <hint>Inserire l'ordine</hint>
         </field>
       </row>
     </form>
@@ -3618,6 +3631,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire il nome della testata correlata</hint>
+          <vocabulary closed="true">journalfondsTree</vocabulary>
         </field>
       </row>
     </form>
@@ -3787,7 +3801,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Indica l'archivio di riferimento oggetto della catalogazione</hint>
+          <hint>Indica l'archivio di riferimento oggetto della catalogazione; si prega inserire il collegamento solo ad un archivio già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -3907,6 +3922,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint />
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -4452,7 +4468,7 @@
           <dc-element>bibliography</dc-element>
           <dc-qualifier>year</dc-qualifier>
           <label>Anno di pubblicazione</label>
-          <input-type>onebox</input-type>
+          <input-type>number</input-type>
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'anno di pubblicazione della risorsa bibliografica</hint>
@@ -4580,7 +4596,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il nome del livello cui appartiene la risorsa.</hint>
+          <hint>Inserire il nome del livello cui appartiene la risorsa; si prega inserire il collegamento solo ad un livello già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -4866,6 +4883,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint />
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
@@ -5073,7 +5091,7 @@
           <label>Titolo dell'opera</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
-          <required />
+          <required>Inserire il titolo della risorsa</required>
           <hint>Inserire il titolo dell'opera</hint>
         </field>
       </row>
@@ -5118,7 +5136,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>subject</dc-element>
           <label>Parole chiave</label>
-          <input-type>onebox</input-type>
+          <input-type>tag</input-type>
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire descrittori di soggetto e/o parole chiave della risorsa.</hint>
@@ -5167,7 +5185,7 @@
           <dc-qualifier>path</dc-qualifier>
           <label>Percorso</label>
           <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
+          <repeatable>true</repeatable>
           <required />
           <hint />
         </field>
@@ -5182,83 +5200,11 @@
           <repeatable>true</repeatable>
           <required />
           <hint />
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
-    <form name="coins-glam-bibliography">
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <label>Titolo</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire il titolo della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>year</dc-qualifier>
-          <label>Anno di pubblicazione</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'anno di pubblicazione della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>publisher</dc-qualifier>
-          <label>Editore</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'editore della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>place</dc-qualifier>
-          <label>Luogo di edizione</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire il luogo di edizione della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>author</dc-qualifier>
-          <label>Autore/i</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'autore/gli autori della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>type</dc-qualifier>
-          <label>Tipo di bibliografia</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Indicare il tipo di bibliografia</hint>
-        </field>
-      </row>
-    </form>
-    <form name="coins">
+    <form name="coin">
       <row>
         <field>
           <dc-schema>dc</dc-schema>
@@ -5432,6 +5378,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -5448,19 +5395,21 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misd</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misd</dc-qualifier>
           <label>Diametro</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire il diametro dell'oggetto</hint>
+          <hint>Inserire il diametro dell'oggetto.</hint>
         </field>
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misg</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misg</dc-qualifier>
           <label>Peso</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
@@ -5570,6 +5519,79 @@
         </field>
       </row>
     </form>
+    <form name="coin-glam-bibliography">
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <label>Titolo</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire il titolo della risorsa bibliografica</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>year</dc-qualifier>
+          <label>Anno di pubblicazione</label>
+          <input-type>number</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire l’anno di pubblicazione della risorsa bibliografica</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>publisher</dc-qualifier>
+          <label>Editore</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire l’editore della risorsa bibliografica</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo di edizione</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire il luogo di edizione della risorsa bibliografica</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>author</dc-qualifier>
+          <label>Autore/i</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire l’autore/gli autori della risorsa bibliografica</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>type</dc-qualifier>
+          <label>Tipo di bibliografia</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Indicare il tipo di bibliografia</required>
+          <hint />
+        </field>
+      </row>
+    </form>
     <form name="artworks">
       <row>
         <field>
@@ -5592,7 +5614,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il nome del livello cui appartiene la risorsa.</hint>
+          <hint>Inserire il nome del livello cui appartiene la risorsa; si prega inserire il collegamento solo ad un livello già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -5877,6 +5900,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -5981,7 +6005,7 @@
           <dc-element>bibliography</dc-element>
           <dc-qualifier>year</dc-qualifier>
           <label>Anno di pubblicazione</label>
-          <input-type>onebox</input-type>
+          <input-type>number</input-type>
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'anno di pubblicazione delle risorsa bibliografica</hint>
@@ -6165,6 +6189,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -6247,7 +6272,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il Livello di descrizione della risorsa.</hint>
+          <hint>Inserire il Livello di descrizione della risorsa; si prega inserire il collegamento solo ad un livello già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -6299,29 +6325,76 @@
         </field>
       </row>
     </form>
-    <form name="scientific_materials-dc-contributor-author">
+    <form name="scientific_materials-glam-bibliography">
       <row>
         <field>
-          <dc-schema>dc</dc-schema>
-          <dc-element>contributor</dc-element>
-          <dc-qualifier>author</dc-qualifier>
-          <label>Creatore</label>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <label>Titolo</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Indicare il creatore dell'oggetto.</hint>
+          <hint>Inserire il titolo della risorsa bibliografica</hint>
         </field>
       </row>
       <row>
         <field>
-          <dc-schema>dc</dc-schema>
-          <dc-element>contributor</dc-element>
-          <dc-qualifier>authorrole</dc-qualifier>
-          <label>Ruolo</label>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>year</dc-qualifier>
+          <label>Anno di pubblicazione</label>
+          <input-type>number</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'anno di pubblicazione della risorsa bibliografica</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>publisher</dc-qualifier>
+          <label>Editore</label>
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Indicare il ruolo del creatore dell'oggetto</hint>
+          <hint>Inserire l'editore della risorsa bibliografica</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo di edizione</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il luogo di edizione della risorsa bibliografica</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>author</dc-qualifier>
+          <label>Autore/i</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'autore/gli autori della risorsa bibliografica</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>type</dc-qualifier>
+          <label>Tipo di bibliografia</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Indicare il tipo di bibliografia</hint>
         </field>
       </row>
     </form>
@@ -6398,79 +6471,6 @@
         </field>
       </row>
     </form>
-    <form name="scientific_materials-glam-bibliography">
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <label>Titolo</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire il titolo della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>year</dc-qualifier>
-          <label>Anno di pubblicazione</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'anno di pubblicazione della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>publisher</dc-qualifier>
-          <label>Editore</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'editore della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>place</dc-qualifier>
-          <label>Luogo di edizione</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire il luogo di edizione della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>author</dc-qualifier>
-          <label>Autore/i</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'autore/gli autori della risorsa bibliografica</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>bibliography</dc-element>
-          <dc-qualifier>type</dc-qualifier>
-          <label>Tipo di bibliografia</label>
-          <input-type>onebox</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Indicare il tipo di bibliografia</hint>
-        </field>
-      </row>
-    </form>
     <form name="scientific_materials">
       <row>
         <field>
@@ -6501,7 +6501,7 @@
           <dc-element>contributor</dc-element>
           <dc-qualifier>author</dc-qualifier>
           <label>Creatore</label>
-          <input-type>group</input-type>
+          <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
           <hint>Indicare il creatore dell'oggetto.</hint>
@@ -6575,7 +6575,8 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il Livello di descrizione dell'oggetto.</hint>
+          <hint>Inserire il Livello di descrizione dell'oggetto; si prega inserire il collegamento solo ad un livello già presente nella Digital Library altrimenti il sistema non salverà il valore.</hint>
+          <vocabulary closed="true">fondsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -6683,6 +6684,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la collezione cui appartiene l'item</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
       <row>
@@ -6937,8 +6939,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misn</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misn</dc-qualifier>
           <label>Lunghezza</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -6948,8 +6951,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misp</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misp</dc-qualifier>
           <label>Profondità</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -6959,8 +6963,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misd</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misd</dc-qualifier>
           <label>Diametro</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -6970,8 +6975,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>miss</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>miss</dc-qualifier>
           <label>Spessore</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -6981,8 +6987,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misg</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misg</dc-qualifier>
           <label>Peso</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -6992,8 +6999,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misc</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misc</dc-qualifier>
           <label>Capacità</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -7003,8 +7011,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misw</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misw</dc-qualifier>
           <label>Potenza</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -7014,8 +7023,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misb</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misb</dc-qualifier>
           <label>Capacità di memoria</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -7025,8 +7035,9 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
-          <dc-element>misi</dc-element>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misi</dc-qualifier>
           <label>Ingombro</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
@@ -7102,6 +7113,167 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire la licenza attribuita alla risorsa.</hint>
+        </field>
+      </row>
+    </form>
+    <form name="web_annotation">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>abstract</dc-qualifier>
+          <label>Abstract</label>
+          <input-type>markdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>annotation</dc-element>
+          <dc-qualifier>type</dc-qualifier>
+          <label>Tipo Annotazione</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il tipo dell’annotazione creata</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>subject</dc-element>
+          <dc-qualifier>annotation</dc-qualifier>
+          <label>Soggetto</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Specificare le indicazioni sull'annotazione.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>person</dc-qualifier>
+          <label>Persona</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il nome della persona cui è eventualmente connessa la risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il luogo collegato alla risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>event</dc-qualifier>
+          <label>Evento collegato</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Titolo dell’eventuale evento cui è connessa la risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>path</dc-qualifier>
+          <label>Percorso</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il percorso.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>aggregation</dc-qualifier>
+          <label>Aggregazione</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'aggregazione cui appartiene l'item.</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>family</dc-qualifier>
+          <label>Famiglia</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire la famiglia collegata alla risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>relatedDocument</dc-qualifier>
+          <label>Documento collegato</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'eventuale collegamento della risorsa ad altri documenti.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>annotation</dc-qualifier>
+          <label>Annotazione Collegata</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'eventuale collegamento con altre annotazioni</hint>
+        </field>
+      </row>
+    </form>
+    <form name="personal_annotation">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>abstract</dc-qualifier>
+          <label>Abstract</label>
+          <input-type>markdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>annotation</dc-element>
+          <dc-qualifier>type</dc-qualifier>
+          <label>Tipo Annotazione</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il tipo dell’annotazione creata</hint>
         </field>
       </row>
     </form>

@@ -8,11 +8,13 @@
 package org.dspace.app.checker;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.core.Context;
+import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -38,7 +40,7 @@ public class ChecksumCheckerScriptConfiguration<T extends ChecksumCheckerScript>
     }
 
     @Override
-    public boolean isAllowedToExecute(Context context) {
+    public boolean isAllowedToExecute(Context context, List<DSpaceCommandLineParameter> commandLineParameters) {
         try {
             return authorizeService.isAdmin(context);
         } catch (SQLException e) {

@@ -283,8 +283,8 @@
         </rightCardinality>
     </type>
     <type>
-        <leftType>Coins</leftType>
-        <rightType>Coins</rightType>
+        <leftType>Coin</leftType>
+        <rightType>Coin</rightType>
         <leftwardType>isCorrectionOfItem</leftwardType>
         <rightwardType>isCorrectedByItem</rightwardType>
         <leftCardinality>
@@ -327,6 +327,34 @@
     <type>
         <leftType>MusicalLibrettos</leftType>
         <rightType>MusicalLibrettos</rightType>
+        <leftwardType>isCorrectionOfItem</leftwardType>
+        <rightwardType>isCorrectedByItem</rightwardType>
+        <leftCardinality>
+            <min>0</min>
+            <max>1</max>
+        </leftCardinality>
+        <rightCardinality>
+            <min>0</min>
+            <max>1</max>
+        </rightCardinality>
+    </type>
+    <type>
+        <leftType>WebAnnotation</leftType>
+        <rightType>WebAnnotation</rightType>
+        <leftwardType>isCorrectionOfItem</leftwardType>
+        <rightwardType>isCorrectedByItem</rightwardType>
+        <leftCardinality>
+            <min>0</min>
+            <max>1</max>
+        </leftCardinality>
+        <rightCardinality>
+            <min>0</min>
+            <max>1</max>
+        </rightCardinality>
+    </type>
+    <type>
+        <leftType>PersonalAnnotation</leftType>
+        <rightType>PersonalAnnotation</rightType>
         <leftwardType>isCorrectionOfItem</leftwardType>
         <rightwardType>isCorrectedByItem</rightwardType>
         <leftCardinality>

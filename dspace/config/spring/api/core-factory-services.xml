@@ -65,6 +65,10 @@
     
     <bean id="supervisionOrderServiceFactory" class="org.dspace.supervision.factory.SupervisionOrderServiceFactoryImpl"/>
 
+    <bean id="notifyServiceFactory" class="org.dspace.app.ldn.factory.NotifyServiceFactoryImpl"/>
+
+    <bean id="ldnMessageServiceFactory" class="org.dspace.app.ldn.factory.LDNMessageServiceFactoryImpl"/>
+
     <bean id="droidServiceFactory" class="org.dspace.checker.factory.DroidServiceFactoryImpl"/>
 
     <bean id="submissionServiceFactory" class="org.dspace.submit.factory.SubmissionServiceFactoryImpl"/>

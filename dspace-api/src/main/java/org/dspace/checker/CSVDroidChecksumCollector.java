@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.mail.MessagingException;
 
+import jakarta.mail.MessagingException;
 import org.dspace.checker.EvaluationContext.EvaluationContextMapper;
 import org.dspace.core.Context;
 import org.dspace.core.Email;

@@ -111,9 +111,9 @@ public class DroidValidationMapper extends AbstractDroidValidationMapper {
                     )
                 );
                 droidCheckResult.setFileSize(
-                    Optional.ofNullable(state.bitstream.getSizeBytes())
-                            .filter(val -> val != null)
-                            .orElseGet(() -> state.file.getTotalSpace())
+                    Optional.of(state.bitstream.getSizeBytes())
+                            .filter(val -> val > 0)
+                            .orElseGet(state.file::getTotalSpace)
                 );
             } catch (IOException e) {
                 log.error("Cannot retrieve some information about the bitstream file.", e);

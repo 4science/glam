@@ -50,7 +50,6 @@ public class ContentGenerator {
                 Locale supportedLocale = I18nUtil.getEPersonLocale(ePerson);
                 Email email = Email.getEmail(I18nUtil.getEmailFilename(supportedLocale, "subscriptions_content"));
                 email.addRecipient(ePerson.getEmail());
-
                 String bodyCommunities = generateBodyMail("Community", indexableComm);
                 String bodyCollections = generateBodyMail("Collection", indexableColl);
                 if (bodyCommunities.equals(EMPTY) && bodyCollections.equals(EMPTY)) {
@@ -96,6 +95,7 @@ public class ContentGenerator {
                 //        .orElseGet(() -> entityType2Disseminator.get("Item"))
                 //        .disseminate(context, item, out);
             }
+            out.close();
             return out.toString();
         } catch (Exception e) {
             log.error(e.getMessage(), e);

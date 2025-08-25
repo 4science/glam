@@ -7,7 +7,10 @@
  */
 package org.dspace.app.checker;
 
+import java.util.List;
+
 import org.dspace.core.Context;
+import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
 /**
@@ -18,7 +21,7 @@ public class ChecksumCheckerCliScriptConfiguration
         extends ChecksumCheckerScriptConfiguration<ChecksumCheckerCliScript> {
 
     @Override
-    public boolean isAllowedToExecute(Context context) {
+    public boolean isAllowedToExecute(Context context, List<DSpaceCommandLineParameter> commandLineParameters) {
         return true;
     }
 }

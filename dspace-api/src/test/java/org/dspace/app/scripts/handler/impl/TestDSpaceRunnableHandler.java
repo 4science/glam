@@ -81,6 +81,12 @@ public class TestDSpaceRunnableHandler extends CommandLineDSpaceRunnableHandler 
     }
 
     @Override
+    public void logError(String message, Throwable throwable) {
+        super.logError(message, throwable);
+        errorMessages.add(message);
+    }
+
+    @Override
     public void printHelp(Options options, String name) {
         if (options != null) {
             HelpFormatter formatter = new HelpFormatter();

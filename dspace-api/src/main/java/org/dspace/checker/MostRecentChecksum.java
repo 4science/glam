@@ -12,19 +12,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.dspace.content.Bitstream;
@@ -185,6 +185,29 @@ public class MostRecentChecksum implements Serializable, ReloadableEntity<java.u
     }
 
     @Override
+    public UUID getID() {
+        return this.bitstream.getID();
+    }
+
+    public List<DroidCheckResult> getDroidCheckResults() {
+        return droidCheckResults;
+    }
+
+    public MostRecentChecksum setDroidCheckResults(List<DroidCheckResult> droidCheckResults) {
+        this.droidCheckResults = droidCheckResults;
+        return this;
+    }
+
+    public DroidCheckStatus getDroidCheckStatus() {
+        return droidCheckStatus;
+    }
+
+    public MostRecentChecksum setDroidCheckStatus(DroidCheckStatus droidCheckStatus) {
+        this.droidCheckStatus = droidCheckStatus;
+        return this;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -226,28 +249,5 @@ public class MostRecentChecksum implements Serializable, ReloadableEntity<java.u
             .append(bitstreamFound)
             .append(checksumResult)
             .toHashCode();
-    }
-
-    @Override
-    public UUID getID() {
-        return this.bitstream.getID();
-    }
-
-    public List<DroidCheckResult> getDroidCheckResults() {
-        return droidCheckResults;
-    }
-
-    public MostRecentChecksum setDroidCheckResults(List<DroidCheckResult> droidCheckResults) {
-        this.droidCheckResults = droidCheckResults;
-        return this;
-    }
-
-    public DroidCheckStatus getDroidCheckStatus() {
-        return droidCheckStatus;
-    }
-
-    public MostRecentChecksum setDroidCheckStatus(DroidCheckStatus droidCheckStatus) {
-        this.droidCheckStatus = droidCheckStatus;
-        return this;
     }
 }
