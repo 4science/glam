@@ -18,7 +18,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.ParseException;
@@ -31,6 +30,7 @@ import org.dspace.checker.CSVChecksumResultMailCollector;
 import org.dspace.checker.CSVDroidChecksumCollector;
 import org.dspace.checker.CheckerCommand;
 import org.dspace.checker.ChecksumResultsCollector;
+import org.dspace.checker.DroidSimpleDispatcher;
 import org.dspace.checker.HandleDispatcher;
 import org.dspace.checker.IteratorDispatcher;
 import org.dspace.checker.LimitedCountDispatcher;
@@ -38,6 +38,8 @@ import org.dspace.checker.LimitedDurationDispatcher;
 import org.dspace.checker.ResultsLogger;
 import org.dspace.checker.ResultsPruner;
 import org.dspace.checker.SimpleDispatcher;
+import org.dspace.checker.factory.CheckerServiceFactory;
+import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
@@ -50,6 +52,19 @@ import org.dspace.services.factory.DSpaceServicesFactory;
 public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<?>> extends DSpaceRunnable<T> {
     private static final Logger LOG = LogManager.getLogger(ChecksumCheckerScript.class);
     private static final BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+    /**
+     * Access for bitstream information
+     */
+    protected final MostRecentChecksumService checksumService =
+        CheckerServiceFactory.getInstance().getMostRecentChecksumService();
+
+    protected BitstreamDispatcher getSimpleDispatcher(Context context, Date startTime, boolean looping,
+                                                                boolean isDroid) {
+        if (isDroid) {
+            return new DroidSimpleDispatcher(context, startTime, looping);
+        }
+        return new SimpleDispatcher(context, startTime, looping);
+    }
 
 
     @Override
@@ -81,7 +96,7 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
                               }
                               return Stream.empty();
                           })
-                          .collect(Collectors.toList());
+                          .toList();
         } catch (Exception e) {
             LOG.error("Cannot retrieve the files file of the collectors!", e);
             handler.logError("Cannot retrieve the files file of the collectors!", e);
@@ -141,55 +156,62 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
             Date processStart = Calendar.getInstance(TimeZone.getDefault()).getTime();
 
             BitstreamDispatcher dispatcher = null;
+            boolean isDroidCheck = commandLine.hasOption('D');
 
             // process should loop infinitely through
             // most_recent_checksum table
-            if (commandLine.hasOption('l')) {
-                dispatcher = new SimpleDispatcher(context, processStart, false);
-            } else if (commandLine.hasOption('L')) {
-                dispatcher = new SimpleDispatcher(context, processStart, true);
-            } else if (commandLine.hasOption('b')) {
+            if (commandLine.hasOption('b')) {
                 // check only specified bitstream(s)
                 String[] ids = commandLine.getOptionValues('b');
                 List<Bitstream> bitstreams = new ArrayList<>(ids.length);
 
-                for (int i = 0; i < ids.length; i++) {
+                for (String id : ids) {
                     try {
-                        bitstreams.add(bitstreamService.find(context, UUID.fromString(ids[i])));
-                    } catch (NumberFormatException nfe) {
-                        System.err.println("The following argument: " + ids[i]
-                                + " is not an integer");
-                        System.exit(0);
+                        bitstreams.add(bitstreamService.find(context, UUID.fromString(id)));
+                    } catch (IllegalArgumentException ie) {
+                        handler.logError("The following argument: " + id + " is not an UUID", ie);
+                        throw ie;
                     }
                 }
                 dispatcher = new IteratorDispatcher(bitstreams.iterator());
             } else if (commandLine.hasOption('a')) {
                 dispatcher = new HandleDispatcher(context, commandLine.getOptionValue('a'));
-            } else if (commandLine.hasOption('d')) {
-                // run checker process for specified duration
-                try {
-                    dispatcher = new LimitedDurationDispatcher(
-                            new SimpleDispatcher(context, processStart, true), new Date(
-                            System.currentTimeMillis()
-                                    + Utils.parseDuration(commandLine.getOptionValue('d'))));
-                } catch (Exception e) {
-                    LOG.fatal("Couldn't parse " + commandLine.getOptionValue('d')
-                            + " as a duration: ", e);
-                    System.exit(0);
-                }
-            } else if (commandLine.hasOption('c')) {
-                int count = Integer.valueOf(commandLine.getOptionValue('c'));
-
-                // run checker process for specified number of bitstreams
-                dispatcher = new LimitedCountDispatcher(new SimpleDispatcher(
-                        context, processStart, false), count);
             } else {
-                dispatcher = new LimitedCountDispatcher(new SimpleDispatcher(
-                        context, processStart, false), 1);
+                // dispatchers with indefinite loops
+                if (commandLine.hasOption('l')) {
+                    dispatcher = getSimpleDispatcher(context, processStart, false, isDroidCheck);
+                } else if (commandLine.hasOption('L')) {
+                    dispatcher = getSimpleDispatcher(context, processStart, true, isDroidCheck);
+                } else if (commandLine.hasOption('d')) {
+                    // run checker process for specified duration
+                    try {
+                        dispatcher = new LimitedDurationDispatcher(
+                            getSimpleDispatcher(context, processStart, true, isDroidCheck),
+                            new Date(System.currentTimeMillis() + Utils.parseDuration(commandLine.getOptionValue('d')))
+                        );
+                    } catch (Exception e) {
+                        handler.logError("Couldn't parse " + commandLine.getOptionValue('d')
+                                             + " as a duration: ", e);
+                        throw e;
+                    }
+                } else if (commandLine.hasOption('c')) {
+                    int count = Integer.valueOf(commandLine.getOptionValue('c'));
+
+                    // run checker process for specified number of bitstreams
+                    dispatcher = new LimitedCountDispatcher(
+                        getSimpleDispatcher(context, processStart, false, isDroidCheck),
+                        count
+                    );
+                } else {
+                    dispatcher = new LimitedCountDispatcher(
+                        getSimpleDispatcher(context, processStart, false, isDroidCheck),
+                        1
+                    );
+                }
             }
 
+
             List<ChecksumResultsCollector> collectors = new ArrayList<>();
-            boolean isDroidCheck = commandLine.hasOption('D');
             boolean isReportVerbose = commandLine.hasOption('v');
             boolean isMailReport = commandLine.hasOption('m');
 

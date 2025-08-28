@@ -58,8 +58,8 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
         try {
             return info.getBitstream().getBundles().stream().findFirst().map(Bundle::getItems).map(i -> i.get(0));
         } catch (SQLException e) {
-            log.error("Cannot retrieve item for the current checksum-info!", e);
-            throw new RuntimeException("Cannot retrieve item for the current checksum-info!", e);
+            log.error("Cannot retrieve item for the current checksum-info: " + info.getID(), e);
+            throw new RuntimeException("Cannot retrieve item for the current checksum-info: " + info.getID(), e);
         }
     };
     private final Function<Optional<Item>, String> getItemId =

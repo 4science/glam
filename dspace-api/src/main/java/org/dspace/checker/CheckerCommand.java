@@ -326,10 +326,10 @@ public final class CheckerCommand {
                 info.setChecksumResult(getChecksumResultByCode(ChecksumResultCode.BITSTREAM_NOT_FOUND));
                 info.setToBeProcessed(false);
             }
+            info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.NOT_PROCESSED));
 
             if (isDroidCheck()) {
                 try {
-                    info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.NOT_PROCESSED));
                     checksumService.setDroidResults(
                         context,
                         info,
@@ -342,8 +342,8 @@ public final class CheckerCommand {
                         info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.VALIDATED));
                     }
                 } catch (DroidValidationException | SQLException e) {
-                    logError("Cannot validate the bitstream with DROID", e);
-                    info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.PROCESSED));
+                    logError("Cannot validate the bitstream " + info.getBitstream().getID() + " with DROID", e);
+                    info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.VALIDATION_ERROR));
                 }
             }
 

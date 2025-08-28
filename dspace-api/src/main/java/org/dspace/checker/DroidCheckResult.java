@@ -8,6 +8,7 @@
 package org.dspace.checker;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -20,6 +21,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import org.dspace.core.ReloadableEntity;
 import org.dspace.core.converter.LocalDateTimeAttributeConverter;
 
@@ -81,6 +84,10 @@ public class DroidCheckResult implements ReloadableEntity<Long> {
 
     @Column(name = "format_version")
     private String formatVersion;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "process_date", nullable = false)
+    private Date processDate;
 
     public DroidCheckResult(MostRecentChecksum mostRecentChecksum) {
         this.mostRecentChecksum = mostRecentChecksum;
@@ -217,6 +224,15 @@ public class DroidCheckResult implements ReloadableEntity<Long> {
 
     public DroidCheckResult setFormatVersion(String formatVersion) {
         this.formatVersion = formatVersion;
+        return this;
+    }
+
+    public Date getProcessDate() {
+        return processDate;
+    }
+
+    public DroidCheckResult setProcessDate(Date processDate) {
+        this.processDate = processDate;
         return this;
     }
 }

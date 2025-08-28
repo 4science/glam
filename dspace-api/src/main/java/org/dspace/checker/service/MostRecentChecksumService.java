@@ -45,6 +45,10 @@ public interface MostRecentChecksumService {
 
     public MostRecentChecksum findOldestRecord(Context context, Date lessThanDate) throws SQLException;
 
+    MostRecentChecksum findOldestByDroid(Context context) throws SQLException;
+
+    MostRecentChecksum findOldestByDroid(Context context, Date lessThanDate) throws SQLException;
+
     Iterator<MostRecentChecksum> findAll(
         Context context,
         Date lessThanDate,

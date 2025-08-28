@@ -40,6 +40,10 @@ public interface MostRecentChecksumDAO extends GenericDAO<MostRecentChecksum> {
 
     public MostRecentChecksum getOldestRecord(Context context, Date lessThanDate) throws SQLException;
 
+    public MostRecentChecksum getOldestByDroid(Context context) throws SQLException;
+
+    public MostRecentChecksum getOldestByDroid(Context context, Date lessThanDate) throws SQLException;
+
     Iterator<MostRecentChecksum> findAll(Context context, Date lessThanDate, int offset, int limit) throws SQLException;
 
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException;

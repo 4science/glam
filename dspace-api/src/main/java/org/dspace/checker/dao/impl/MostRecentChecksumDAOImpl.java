@@ -8,6 +8,7 @@
 package org.dspace.checker.dao.impl;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -120,6 +121,47 @@ public class MostRecentChecksumDAOImpl extends AbstractHibernateDAO<MostRecentCh
         Query query = createQuery(context, hql);
         query.setParameter("bitstream", bitstream);
         query.executeUpdate();
+    }
+
+
+    public MostRecentChecksum getOldestByDroid(Context context) throws SQLException {
+        String hql =
+            "select m " +
+            "from MostRecentChecksum m " +
+            "join fetch m.bitstream " +
+            "left join m.droidCheckResults d " +
+            " and d.processDate = ( " +
+            "       select max(d2.processDate) " +
+            "       from DroidCheckResult d2 " +
+            "       where d2.mostRecentChecksum = m " +
+            " ) " +
+            "where m.tobeProcessed = true " +
+            "order by coalesce(d.processDate, :minDate), m.bitstream.id";
+
+        Query q = createQuery(context, hql);
+        q.setParameter("minDate", Date.from(Instant.MIN));
+        return singleResult(q);
+    }
+
+    public MostRecentChecksum getOldestByDroid(Context context, Date lessThanDate) throws SQLException {
+        String hql =
+            "select m " +
+            "from MostRecentChecksum m " +
+            "join fetch m.bitstream " +
+            "left join m.droidCheckResults d " +
+            " and d.processDate = ( " +
+            "       select max(d2.processDate) " +
+            "       from DroidCheckResult d2 " +
+            "       where d2.mostRecentChecksum = m " +
+            " ) " +
+            "where m.tobeProcessed = true " +
+            " and m.processStartDate < :processStartDate " +
+            "order by coalesce(d.processDate, :minDate), m.bitstream.id";
+
+        Query q = createQuery(context, hql);
+        q.setParameter("minDate", Date.from(Instant.MIN));
+        q.setParameter("processStartDate", lessThanDate);
+        return singleResult(q);
     }
 
     @Override

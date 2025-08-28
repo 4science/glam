@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +65,7 @@ public class DroidValidationMapper extends AbstractDroidValidationMapper {
         ApiResult apiResult;
         while (iterator.hasNext() && (apiResult = iterator.next()) != null) {
             DroidCheckResult droidCheckResult = new DroidCheckResult();
+            droidCheckResult.setProcessDate(new Date());
             droidCheckResult.setStatus(getDroidCheckStatusBy(context, DroidResultCode.VALIDATED));
             droidCheckResult.setFileExtension(apiResult.getExtension());
             droidCheckResult.setFileFormat(apiResult.getName());

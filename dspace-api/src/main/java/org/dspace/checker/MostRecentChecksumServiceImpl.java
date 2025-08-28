@@ -203,6 +203,33 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
         return mostRecentChecksumDAO.getOldestRecord(context, lessThanDate);
     }
 
+    /**
+     * Get the oldest most recent checksum record that was processed using
+     * DROID. If more than one found the first one in the result set is returned.
+     *
+     * @param context
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public MostRecentChecksum findOldestByDroid(Context context) throws SQLException {
+        return mostRecentChecksumDAO.getOldestByDroid(context);
+    }
+
+    /**
+     * Get the oldest most recent checksum record starting from the provided Date that has been validated with DROID.
+     * If more than one found the first one in the result set is returned.
+     *
+     * @param context      context
+     * @param lessThanDate date
+     * @return id of olded bitstream or -1 if not bitstreams are found
+     * @throws SQLException if database error
+     */
+    @Override
+    public MostRecentChecksum findOldestByDroid(Context context, Date lessThanDate) throws SQLException {
+        return mostRecentChecksumDAO.getOldestByDroid(context, lessThanDate);
+    }
+
     @Override
     public Iterator<MostRecentChecksum> findAll(
         Context context,

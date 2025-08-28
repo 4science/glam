@@ -64,6 +64,33 @@ public class SimpleDispatcher implements BitstreamDispatcher {
         this.fetchByDate = !this.loopContinuously && (processStartTime != null);
     }
 
+
+    protected Bitstream loop(Context context) {
+        Bitstream found = null;
+        try {
+            MostRecentChecksum checksum = checksumService.findOldestRecord(context);
+            if (checksum != null) {
+                found = checksum.getBitstream();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return found;
+    }
+
+    protected Bitstream findByDate(Context context, Date date) {
+        Bitstream found = null;
+        try {
+            MostRecentChecksum checksum = checksumService.findOldestRecord(context, date);
+            if (checksum != null) {
+                found = checksum.getBitstream();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return found;
+    }
+
     /**
      * Selects the next candidate bitstream.
      *
@@ -74,17 +101,10 @@ public class SimpleDispatcher implements BitstreamDispatcher {
     public synchronized Bitstream next() throws SQLException {
         // should process loop infinitely through the
         // bitstreams in most_recent_checksum table?
-        MostRecentChecksum oldestRecord;
-        if (!loopContinuously && (processStartTime != null)) {
-            oldestRecord = checksumService.findOldestRecord(context, processStartTime);
+        if (fetchByDate) {
+            return findByDate(context, processStartTime);
         } else {
-            oldestRecord = checksumService.findOldestRecord(context);
+            return loop(context);
         }
-        if (oldestRecord != null) {
-            return oldestRecord.getBitstream();
-        } else {
-            return null;
-        }
-
     }
 }
