@@ -183,8 +183,6 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
         assertThat(checksum, not(nullValue()));
         assertThat(checksum.getChecksumResult(), not(nullValue()));
         assertThat(checksum.getChecksumResult().getResultCode(), equalTo(ChecksumResultCode.CHECKSUM_MATCH));
-
-
     }
 
     @Test
@@ -324,6 +322,157 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             line = reader.readLine();
             assertThat(line, nullValue());
         }
+    }
+
+    @Test
+    public void testDroidAfterChecksumValidation() throws Exception {
+
+        context.turnOffAuthorisationSystem();
+        Item item =
+            ItemBuilder.createItem(context, collection)
+                       .withTitle("Custom Item")
+                       .build();
+
+        Bundle bundle =
+            BundleBuilder.createBundle(context, item)
+                         .withName("ORIGINAL")
+                         .build();
+
+        String bitstreamContent = "Dummy content";
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream(bitstreamContent, CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, bundle, is)
+                                        .withName("Bitstream1")
+                                        .withMimeType("text/plain")
+                                        .withFormat("text")
+                                        .build();
+        }
+        Bitstream bitstream2;
+        try (InputStream is = IOUtils.toInputStream(bitstreamContent, CharEncoding.UTF_8)) {
+            bitstream2 = BitstreamBuilder.createBitstream(context, bundle, is)
+                                        .withName("Bitstream2")
+                                        .withMimeType("text/plain")
+                                        .withFormat("text")
+                                        .build();
+        }
+
+        context.restoreAuthSystemState();
+        context.commit();
+
+        MostRecentChecksum checksum1 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream1);
+        MostRecentChecksum checksum2 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream2);
+
+        assertThat(checksum1, nullValue());
+        assertThat(checksum2, nullValue());
+
+        String[] args =
+            new String[] {
+                "checksum-checker", "-l"
+            };
+        TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
+
+        handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, eperson);
+        assertThat("Expected no warnings", handler.getWarningMessages(), empty());
+        assertThat("Expected no error message", handler.getErrorMessages(), empty());
+
+        bitstream1 = context.reloadEntity(bitstream1);
+
+        checksum1 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream1);
+
+        assertThat(checksum1, not(nullValue()));
+        assertThat(checksum1.getChecksumResult(), not(nullValue()));
+        assertThat(checksum1.getChecksumResult().getResultCode(), equalTo(ChecksumResultCode.CHECKSUM_MATCH));
+        //assertThat(checksum1.getDroidCheckStatus().getStatusCode(), equalTo(DroidResultCode.NOT_PROCESSED));
+        assertThat(checksum1.getDroidCheckResults(), is(empty()));
+
+        bitstream2 = context.reloadEntity(bitstream2);
+
+        checksum2 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream2);
+
+        assertThat(checksum2, not(nullValue()));
+        assertThat(checksum2.getChecksumResult(), not(nullValue()));
+        assertThat(checksum2.getChecksumResult().getResultCode(), equalTo(ChecksumResultCode.CHECKSUM_MATCH));
+        //assertThat(checksum2.getDroidCheckStatus().getStatusCode(), equalTo(DroidResultCode.NOT_PROCESSED));
+        assertThat(checksum2.getDroidCheckResults(), is(empty()));
+
+        args =
+            new String[] {
+                "checksum-checker", "-l", "-D"
+            };
+        handler = new TestDSpaceRunnableHandler();
+        handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, eperson);
+        assertThat("Expected no warnings", handler.getWarningMessages(), empty());
+        assertThat("Expected no error message", handler.getErrorMessages(), empty());
+
+        bitstream1 = context.reloadEntity(bitstream1);
+
+        checksum1 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream1);
+
+        assertThat(checksum1, not(nullValue()));
+        assertThat(checksum1.getChecksumResult(), not(nullValue()));
+        assertThat(checksum1.getChecksumResult().getResultCode(), equalTo(ChecksumResultCode.CHECKSUM_MATCH));
+        assertThat(checksum1.getDroidCheckStatus().getStatusCode(), equalTo(DroidResultCode.VALIDATED));
+        assertThat(checksum1.getDroidCheckResults(), is(not(empty())));
+
+        DroidCheckResult checkResult1 = checksum1.getDroidCheckResults().get(0);
+        assertThat(checkResult1, not(nullValue()));
+
+        List<DroidCheckResult> found1 = this.droidCheckResultService.findBy(context, bitstream1);
+        assertThat(found1, not(nullValue()));
+        assertThat(found1, hasSize(1));
+
+        Path filePath1 = Paths.get(storageService.absolutePath(context, bitstream1));
+
+        DroidCheckResult foundResult1 = found1.get(0);
+        assertThat(foundResult1.getID(), equalTo(checkResult1.getID()));
+        assertThat(foundResult1.isExtensionMismatch(), equalTo(false));
+        assertThat(foundResult1.getFileExtension(), equalTo("txt"));
+        assertThat(foundResult1.getPath(), equalTo(filePath1.toString()));
+        assertThat(foundResult1.getFilename(), equalTo(filePath1.getFileName().toString()));
+        assertThat(foundResult1.getFileFormat(), equalTo("Plain Text File"));
+        assertThat(foundResult1.getMimeType(), equalTo("text/plain"));
+        assertThat(foundResult1.getPUID(), equalTo("x-fmt/111"));
+        assertThat(foundResult1.getMethod(), equalTo("Extension"));
+        assertThat(foundResult1.getFileSize(), equalTo(bitstream1.getSizeBytes()));
+        assertThat(foundResult1.getStatus().getStatusCode(), equalTo(DroidResultCode.VALIDATED));
+
+        bitstream2 = context.reloadEntity(bitstream2);
+
+        checksum2 =
+            this.mostRecentChecksumService.findByBitstream(context, bitstream2);
+
+        assertThat(checksum2, not(nullValue()));
+        assertThat(checksum2.getChecksumResult(), not(nullValue()));
+        assertThat(checksum2.getChecksumResult().getResultCode(), equalTo(ChecksumResultCode.CHECKSUM_MATCH));
+        assertThat(checksum2.getDroidCheckStatus().getStatusCode(), equalTo(DroidResultCode.VALIDATED));
+        assertThat(checksum2.getDroidCheckResults(), is(not(empty())));
+
+        DroidCheckResult checkResult2 = checksum2.getDroidCheckResults().get(0);
+        assertThat(checkResult2, not(nullValue()));
+
+        List<DroidCheckResult> found2 = this.droidCheckResultService.findBy(context, bitstream2);
+        assertThat(found2, not(nullValue()));
+        assertThat(found2, hasSize(1));
+
+        Path filePath2 = Paths.get(storageService.absolutePath(context, bitstream2));
+
+        DroidCheckResult foundResult2 = found2.get(0);
+        assertThat(foundResult2.getID(), equalTo(checkResult2.getID()));
+        assertThat(foundResult2.isExtensionMismatch(), equalTo(false));
+        assertThat(foundResult2.getFileExtension(), equalTo("txt"));
+        assertThat(foundResult2.getPath(), equalTo(filePath2.toString()));
+        assertThat(foundResult2.getFilename(), equalTo(filePath2.getFileName().toString()));
+        assertThat(foundResult2.getFileFormat(), equalTo("Plain Text File"));
+        assertThat(foundResult2.getMimeType(), equalTo("text/plain"));
+        assertThat(foundResult2.getPUID(), equalTo("x-fmt/111"));
+        assertThat(foundResult2.getMethod(), equalTo("Extension"));
+        assertThat(foundResult2.getFileSize(), equalTo(bitstream2.getSizeBytes()));
+        assertThat(foundResult2.getStatus().getStatusCode(), equalTo(DroidResultCode.VALIDATED));
     }
 
     @Test

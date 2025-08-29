@@ -13,4 +13,4 @@ ALTER TABLE droid_check_result
     ADD COLUMN IF NOT EXISTS process_date TIMESTAMP NOT NULL;
 
 -- Creates index for the new queue query
-CREATE INDEX IF NOT EXISTS dcr_bits_status_queue on droid_check_result(bitstream_id, status, process_date);
+CREATE INDEX IF NOT EXISTS dcr_bits_queue on droid_check_result(bitstream_id, process_date);

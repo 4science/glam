@@ -74,76 +74,46 @@ CREATE TABLE IF NOT EXISTS droid_check_history
 -- this will insert into the result code
 -- the initial results
 insert into droid_check_status
-select
+values
 (
     'NOT_PROCESSED',
     'The droid validation was not applied'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'NOT_PROCESSED'
 );
 
 insert into droid_check_status
-SELECT
+values
 (
     'NOT_FOUND',
     'The bitstream is not complaint with any droid registered format'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'NOT_FOUND'
 );
 
 insert into droid_check_status
-select
+values
 (
     'PROCESSED',
     'The bitstream has been processed with the droid validation'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'PROCESSED'
 );
 
 
 insert into droid_check_status
-SELECT
+values
 (
     'VALIDATED',
     'Bitstream has been validated correctly with droid'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'VALIDATED'
 );
 
 insert into droid_check_status
-select
+values
 (
     'PARTIAL_VALIDATION',
     'Bitstream validation partially performed due to a lack of information'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'PARTIAL_VALIDATION'
 );
 
 insert into droid_check_status
-select
+values
 (
     'VALIDATION_ERROR',
     'Some errors occurred during the validation of the bitstream'
-)
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM droid_check_status dcs
-	WHERE dcs.status_code = 'VALIDATION_ERROR'
 );
 
 -- Adds droid_status column to the checksum related tables.
