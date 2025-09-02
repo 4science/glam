@@ -29,14 +29,14 @@
         <qualifier>group</qualifier>
         <scope_note>Default metadata for custom policies rule</scope_note>
     </dc-type>
-    
+
     <dc-type>
 		<schema>cris</schema>
 		<element>submission</element>
 		<qualifier>definition</qualifier>
         <scope_note>Metadata to link a collection with a submission type</scope_note>
 	</dc-type>
-    
+
     <dc-type>
         <schema>cris</schema>
         <element>submission</element>
@@ -99,14 +99,14 @@
         <qualifier>ccAddress</qualifier>
         <scope_note></scope_note>
     </dc-type>
-    
+
     <dc-type>
         <schema>cris</schema>
         <element>identifier</element>
         <qualifier>gscholar</qualifier>
         <scope_note></scope_note>
     </dc-type>
-    
+
     <dc-type>
         <schema>cris</schema>
         <element>workspace</element>
@@ -532,6 +532,13 @@
         <schema>cris</schema>
         <element>virtualsource</element>
         <qualifier>longitude</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>cris</schema>
+        <element>curation</element>
+        <qualifier>task</qualifier>
         <scope_note></scope_note>
     </dc-type>
 
