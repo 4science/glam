@@ -254,12 +254,14 @@
             <step id="archival_material_indexing" />
             <step id="archival_material_references" />
             <step id="upload" />
+            <step id="curation" />
             <step id="license" />
         </submission-process>
         <submission-process name="archival_material-edit">
             <step id="archival_material" />
             <step id="archival_material_indexing" />
             <step id="archival_material_references" />
+            <step id="curation" />
             <step id="upload" />
         </submission-process>
         <submission-process name="publication">

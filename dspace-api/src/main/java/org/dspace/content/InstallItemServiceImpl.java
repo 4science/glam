@@ -24,6 +24,7 @@ import org.dspace.content.service.InstallItemService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
+import org.dspace.curate.CurationTaskScheduler;
 import org.dspace.embargo.service.EmbargoService;
 import org.dspace.event.Event;
 import org.dspace.identifier.Identifier;
@@ -44,22 +45,29 @@ public class InstallItemServiceImpl implements InstallItemService {
 
     @Autowired(required = true)
     protected ContentServiceFactory contentServiceFactory;
+
     @Autowired(required = true)
     protected CollectionService collectionService;
+
     @Autowired(required = true)
     protected EmbargoService embargoService;
+
     @Autowired(required = true)
     protected IdentifierService identifierService;
+
     @Autowired(required = true)
     protected ItemService itemService;
+
     @Autowired(required = true)
     protected SupervisionOrderService supervisionOrderService;
-    @Autowired(required = false)
-
-    Logger log = LogManager.getLogger(InstallItemServiceImpl.class);
 
     @Autowired
     protected ConfigurationService configurationService;
+
+    @Autowired
+    CurationTaskScheduler curationTaskScheduler;
+
+    Logger log = LogManager.getLogger(InstallItemServiceImpl.class);
 
     protected InstallItemServiceImpl() {
     }
@@ -94,6 +102,8 @@ public class InstallItemServiceImpl implements InstallItemService {
 
         // Finish up / archive the item
         item = finishItem(c, item, is);
+
+        curationTaskScheduler.scheduleCurationTaskProcess(c, item);
 
         // As this is a BRAND NEW item, as a final step we need to remove the
         // submitter item policies created during deposit and replace them with
