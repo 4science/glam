@@ -11,11 +11,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -47,6 +49,7 @@ import org.dspace.core.Context;
 import org.dspace.core.Utils;
 import org.dspace.scripts.DSpaceRunnable;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
+import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 
 public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<?>> extends DSpaceRunnable<T> {
@@ -57,6 +60,9 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
      */
     protected final MostRecentChecksumService checksumService =
         CheckerServiceFactory.getInstance().getMostRecentChecksumService();
+
+    protected final ConfigurationService configurationService =
+        DSpaceServicesFactory.getInstance().getConfigurationService();
 
     protected BitstreamDispatcher getSimpleDispatcher(Context context, Date startTime, boolean looping,
                                                                 boolean isDroid) {
@@ -112,11 +118,20 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
         if (file == null || !file.exists() || !file.isFile()) {
             return;
         }
+        String tempDir = getTempDir();
+
+        File tempDirFile = new File(tempDir);
+        if (!tempDirFile.exists()) {
+            if (!tempDirFile.mkdirs()) {
+                LOG.error("Unable to create the tempDir folder: {}", tempDir);
+                handler.logError("Unable to create the tempDir folder: " + tempDir);
+            }
+        }
         try (FileInputStream fis = new FileInputStream(file)) {
             context.turnOffAuthorisationSystem();
             handler.writeFilestream(
                 context,
-                file.getName(),
+                Paths.get(tempDir, file.getName()).toAbsolutePath().toString(),
                 fis,
                 FilenameUtils.getExtension(file.getName())
             );
@@ -126,6 +141,13 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
         } finally {
             context.restoreAuthSystemState();
         }
+    }
+
+    private String getTempDir() {
+        return Optional.ofNullable(
+                           configurationService.getProperty("checksum-checker.collect.files.output.dir")
+                       ).or(() -> Optional.ofNullable(configurationService.getProperty("upload.temp.dir")))
+                       .orElseGet(() -> System.getProperty("java.io.tmpdir"));
     }
 
     @Override
@@ -239,7 +261,9 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
 
             checker.process();
 
-            handleCollectorOutput(handler, collectors, context);
+            if (configurationService.getBooleanProperty("checksum-checker.collect.files", false)) {
+                handleCollectorOutput(handler, collectors, context);
+            }
 
             context.complete();
             context = null;

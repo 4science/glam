@@ -79,7 +79,7 @@ import org.mockito.Mockito;
  **/
 public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
+    private static final String TEST_OUTPUT = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore";
 
     private final DroidCheckResultService droidCheckResultService =
         DroidServiceFactory.getInstance().getDroidCheckResultService();
@@ -109,6 +109,7 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
 
         // force output folder
         configurationService.setProperty("droid.csv.checksum.outputfile.tempdir", TEST_OUTPUT);
+        configurationService.setProperty("checksum-checker.collect.files", false);
 
         context.turnOffAuthorisationSystem();
         community = createCommunity(context).build();
@@ -321,6 +322,10 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             );
             line = reader.readLine();
             assertThat(line, nullValue());
+        } finally {
+            if (email.exists()) {
+                email.delete();
+            }
         }
     }
 
@@ -587,6 +592,10 @@ public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
             // end of line
             line = reader.readLine();
             assertThat(line, nullValue());
+        } finally {
+            if (email.exists()) {
+                email.delete();
+            }
         }
     }
 

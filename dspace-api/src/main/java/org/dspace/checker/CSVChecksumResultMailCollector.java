@@ -115,8 +115,12 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
     }
 
     public static String getConfigTempDir() {
-        return DSpaceServicesFactory.getInstance().getConfigurationService()
-                                    .getProperty("checksum-checker.csv.checksum.outputfile.tempdir");
+        return Optional.ofNullable(
+                           DSpaceServicesFactory.getInstance().getConfigurationService()
+                                                .getProperty("checksum-checker.csv.checksum.outputfile.tempdir"))
+                       .or(() -> Optional.ofNullable(DSpaceServicesFactory.getInstance().getConfigurationService()
+                                                                          .getProperty("upload.temp.dir")))
+                       .orElseGet(() -> System.getProperty("java.io.tmpdir"));
     }
 
     public static String[] getRecipients() {
@@ -162,6 +166,7 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
             } catch (Exception e) {
                 throw new RuntimeException("Cannot close the csv writer", e);
             }
+            File attachment = null;
             try {
                 Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), getEmailTemplate()));
                 // "total",
@@ -173,7 +178,7 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
                 // "not valid"
                 email.addArgument(total - valid);
 
-                File attachment = csvWriter.outputFile;
+                attachment = csvWriter.outputFile;
                 if (attachment != null && attachment.exists() && attachment.length() > 0) {
                     email.addAttachment(attachment, getPrefix() + ".csv");
                 }
@@ -184,6 +189,8 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
                 }
                 log.info("Sending the email with the checksum-checker output as attachment.");
                 email.send();
+
+                attachment.delete();
             } catch (IOException | MessagingException e) {
                 log.error("Cannot create the email using the configured template!", e);
                 throw new RuntimeException("Cannot create the email using the configured template!", e);

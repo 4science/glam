@@ -135,7 +135,10 @@ public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
 
     private String getTempDir() {
         return Optional.ofNullable(this.filePath)
-                       .orElseGet(() -> configurationService.getProperty("droid.csv.checksum.outputfile.tempdir"));
+                       .or(() -> Optional.ofNullable(
+                           configurationService.getProperty("droid.csv.checksum.outputfile.tempdir")))
+                       .or(() -> Optional.ofNullable(configurationService.getProperty("upload.temp.dir")))
+                       .orElseGet(() -> System.getProperty("java.io.tmpdir"));
     }
 
     private String[] getRecipients() {
@@ -167,6 +170,7 @@ public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
         } catch (Exception e) {
             throw new RuntimeException("Cannot close the csv writer", e);
         }
+        File csvFile = csvWriter.outputFile;
         try {
             Email email = Email.getEmail(
                 I18nUtil.getEmailFilename(
@@ -174,7 +178,7 @@ public class CSVDroidChecksumCollector implements ChecksumResultsCollector {
                     getEmailTemplate()
                 )
             );
-            email.addAttachment(csvWriter.outputFile, getPrefix() + ".csv");
+            email.addAttachment(csvFile, getPrefix() + ".csv");
             String[] recipients = getRecipients();
             for (String recipient : recipients) {
                 email.addRecipient(recipient);

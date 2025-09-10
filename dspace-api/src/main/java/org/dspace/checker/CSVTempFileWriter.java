@@ -84,8 +84,9 @@ public class CSVTempFileWriter implements CSVWriter {
 
             File tempDirectory = getTempDirectory(Paths.get(this.directory));
             outputFile = File.createTempFile(getTempPrefix(), getTempSuffix(), tempDirectory);
+            outputFile.deleteOnExit();
 
-            log.info("The results will be saved to {}: ", outputFile.getAbsolutePath());
+            log.info("The results will be saved to: {} ", outputFile.getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
