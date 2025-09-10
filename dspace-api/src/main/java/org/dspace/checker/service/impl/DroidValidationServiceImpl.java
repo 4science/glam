@@ -42,11 +42,17 @@ public class DroidValidationServiceImpl extends AbstractDroidValidationService {
     @Override
     public DroidValidationState validate(final Context context, final Bitstream bitstream)
         throws DroidValidationException {
+        File validationFile = null;
         try {
-            return validate(context, getInstance(), getFile(context, bitstream), bitstream);
+            validationFile = getFile(context, bitstream);
+            return validate(context, getInstance(), validationFile, bitstream);
         } catch (SignatureParseException e) {
             log.error("Cannot initialize DROID validation feature!", e);
             throw new DroidValidationException("Cannot initialize DROID validation feature!", e);
+        } finally {
+            if (validationFile != null && validationFile.exists()) {
+                validationFile.delete();
+            }
         }
     }
 
@@ -58,15 +64,23 @@ public class DroidValidationServiceImpl extends AbstractDroidValidationService {
             log.error("Cannot load the file to validate with DROID!", e);
             throw new RuntimeException(e);
         }
+
+        String tempDirectoryPath =
+            configurationService.getProperty("upload.temp.dir", System.getProperty("java.io.tmpdir"));
+
+        File tempDirectory = new File(tempDirectoryPath);
+        if (!tempDirectory.exists()) {
+            tempDirectory.mkdirs();
+        }
+
         File tempFile;
         try {
-            tempFile = File.createTempFile(randomFileName(), getSuffix(context, bitstream));
+            tempFile = File.createTempFile(randomFileName(), getSuffix(context, bitstream), tempDirectory);
+            tempFile.deleteOnExit();
         } catch (IOException e) {
             log.error("Cannot create the temporary file for DROID validation!", e);
             throw new RuntimeException(e);
         }
-
-        tempFile.deleteOnExit();
 
         try {
             FileUtils.copyInputStreamToFile(inputStream, tempFile);
