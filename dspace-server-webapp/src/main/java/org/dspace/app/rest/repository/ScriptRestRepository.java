@@ -6,6 +6,7 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.app.rest.repository;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -24,12 +25,12 @@ import org.dspace.app.rest.exception.UnprocessableEntityException;
 import org.dspace.app.rest.model.ParameterValueRest;
 import org.dspace.app.rest.model.ProcessRest;
 import org.dspace.app.rest.model.ScriptRest;
-import org.dspace.app.rest.scripts.handler.impl.RestDSpaceRunnableHandler;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 import org.dspace.scripts.service.ScriptService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,12 +110,12 @@ public class ScriptRestRepository extends DSpaceRestRepository<ScriptRest, Strin
             throw new DSpaceBadRequestException("Illegal argoument " + e.getMessage(), e);
         }
         EPerson user = context.getCurrentUser();
-        RestDSpaceRunnableHandler restDSpaceRunnableHandler = new RestDSpaceRunnableHandler(user,
+        ProcessDSpaceRunnableHandler processDSpaceRunnableHandler = new ProcessDSpaceRunnableHandler(user,
             scriptToExecute.getName(), dSpaceCommandLineParameters, context.getSpecialGroups(),
             context.getCurrentLocale());
         List<String> args = constructArgs(dSpaceCommandLineParameters);
-        runDSpaceScript(files, context, user, scriptToExecute, restDSpaceRunnableHandler, args);
-        return converter.toRest(restDSpaceRunnableHandler.getProcess(context), utils.obtainProjection());
+        runDSpaceScript(files, context, user, scriptToExecute, processDSpaceRunnableHandler, args);
+        return converter.toRest(processDSpaceRunnableHandler.getProcess(context), utils.obtainProjection());
     }
 
     private List<DSpaceCommandLineParameter> processPropertiesToDSpaceCommandLineParameters(String propertiesJson)
@@ -143,21 +144,23 @@ public class ScriptRestRepository extends DSpaceRestRepository<ScriptRest, Strin
         return args;
     }
 
-    private void runDSpaceScript(List<MultipartFile> files, Context context, EPerson user,
-        ScriptConfiguration scriptToExecute, RestDSpaceRunnableHandler restDSpaceRunnableHandler, List<String> args)
+    private void runDSpaceScript(List<MultipartFile> files,
+                                 Context context, EPerson user,
+                                 ScriptConfiguration scriptToExecute,
+                                 ProcessDSpaceRunnableHandler processDSpaceRunnableHandler, List<String> args)
         throws IOException, SQLException, AuthorizeException, InstantiationException, IllegalAccessException {
         DSpaceRunnable dSpaceRunnable = scriptService.createDSpaceRunnableForScriptConfiguration(scriptToExecute);
         try {
-            dSpaceRunnable.initialize(args.toArray(new String[0]), restDSpaceRunnableHandler, user);
+            dSpaceRunnable.initialize(args.toArray(new String[0]), processDSpaceRunnableHandler, user);
             if (files != null && !files.isEmpty()) {
                 checkFileNames(dSpaceRunnable, files);
-                processFiles(context, restDSpaceRunnableHandler, files);
+                processFiles(context, processDSpaceRunnableHandler, files);
             }
-            restDSpaceRunnableHandler.schedule(dSpaceRunnable);
+            processDSpaceRunnableHandler.schedule(dSpaceRunnable);
         } catch (ParseException e) {
             dSpaceRunnable.printHelp();
             try {
-                restDSpaceRunnableHandler.handleException(
+                processDSpaceRunnableHandler.handleException(
                     "Failed to parse the arguments given to the script with name: "
                         + scriptToExecute.getName() + " and args: " + args, e
                 );
@@ -167,11 +170,11 @@ public class ScriptRestRepository extends DSpaceRestRepository<ScriptRest, Strin
         }
     }
 
-    private void processFiles(Context context, RestDSpaceRunnableHandler restDSpaceRunnableHandler,
+    private void processFiles(Context context, ProcessDSpaceRunnableHandler processDSpaceRunnableHandler,
                               List<MultipartFile> files)
         throws IOException, SQLException, AuthorizeException {
         for (MultipartFile file : files) {
-            restDSpaceRunnableHandler
+            processDSpaceRunnableHandler
                 .writeFilestream(context, file.getOriginalFilename(), file.getInputStream(), "inputfile");
         }
     }

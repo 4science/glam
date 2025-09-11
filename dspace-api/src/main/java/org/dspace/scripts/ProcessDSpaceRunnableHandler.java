@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.curate;
+package org.dspace.scripts;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,10 +38,6 @@ import org.dspace.eperson.Group;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
 import org.dspace.eperson.service.GroupService;
-import org.dspace.scripts.DSpaceCommandLineParameter;
-import org.dspace.scripts.DSpaceRunnable;
-import org.dspace.scripts.Process;
-import org.dspace.scripts.ProcessLogLevel;
 import org.dspace.scripts.factory.ScriptServiceFactory;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
 import org.dspace.scripts.service.ProcessService;
@@ -51,11 +47,11 @@ import org.dspace.utils.DSpace;
 import org.springframework.core.task.TaskExecutor;
 
 /**
- *
- * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
- **/
-public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
-    private static final Logger log = LogManager.getLogger(DSpaceProcessRunnableHandler.class);
+ * The {@link DSpaceRunnableHandler} dealing with Scripts started from the REST api
+ */
+public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
+
+    private static final Logger log = LogManager.getLogger(ProcessDSpaceRunnableHandler.class);
 
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
@@ -70,14 +66,13 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
 
     /**
      * This constructor will initialise the handler with the process created from the parameters
-     *
      * @param ePerson       The eperson that creates the process
      * @param scriptName    The name of the script for which is a process will be created
      * @param parameters    The parameters for this process
      * @param specialGroups The list of special groups related to eperson creating process at process creation time
      * @param currentLocale The context current locale to use inside the runnable handler
      */
-    public DSpaceProcessRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
+    public ProcessDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
                                         final List<Group> specialGroups, final Locale currentLocale) {
         Context context = new Context();
         this.locale = Optional.ofNullable(currentLocale).orElse(context.getCurrentLocale());
@@ -85,16 +80,15 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
         try {
             this.ePersonId = Objects.nonNull(ePerson) ? ePerson.getID() : null;
             Process process = processService.create(context, ePerson, scriptName, parameters,
-                                                                       new HashSet<>(specialGroups));
+                new HashSet<>(specialGroups));
             this.processId = process.getID();
             this.scriptName = process.getName();
 
             context.complete();
         } catch (SQLException e) {
-            log.error(
-                "DSpaceProcessRunnableHandler with ePerson: {} for Script with name: {} and parameters: {} could nto be created",
-                ePerson
-                    .getEmail(), scriptName, parameters, e);
+            log.error("RestDSpaceRunnableHandler with ePerson: " + ePerson
+                .getEmail() + " for Script with name: " + scriptName +
+                          " and parameters: " + parameters + " could nto be created", e);
         } finally {
             if (context.isValid()) {
                 context.abort();
@@ -111,7 +105,7 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
             context.complete();
             logInfo("The script has started");
         } catch (SQLException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} could not be started", processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not be started", e);
         } finally {
             if (context.isValid()) {
                 context.abort();
@@ -131,12 +125,10 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
 
             context.complete();
         } catch (SQLException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} could not be completed", processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not be completed", e);
         } catch (IOException | AuthorizeException e) {
-            log.error(
-                "DSpaceProcessRunnableHandler with process: {} could not be completed due to an error with the " +
-                    "logging bitstream",
-                processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not be completed due to an " +
+                              "error with the logging bitstream", e);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
@@ -170,9 +162,8 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
         } catch (SQLException sqlException) {
             log.error("SQL exception while handling another exception", e);
         } catch (IOException | AuthorizeException ioException) {
-            log.error(
-                "DSpaceProcessRunnableHandler with process: {} could not be completed due to an error with the logging bitstream",
-                processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not be completed due to an " +
+                              "error with the logging bitstream", e);
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
         } finally {
@@ -274,14 +265,12 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
 
     @Override
     public void writeFilestream(Context context, String fileName, InputStream inputStream, String type,
-                                boolean isPubliclyReadable)
-        throws IOException, SQLException, AuthorizeException {
+            boolean isPubliclyReadable)
+            throws IOException, SQLException, AuthorizeException {
         Process process = processService.find(context, processId);
-        Map<Integer, EPerson> userPolicies =
-            Optional.ofNullable(context.getCurrentUser())
-                    .map(user ->
-                             Map.of(Constants.READ, user, Constants.WRITE, user, Constants.DELETE, user))
-                    .orElse(null);
+        Map<Integer, EPerson> userPolicies = Optional.ofNullable(context.getCurrentUser())
+                .map(user -> Map.of(Constants.READ, user, Constants.WRITE, user, Constants.DELETE, user))
+                .orElse(null);
         Map<Integer, Group> groupPolicies = null;
         if (isPubliclyReadable || context.getCurrentUser() == null) {
             groupPolicies = Map.of(Constants.READ, groupService.findByName(context, Group.ANONYMOUS));
@@ -291,15 +280,14 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
 
     /**
      * This method will return the process created by this handler
-     *
-     * @param context
      * @return The Process database object created by this handler
+     * @param context
      */
     public Process getProcess(Context context) {
         try {
             return processService.find(context, processId);
         } catch (SQLException e) {
-            log.error("DSpaceProcessRunnableHandler with process: " + processId + " could not be found", e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not be found", e);
         }
         return null;
     }
@@ -307,12 +295,11 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
     /**
      * This method will schedule a process to be run, it will trigger the run method for the Script passed along
      * to this method as well as updating the database logic for the Process representing the execution of this script
-     *
-     * @param script The script to be ran
+     * @param script    The script to be ran
      */
     public void schedule(DSpaceRunnable script) {
         String taskExecutorBeanName = configurationService.getProperty("dspace.task.executor",
-                                                                       "dspaceRunnableThreadExecutor");
+                                                                  "dspaceRunnableThreadExecutor");
         TaskExecutor taskExecutor = new DSpace().getServiceManager()
                                                 .getServiceByName(taskExecutorBeanName, TaskExecutor.class);
         Context context = new Context();
@@ -322,7 +309,7 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
             processService.update(context, process);
             context.complete();
         } catch (SQLException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} ran into an SQLException", processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " ran into an SQLException", e);
         } finally {
             if (context.isValid()) {
                 context.abort();
@@ -334,8 +321,8 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
     private void appendLogToProcess(String message, ProcessLogLevel error) {
         try {
             processService.appendLog(processId, scriptName, message, error);
-        } catch (IOException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} could not write log to process", processId, e);
+        }  catch (IOException e) {
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not write log to process", e);
         }
     }
 
@@ -347,7 +334,7 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
             context.setCurrentUser(ePerson);
             processService.createLogBitstream(context, process);
         } catch (SQLException | IOException | AuthorizeException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} could not write log to process", processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not write log to process", e);
         }
     }
 
@@ -362,7 +349,7 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
                 specialGroups.add(group.getID());
             }
         } catch (SQLException e) {
-            log.error("DSpaceProcessRunnableHandler with process: {} could not find the proccess", processId, e);
+            log.error("RestDSpaceRunnableHandler with process: " + processId + " could not find the proccess", e);
         } finally {
             if (context.isValid()) {
                 context.abort();
