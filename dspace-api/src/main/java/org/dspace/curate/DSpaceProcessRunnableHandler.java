@@ -55,6 +55,7 @@ import org.springframework.core.task.TaskExecutor;
  * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
  **/
 public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
+
     private static final Logger log = LogManager.getLogger(DSpaceProcessRunnableHandler.class);
 
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
@@ -91,10 +92,8 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
 
             context.complete();
         } catch (SQLException e) {
-            log.error(
-                "DSpaceProcessRunnableHandler with ePerson: {} for Script with name: {} and parameters: {} could nto be created",
-                ePerson
-                    .getEmail(), scriptName, parameters, e);
+            log.error("DSpaceProcessRunnableHandler with ePerson: {} for Script with name: {} and" +
+                      " parameters: {} could nto be created", ePerson.getEmail(), scriptName, parameters, e);
         } finally {
             if (context.isValid()) {
                 context.abort();
@@ -170,9 +169,8 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
         } catch (SQLException sqlException) {
             log.error("SQL exception while handling another exception", e);
         } catch (IOException | AuthorizeException ioException) {
-            log.error(
-                "DSpaceProcessRunnableHandler with process: {} could not be completed due to an error with the logging bitstream",
-                processId, e);
+            log.error("DSpaceProcessRunnableHandler with process: {} could not be completed due to an error" +
+                      " with the logging bitstream", processId, e);
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
         } finally {
@@ -180,7 +178,6 @@ public class DSpaceProcessRunnableHandler implements DSpaceRunnableHandler {
                 context.abort();
             }
         }
-
         // Make sure execution actually ends after we handle the exception
         throw new RuntimeException(e);
     }
