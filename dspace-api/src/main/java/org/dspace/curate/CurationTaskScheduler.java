@@ -24,7 +24,6 @@ import org.dspace.eperson.EPerson;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.DSpaceRunnable;
 import org.dspace.scripts.configuration.ScriptConfiguration;
-import org.dspace.scripts.service.ProcessService;
 import org.dspace.scripts.service.ScriptService;
 import org.dspace.services.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,17 +39,14 @@ public class CurationTaskScheduler {
 
     private static final Logger log = LogManager.getLogger(CurationTaskScheduler.class);
 
-    @Autowired
-    ProcessService processService;
-
-    @Autowired
-    ScriptService scriptService;
-
-    @Autowired
-    ConfigurationService configurationService;
+    private static final String SCRIPT_NAME = "curateOrchestrator";
 
     @Autowired
     ItemService itemService;
+    @Autowired
+    ScriptService scriptService;
+    @Autowired
+    ConfigurationService configurationService;
 
     public void scheduleCurationTaskProcess(Context context, Item item) throws SQLException {
         String curationMetadata = this.configurationService.getProperty("curation.task.metadata.definition");
@@ -58,39 +54,26 @@ public class CurationTaskScheduler {
             return;
         }
 
-        List<MetadataValue> metadata =
-            this.itemService.getMetadataByMetadataString(item, curationMetadata);
+        List<MetadataValue> metadata = this.itemService.getMetadataByMetadataString(item, curationMetadata);
         if (metadata.isEmpty()) {
             return;
         }
 
-        List<DSpaceCommandLineParameter> params =
-            metadata.stream()
-                    .map(MetadataValue::getValue)
-                    .map(value -> new DSpaceCommandLineParameter("-task", value))
-                    .collect(Collectors.toList());
+        List<DSpaceCommandLineParameter> params = metadata.stream()
+                                                          .map(MetadataValue::getValue)
+                                                          .map(value -> new DSpaceCommandLineParameter("-task", value))
+                                                          .collect(Collectors.toList());
         params.add(new DSpaceCommandLineParameter("-id", item.getID().toString()));
-        String scriptName = "curateOrchestrator";
 
-        ScriptConfiguration<?> scriptConfiguration =
-            this.scriptService.getScriptConfiguration(scriptName);
+        ScriptConfiguration<?> scriptConfiguration = this.scriptService.getScriptConfiguration(SCRIPT_NAME);
 
         if (scriptConfiguration == null || !scriptConfiguration.isAllowedToExecute(context, params)) {
             return;
         }
 
-        try {
-            DSpaceRunnable<?> scriptInstance =
-                this.scriptService.createDSpaceRunnableForScriptConfiguration(scriptConfiguration);
-        } catch (IllegalAccessException | InstantiationException e) {
-            log.error("Cannot initialize the script {}!", scriptName, e);
-            return;
-        }
-
         EPerson currentUser = context.getCurrentUser();
-        DSpaceProcessRunnableHandler dSpaceProcessRunnableHandler =
-            new DSpaceProcessRunnableHandler(currentUser, scriptName, params, context.getSpecialGroups(),
-                                             context.getCurrentLocale());
+        DSpaceProcessRunnableHandler dSpaceProcessRunnableHandler = new DSpaceProcessRunnableHandler(currentUser,
+                                           SCRIPT_NAME, params, context.getSpecialGroups(), context.getCurrentLocale());
 
         try {
             DSpaceRunnable<?> dSpaceRunnable =
@@ -103,13 +86,10 @@ public class CurationTaskScheduler {
                 }
             }
 
-            dSpaceRunnable.initialize(
-                args.toArray(new String[0]),
-                dSpaceProcessRunnableHandler,
-                currentUser
-            );
+            dSpaceRunnable.initialize(args.toArray(new String[0]), dSpaceProcessRunnableHandler, currentUser);
             dSpaceProcessRunnableHandler.schedule(dSpaceRunnable);
         } catch (IllegalAccessException | InstantiationException | ParseException e) {
+            log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }

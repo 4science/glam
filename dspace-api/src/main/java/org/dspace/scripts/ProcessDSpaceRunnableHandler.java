@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.app.rest.scripts.handler.impl;
+package org.dspace.scripts;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
@@ -37,10 +38,6 @@ import org.dspace.eperson.Group;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
 import org.dspace.eperson.service.GroupService;
-import org.dspace.scripts.DSpaceCommandLineParameter;
-import org.dspace.scripts.DSpaceRunnable;
-import org.dspace.scripts.Process;
-import org.dspace.scripts.ProcessLogLevel;
 import org.dspace.scripts.factory.ScriptServiceFactory;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
 import org.dspace.scripts.service.ProcessService;
@@ -52,9 +49,9 @@ import org.springframework.core.task.TaskExecutor;
 /**
  * The {@link DSpaceRunnableHandler} dealing with Scripts started from the REST api
  */
-public class RestDSpaceRunnableHandler implements DSpaceRunnableHandler {
-    private static final Logger log = org.apache.logging.log4j.LogManager
-        .getLogger(RestDSpaceRunnableHandler.class);
+public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
+
+    private static final Logger log = LogManager.getLogger(ProcessDSpaceRunnableHandler.class);
 
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
@@ -75,8 +72,8 @@ public class RestDSpaceRunnableHandler implements DSpaceRunnableHandler {
      * @param specialGroups The list of special groups related to eperson creating process at process creation time
      * @param currentLocale The context current locale to use inside the runnable handler
      */
-    public RestDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
-            final List<Group> specialGroups, final Locale currentLocale) {
+    public ProcessDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
+                                        final List<Group> specialGroups, final Locale currentLocale) {
         Context context = new Context();
         this.locale = Optional.ofNullable(currentLocale).orElse(context.getCurrentLocale());
         context.setCurrentLocale(this.locale);

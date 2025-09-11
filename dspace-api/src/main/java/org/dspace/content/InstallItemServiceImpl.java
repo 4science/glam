@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.logic.Filter;
@@ -24,7 +22,6 @@ import org.dspace.content.service.InstallItemService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
-import org.dspace.curate.CurationTaskScheduler;
 import org.dspace.embargo.service.EmbargoService;
 import org.dspace.event.Event;
 import org.dspace.identifier.Identifier;
@@ -64,11 +61,6 @@ public class InstallItemServiceImpl implements InstallItemService {
     @Autowired
     protected ConfigurationService configurationService;
 
-    @Autowired
-    CurationTaskScheduler curationTaskScheduler;
-
-    Logger log = LogManager.getLogger(InstallItemServiceImpl.class);
-
     protected InstallItemServiceImpl() {
     }
 
@@ -102,8 +94,6 @@ public class InstallItemServiceImpl implements InstallItemService {
 
         // Finish up / archive the item
         item = finishItem(c, item, is);
-
-        curationTaskScheduler.scheduleCurationTaskProcess(c, item);
 
         // As this is a BRAND NEW item, as a final step we need to remove the
         // submitter item policies created during deposit and replace them with
