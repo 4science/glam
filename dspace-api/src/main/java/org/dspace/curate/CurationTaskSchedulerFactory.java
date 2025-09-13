@@ -11,7 +11,7 @@ import org.dspace.services.factory.DSpaceServicesFactory;
 
 /**
  * Abstract factory to get services for the CurationTaskScheduler,
- * use ScriptServiceFactory.getInstance() to retrieve an implementation
+ * use CurationTaskSchedulerFactory.getInstance() to retrieve an implementation
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */

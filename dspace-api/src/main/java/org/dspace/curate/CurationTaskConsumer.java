@@ -13,6 +13,9 @@ import org.dspace.event.Event;
 import org.dspace.event.NamedConsumer;
 
 /**
+ * Consumer that handles curation tasks for archived items in response to system events.
+ * Delegates the actual task scheduling to CurationTaskScheduler.
+ *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
 public class CurationTaskConsumer extends NamedConsumer {
