@@ -278,26 +278,62 @@ orcid.webhook.registration-token =
 # Specify the incoming assetstore (see config/spring/api/bitstore.xml)
 #assetstore.index.primary = 1
 
-## Assetstore S3 configuration, only used if the above configuration is set to true
+## S3 Assetstore configuration (only used if S3 is enabled as primary or secondary store)
 #assetstore.s3.enabled = true
+
+# AWS Authentication Type - configures how DSpace authenticates with AWS S3
+# Possible values:
+#   - "default" (default): Uses DefaultAWSCredentialsProviderChain (EC2 IAM Role, environment variables, etc.)
+#   - "irsa": Uses IRSA (IAM Roles for Service Accounts) for EKS environments
+#   - "sts": Uses STS (Security Token Service) for role assumption and temporary credentials
+#   - "static": Uses static access/secret keys (not recommended for production)
+# More info: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts-minimum-sdk.html
+#assetstore.s3.awsAuthenticationType = default
 
 # For using a relative path (xx/xx/xx/xxx...) set to true
 #assetstore.s3.useRelativePath = true
 
 # S3 bucket name to store assets in, default would generate a bucket
 # based on the dspace host name
-assetstore.s3.bucketName =
+#assetstore.s3.bucketName =
 # Subfolder to organize assets within the bucket, in case this bucket
 # is shared. Optional, default is root level of bucket
-assetstore.s3.subfolder =
+#assetstore.s3.subfolder =
 
-# please do not use that in production but rely on the aws credentials
-# discovery mechanism to configure them (ENV VAR, EC2 Iam role, etc.)
+## STS (Security Token Service) Configuration
+## Only used when awsAuthenticationType is set to "sts"
+## STS provides temporary credentials through role assumption
+
+# ARN of the IAM role to assume (REQUIRED for STS authentication)
+# Example: arn:aws:iam::123456789012:role/DSpaceS3CrossAccountRole
+#assetstore.s3.stsRoleArn =
+
+# Session name for the assumed role session (optional, defaults to "DSpace-S3-Session")
+#assetstore.s3.stsSessionName =
+
+# Duration of the assumed role session in seconds (optional, 900-43200 seconds)
+#assetstore.s3.stsSessionDuration =
+
+# External ID for role assumption (optional, used for cross-account access)
+#assetstore.s3.stsExternalId =
+
+# Custom STS endpoint (optional)
+#assetstore.s3.stsEndpoint =
+
+# STS-specific region (optional, defaults to S3 region)
+#assetstore.s3.stsRegion =
+
+# Static AWS credentials (not recommended for production)
+# Please don't use root credentials in production but rely on the aws credentials
+# discovery mechanism to configure them (ENV VAR, EC2 Iam role, IRSA, etc.)
 assetstore.s3.awsAccessKey =
 assetstore.s3.awsSecretKey =
 
 # to force the use of a specific region
 assetstore.s3.awsRegionName =
+
+# session token (for temporary credentials)
+#assetstore.s3.awsToken =
 
 #GeoIP dbfile configuration for usage statistics
 usage-statistics.dbfile=/var/lib/GeoIP/GeoLite2-City.mmdb
