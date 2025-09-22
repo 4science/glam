@@ -6,6 +6,7 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.discovery.configuration;
+
 import static org.apache.commons.collections4.iterators.EmptyIterator.emptyIterator;
 
 import java.text.MessageFormat;
@@ -45,7 +46,7 @@ public class DiscoveryConfigurationUtilsService {
         DiscoveryConfiguration discoveryConfiguration = findDiscoveryConfiguration(entityType, relationName);
         if (discoveryConfiguration == null) {
             log.warn("No discovery configuration found for relation " + relationName + " for item with id "
-                + item.getID() + " and type " + entityType + ". No related items is found.");
+                         + item.getID() + " and type " + entityType + ". No related items is found.");
             return emptyIterator();
         }
 

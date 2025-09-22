@@ -40,7 +40,6 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Collection;
@@ -59,6 +58,7 @@ import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.statistics.SolrLoggerServiceImpl;
+import org.dspace.statistics.SolrStatisticsCore;
 import org.dspace.statistics.factory.StatisticsServiceFactory;
 import org.dspace.statistics.service.SolrLoggerService;
 
@@ -86,10 +86,8 @@ public class StatisticsImporter {
     protected static final ConfigurationService configurationService
             = DSpaceServicesFactory.getInstance().getConfigurationService();
 
-    /**
-     * Solr server connection
-     */
-    private static HttpSolrClient solr;
+    protected SolrStatisticsCore solrStatisticsCore = DSpaceServicesFactory.getInstance().getServiceManager()
+                                    .getServiceByName("solrStatisticsCore", SolrStatisticsCore.class);
 
     /**
      * GEOIP lookup service
@@ -371,7 +369,7 @@ public class StatisticsImporter {
                 sid.addField("dns", dns.toLowerCase());
 
                 solrLoggerService.storeParents(sid, dso);
-                solr.add(sid);
+                solrStatisticsCore.getSolr().add(sid);
                 errors--;
             }
 
@@ -398,7 +396,7 @@ public class StatisticsImporter {
 
             // Commit at the end because it takes a while
             try {
-                solr.commit();
+                solrStatisticsCore.getSolr().commit();
             } catch (SolrServerException sse) {
                 System.err.println("Error committing statistics to solr server!");
                 sse.printStackTrace();
@@ -469,13 +467,6 @@ public class StatisticsImporter {
 
         // Verbose option
         boolean verbose = line.hasOption('v');
-
-        // Find our solr server
-        String sserver = configurationService.getProperty("solr-statistics.server");
-        if (verbose) {
-            System.out.println("Writing to solr server at: " + sserver);
-        }
-        solr = new HttpSolrClient.Builder(sserver).build();
 
         String dbPath = configurationService.getProperty("usage-statistics.dbfile");
         try {

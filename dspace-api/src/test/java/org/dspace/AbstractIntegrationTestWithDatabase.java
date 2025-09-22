@@ -20,24 +20,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.launcher.ScriptLauncher;
 import org.dspace.app.scripts.handler.impl.TestDSpaceRunnableHandler;
-import org.dspace.authority.MockAuthoritySolrServiceImpl;
 import org.dspace.builder.AbstractBuilder;
 import org.dspace.builder.EPersonBuilder;
 import org.dspace.content.Community;
 import org.dspace.core.Context;
 import org.dspace.core.I18nUtil;
-import org.dspace.deduplication.MockSolrDedupCore;
-import org.dspace.discovery.MockSolrSearchCore;
 import org.dspace.eperson.EPerson;
 import org.dspace.eperson.Group;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
 import org.dspace.eperson.service.GroupService;
 import org.dspace.kernel.ServiceManager;
-import org.dspace.qaevent.MockQAEventService;
 import org.dspace.services.factory.DSpaceServicesFactory;
-import org.dspace.statistics.MockSolrLoggerServiceImpl;
-import org.dspace.statistics.MockSolrStatisticsCore;
+import org.dspace.solr.MockSolrClientFactory;
 import org.dspace.storage.rdbms.DatabaseUtils;
 import org.dspace.validation.LogicalStatementValidator;
 import org.dspace.validation.MetadataValidator;
@@ -192,12 +187,8 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
 
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
 
-        getFirst(serviceManager, MockSolrSearchCore.class).reset();
-        getFirst(serviceManager, MockSolrStatisticsCore.class).reset();
-        getFirst(serviceManager, MockSolrLoggerServiceImpl.class).reset();
-        getFirst(serviceManager, MockAuthoritySolrServiceImpl.class).reset();
-        getFirst(serviceManager, MockSolrDedupCore.class).reset();
-        getFirst(serviceManager, MockQAEventService.class).reset();
+        // Use the registry pattern to reset all mock Solr servers
+        getFirst(serviceManager, MockSolrClientFactory.class).resetAll();
 
         try {
             // Reload our ConfigurationService (to reset configs to defaults again)
@@ -218,7 +209,7 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
         }
     }
 
-    private <T> T getFirst(ServiceManager serviceManager, Class<T> clazz) {
+    protected <T> T getFirst(ServiceManager serviceManager, Class<T> clazz) {
         List<T> servicesByType = serviceManager.getServicesByType(clazz);
         if (CollectionUtils.isEmpty(servicesByType)) {
             throw new IllegalStateException("No service of type " + clazz + " found");

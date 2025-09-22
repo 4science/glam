@@ -28,7 +28,7 @@ import org.dspace.content.Collection;
 import org.dspace.content.Item;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.CollectionService;
-import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.kernel.ServiceManager;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
@@ -46,7 +46,7 @@ public class SolrDatabaseResyncIT extends AbstractIntegrationTestWithDatabase {
     private final CollectionService collectionService =
             ContentServiceFactory.getInstance().getCollectionService();
 
-    private MockSolrSearchCore searchService;
+    private SolrSearchCore searchService;
 
     private Collection col;
     private Item item1;
@@ -68,7 +68,7 @@ public class SolrDatabaseResyncIT extends AbstractIntegrationTestWithDatabase {
         configurationService.setProperty("script.solr-database-resync.batch-size", 5);
 
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
-        searchService = serviceManager.getServiceByName(null, MockSolrSearchCore.class);
+        searchService = serviceManager.getServiceByName(null, SolrSearchCore.class);
 
         context.turnOffAuthorisationSystem();
 

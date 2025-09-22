@@ -9,6 +9,7 @@ package org.dspace.app.audit;
 
 /**
  * Service to store and retrieve DSpace Events from the audit solr core
+ *
  * @author Andrea Bollini (andrea.bollini at 4science.it)
  */
 
@@ -18,6 +19,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,23 +28,18 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.event.Event;
-import org.dspace.service.impl.HttpConnectionPoolService;
-import org.dspace.services.ConfigurationService;
+import org.dspace.solr.SolrClientFactory;
 import org.dspace.util.SolrUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * Service to interact with the Solr audit core
  */
-@Service
 public class AuditService {
     private static final String UUID_FIELD = "uid";
 
@@ -61,31 +58,16 @@ public class AuditService {
     private static final String DATETIME_FIELD = "timeStamp";
 
     private static final String DETAIL_FIELD = "detail";
-
-    @Autowired
-    private ConfigurationService configurationService;
-
-    @Autowired @Named("solrHttpConnectionPoolService")
-    protected HttpConnectionPoolService httpConnectionPoolService;
-
     private static Logger log = LogManager.getLogger(AuditService.class);
 
-    protected SolrClient solr = null;
+    @Inject
+    @Named("auditSolrClientFactory")
+    private SolrClientFactory solrClientFactory;
 
-    public SolrClient getSolr() throws SolrServerException, IOException {
-        if (solr == null) {
-            String solrService = configurationService.getProperty("solr.audit.server");
-            log.debug("Solr audit URL: " + solrService);
-            HttpSolrClient solrServer =
-                new HttpSolrClient.Builder(solrService)
-                    .withHttpClient(httpConnectionPoolService.getClient())
-                    .build();
-            solrServer.setBaseURL(solrService);
-            SolrQuery solrQuery = new SolrQuery().setQuery("*:*");
-            solrServer.query(solrQuery);
-            solr = solrServer;
-        }
-        return solr;
+    public SolrClient getSolr() {
+        return solrClientFactory
+            .getClient("solr.audit.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for audit core"));
     }
 
     public void store(Context context, Event event) {
@@ -99,7 +81,7 @@ public class AuditService {
 
     /**
      * Store an audit event as is in the Solr audit core
-     * 
+     *
      * @param context DSpace Context
      * @param audit   the complete audit event to store, no details about the
      *                current user are extracted from the context
@@ -136,7 +118,7 @@ public class AuditService {
      * This method convert an Event in an audit event. Please note that no user is
      * bound to an Event, if needed retrieve the current user from the context and
      * set it to the resulting Audit Event
-     * 
+     *
      * @param event the dspace event
      * @return an audit event wrapping the event without any user details
      */
@@ -152,11 +134,12 @@ public class AuditService {
         audit.setSubjectUUID(event.getSubjectID());
         return audit;
     }
+
     /**
      * Shortcut for
      * {@link #findEvents(Context, UUID, Date, Date, int, int, boolean)} with
      * objectUuid, from and to null
-     * 
+     *
      * @param context DSpace context
      * @param limit   the number of results to return
      * @param offset  the offset for the pagination (0 based)
@@ -164,14 +147,14 @@ public class AuditService {
      * @return the list of audit event according to the pagination parameters
      */
     public List<AuditEvent> findAllEvents(Context context, int limit, int offset,
-            boolean asc) {
+                                          boolean asc) {
         return findEvents(context, null, null, null, limit, offset, asc);
     }
 
     /**
      * Return the list of events in the specified time window for the requested
      * object
-     * 
+     *
      * @param context    DSpace context
      * @param objectUuid can be null. If not null limit the audit events to the ones
      *                   where the subject or the object
@@ -181,16 +164,16 @@ public class AuditService {
      * @param offset     the offset for the pagination (0 based)
      * @param asc        if true sort the result in ascending order (by timeStamp)
      * @return the list of events in the specified time window for the requested
-     *         object
+     * object
      */
     public List<AuditEvent> findEvents(Context context, UUID objectUuid, Date from, Date to, int limit, int offset,
-            boolean asc) {
+                                       boolean asc) {
         String q = "*";
         if (objectUuid != null) {
             q = objectUuid.toString();
         }
         SolrQuery solrQuery = new SolrQuery("(" + SUBJECT_UUID_FIELD + ":" + q + " OR "
-                + OBJECT_UUID_FIELD + ":" + q + ")  AND " + buildTimeQuery(from, to));
+                                                + OBJECT_UUID_FIELD + ":" + q + ")  AND " + buildTimeQuery(from, to));
         solrQuery.setRows(Integer.MAX_VALUE);
         solrQuery.addSort(new SortClause(DATETIME_FIELD, asc ? ORDER.asc : ORDER.desc));
         solrQuery.setRows(limit);
@@ -246,7 +229,7 @@ public class AuditService {
 
     /**
      * Return the audit event for the specified uuid if any
-     * 
+     *
      * @param context the DSpace Context
      * @param uuid    the uuid of the Audit Event
      * @return the audit event for the specified uuid if any
@@ -309,7 +292,7 @@ public class AuditService {
             q = objectUuid.toString();
         }
         SolrQuery solrQuery = new SolrQuery("(" + SUBJECT_UUID_FIELD + ":" + q + " OR "
-                + OBJECT_UUID_FIELD + ":" + q + ")  AND " + buildTimeQuery(from, to));
+                                                + OBJECT_UUID_FIELD + ":" + q + ")  AND " + buildTimeQuery(from, to));
         solrQuery.setRows(Integer.MAX_VALUE);
         solrQuery.setRows(0);
         QueryResponse queryResponse;

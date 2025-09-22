@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.dspace.AbstractDSpaceIntegrationTest;
 
@@ -117,7 +118,7 @@ public class MockSolrServer {
             try {
                 server.deleteByQuery("*:*");
                 server.commit();
-            } catch (SolrServerException | IOException e) {
+            } catch (SolrException | SolrServerException | IOException e) {
                 log.error("Failed to empty Solr index:  {}", e.getMessage(), e);
             }
 

@@ -16,8 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-import org.dspace.discovery.MockSolrSearchCore;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.solr.MockSolrClientFactory;
 import org.dspace.utils.DSpace;
 import org.junit.After;
 import org.junit.Before;
@@ -81,9 +81,9 @@ public class AbstractIntegrationTest extends AbstractUnitTest {
         super.destroy();
         cleanExtraConfigurations();
         // Clear the search core.
-        MockSolrSearchCore searchService = DSpaceServicesFactory.getInstance().getServiceManager()
-                                            .getServiceByName(null, MockSolrSearchCore.class);
-        searchService.reset();
+        MockSolrClientFactory solrClientFactory = DSpaceServicesFactory.getInstance().getServiceManager()
+                                            .getServiceByName(null, MockSolrClientFactory.class);
+        solrClientFactory.resetAll();
     }
 
     /**

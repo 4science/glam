@@ -9,6 +9,7 @@ package org.dspace.app.rest.repository;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -70,6 +71,7 @@ import org.dspace.xmlworkflow.storedcomponents.service.PoolTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
@@ -160,6 +162,14 @@ public class CollectionRestRepository extends DSpaceObjectRestRepository<Collect
                 discoverQuery.setDSpaceObjectFilter(IndexableCollection.TYPE);
                 discoverQuery.setStart(Math.toIntExact(pageable.getOffset()));
                 discoverQuery.setMaxResults(pageable.getPageSize());
+                discoverQuery.setSortField("dc.title_sort", DiscoverQuery.SORT_ORDER.asc);
+                Iterator<Sort.Order> orderIterator = pageable.getSort().iterator();
+                if (orderIterator.hasNext()) {
+                    Sort.Order order = orderIterator.next();
+                    DiscoverQuery.SORT_ORDER direction = order.getDirection().isAscending() ?
+                        DiscoverQuery.SORT_ORDER.asc : DiscoverQuery.SORT_ORDER.desc;
+                    discoverQuery.setSortField(order.getProperty() + "_sort", direction);
+                }
                 DiscoverResult resp = searchService.search(context, discoverQuery);
                 long tot = resp.getTotalSearchResults();
                 for (IndexableObject solrCollections : resp.getIndexableObjects()) {

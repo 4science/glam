@@ -107,8 +107,8 @@ public class DiscoveryIT extends AbstractIntegrationTestWithDatabase {
     MetadataAuthorityService metadataAuthorityService = ContentAuthorityServiceFactory.getInstance()
                                                                                       .getMetadataAuthorityService();
 
-    MockSolrSearchCore solrSearchCore = DSpaceServicesFactory.getInstance().getServiceManager()
-                                                             .getServiceByName(null, MockSolrSearchCore.class);
+    SolrSearchCore solrSearchCore = DSpaceServicesFactory.getInstance().getServiceManager()
+                                                             .getServiceByName(null, SolrSearchCore.class);
 
     @Override
     @Before
@@ -722,6 +722,8 @@ public class DiscoveryIT extends AbstractIntegrationTestWithDatabase {
 
         DiscoverQuery discoverQuery = new DiscoverQuery();
         discoverQuery.addFilterQueries("subject:" + subject1);
+        // Add explicit sorting for consistent iteration across shards
+        discoverQuery.setSortField("dc.title_sort", DiscoverQuery.SORT_ORDER.asc);
 
         Iterator<Item> itemIterator =
             searchService.iteratorSearch(context, new IndexableCollection(collection), discoverQuery);
@@ -923,6 +925,8 @@ public class DiscoveryIT extends AbstractIntegrationTestWithDatabase {
         discoverQuery.setStart(start);
         discoverQuery.setMaxResults(limit);
         discoverQuery.addFilterQueries("search.resourcetype:" + resourceType);
+        // Add explicit sorting by a deterministic field
+        discoverQuery.setSortField("dc.title_sort", DiscoverQuery.SORT_ORDER.asc);
         DiscoverResult discoverResult = searchService.search(context, discoverQuery);
         List<IndexableObject> indexableObjects = discoverResult.getIndexableObjects();
         assertEquals(size, indexableObjects.size());

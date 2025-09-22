@@ -287,6 +287,9 @@ public class BulkItemExport extends DSpaceRunnable<BulkItemExportScriptConfigura
             String[] sortSections = sort.split(SORT_SEPARATOR);
             sortBy = sortSections[0];
             sortOrder = sortSections.length > 1 ? sortSections[1] : null;
+        } else {
+            sortBy = "dc.title";
+            sortOrder = "asc";
         }
 
         List<QueryBuilderSearchFilter> filters = parseSearchFilters();

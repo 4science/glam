@@ -277,17 +277,31 @@ public class StatisticsDatasetDisplay {
         return filterQuery.toString();
     }
 
-    //Creates query for usage raport generator
+    //Creates query for usage report generator
     public String composeQueryWithInverseRelation(DSpaceObject dSpaceObject, List<String> default_queries, int type) {
+
         StringBuilder query = new StringBuilder();
+
+        // Check if SolrCloud is enabled
+        boolean isSolrCloudEnabled = configurationService.getBooleanProperty("solr.cloud.enabled", false);
+
         if (type == Constants.BITSTREAM) {
-            query.append("{!join from=search.resourceid to=owningItem fromIndex=");
+            query.append("{!join from=search.resourceid to=owningItem");
         } else {
-            query.append("{!join from=search.resourceid to=id fromIndex=");
+            query.append("{!join from=search.resourceid to=id");
         }
 
+        // Add method=crossCollection for SolrCloud mode
+        if (isSolrCloudEnabled) {
+            query.append(" method=crossCollection");
+        }
+
+        // Add fromIndex parameter
+        query.append(" fromIndex=");
         query.append(configurationService.getProperty("solr.multicorePrefix"));
         query.append("search} ");
+
+        // Build the filter queries
         boolean isFirstDefaultQuery = true;
         for (String default_query : default_queries) {
             if (!isFirstDefaultQuery) {
