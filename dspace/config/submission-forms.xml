@@ -58,6 +58,18 @@
           <hint />
         </field>
       </row>
+      <row>
+        <field>
+          <dc-schema>bitstream</dc-schema>
+          <dc-element>curation</dc-element>
+          <dc-qualifier>exclude</dc-qualifier>
+          <label>Escludere dall'elaborazione del curation tasl</label>
+          <input-type value-pairs-name="truefalse">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezione si per escludere bitstream dall'elaborazione del curation task, altrimenti no</hint>
+        </field>
+      </row>
     </form>
     <form name="publication-dc-contributor-author">
       <row>
@@ -7320,7 +7332,7 @@
           <label>Tipo di curation task da eseguire in fase di deposito</label>
           <input-type value-pairs-name="curation_tasks">dropdown</input-type>
           <repeatable>true</repeatable>
-          <required />
+          <required>Seleziona curation task</required>
           <hint>Seleziona curation task</hint>
         </field>
       </row>
@@ -9747,7 +9759,7 @@
     </value-pairs>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
-        <displayed-value>Create PDF/A</displayed-value>
+        <displayed-value>Crea PDF/A</displayed-value>
         <stored-value>pdfacreate</stored-value>
       </pair>
     </value-pairs>
