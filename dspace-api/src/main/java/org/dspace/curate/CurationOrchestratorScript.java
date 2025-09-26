@@ -36,6 +36,7 @@ import org.dspace.core.Context;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.storage.bitstore.BitStoreService;
@@ -174,8 +175,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String getProcessId() {
-        if (handler instanceof DSpaceProcessRunnableHandler) {
-            return ((DSpaceProcessRunnableHandler) handler).getProcessId().toString();
+        if (handler instanceof ProcessDSpaceRunnableHandler) {
+            return ((ProcessDSpaceRunnableHandler) handler).getProcessId().toString();
         }
         return "unknown-" + UUID.randomUUID();
     }

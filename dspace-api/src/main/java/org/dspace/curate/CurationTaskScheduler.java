@@ -23,6 +23,7 @@ import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 import org.dspace.scripts.service.ScriptService;
 import org.dspace.services.ConfigurationService;
@@ -72,7 +73,7 @@ public class CurationTaskScheduler {
         }
 
         EPerson currentUser = context.getCurrentUser();
-        DSpaceProcessRunnableHandler dSpaceProcessRunnableHandler = new DSpaceProcessRunnableHandler(currentUser,
+        ProcessDSpaceRunnableHandler processDSpaceRunnableHandler = new ProcessDSpaceRunnableHandler(currentUser,
                                            SCRIPT_NAME, params, context.getSpecialGroups(), context.getCurrentLocale());
 
         try {
@@ -86,8 +87,8 @@ public class CurationTaskScheduler {
                 }
             }
 
-            dSpaceRunnable.initialize(args.toArray(new String[0]), dSpaceProcessRunnableHandler, currentUser);
-            dSpaceProcessRunnableHandler.schedule(dSpaceRunnable);
+            dSpaceRunnable.initialize(args.toArray(new String[0]), processDSpaceRunnableHandler, currentUser);
+            processDSpaceRunnableHandler.schedule(dSpaceRunnable);
         } catch (IllegalAccessException | InstantiationException | ParseException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
