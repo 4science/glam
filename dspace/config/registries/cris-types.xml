@@ -538,6 +538,20 @@
     <dc-type>
         <schema>cris</schema>
         <element>curation</element>
+        <qualifier>process</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>cris</schema>
+        <element>curation</element>
+        <qualifier>history</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>cris</schema>
+        <element>curation</element>
         <qualifier>task</qualifier>
         <scope_note></scope_note>
     </dc-type>
