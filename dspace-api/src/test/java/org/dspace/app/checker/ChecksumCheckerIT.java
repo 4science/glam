@@ -79,7 +79,7 @@ import org.mockito.Mockito;
  **/
 public class ChecksumCheckerIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String TEST_OUTPUT = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore";
+    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
 
     private final DroidCheckResultService droidCheckResultService =
         DroidServiceFactory.getInstance().getDroidCheckResultService();

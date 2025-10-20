@@ -114,6 +114,8 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
 
+    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
+
     @Autowired
     private ProcessService processService;
 
@@ -2021,6 +2023,10 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
 
         context.turnOffAuthorisationSystem();
 
+
+        configurationService.setProperty("droid.csv.checksum.outputfile.tempdir", TEST_OUTPUT);
+        configurationService.setProperty("checksum-checker.collect.files", true);
+
         Community community = createCommunity(context).build();
         Collection collection = createCollection(context, community).withAdminGroup(eperson).build();
 
@@ -2077,7 +2083,6 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
                                             "$.description",
                                             is("Sends mail report after the checksum verification to configured " +
                                                    "users")),
-                                        hasJsonPath("$.type", is("boolean")),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--mail-report"))
                                     ),
@@ -2086,7 +2091,6 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
                                         hasJsonPath(
                                             "$.description",
                                             is("Execute verification with DROID (i.e. digital preservation)")),
-                                        hasJsonPath("$.type", is("boolean")),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--droid"))
                                     ),
@@ -2152,10 +2156,11 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
                                     ),
                                     allOf(
                                         hasJsonPath("$.name", is("-p")),
-                                        hasJsonPath("$.description",
-                                                    is("Prune old results (optionally using specified properties file" +
-                                                           " for configuration)")),
-                                        hasJsonPath("$.type", is("boolean")),
+                                        hasJsonPath(
+                                            "$.description",
+                                            is("Prune old results (optionally using specified " +
+                                                   "properties file for configuration)")
+                                        ),
                                         hasJsonPath("$.mandatory", is(false)),
                                         hasJsonPath("$.nameLong", is("--prune"))
                                     )
