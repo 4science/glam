@@ -29,10 +29,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
+import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
+import org.dspace.curate.service.S3FileChecker;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.scripts.DSpaceRunnable;
@@ -69,7 +71,9 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
+    private static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
+    protected S3FileChecker S3FileChecker;
     protected ItemService itemService = ContentServiceFactory.getInstance().getItemService();
     protected HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
     protected BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
@@ -77,10 +81,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     protected BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
                                                                                      .getBitstreamStorageService();
 
-    private List<String> tasks;
-    private String identifier;
     private Context context;
+    private Curator curator;
+    private String identifier;
+    private List<String> tasks;
+    private TaskResolver resolver = new TaskResolver();
     private ObjectMapper objectMapper = new ObjectMapper();
+    private List<ResolvedTask> resolvedTasks = new ArrayList<>();
+    private List<String> cloudCurationTasksToCheck = new ArrayList<>();
 
     private static ClientConfiguration getProxyClientConfig(String proxyHost, String proxyPort, String ignoredHosts) {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -107,6 +115,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     @Override
     public void setup() throws ParseException {
+        //TODO
+        S3FileChecker = new S3FileChecker();
         if (hasInvalidParameters()) {
             return;
         }
@@ -121,6 +131,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     @Override
     public void internalRun() throws Exception {
         this.context = new Context(Context.Mode.READ_ONLY);
+        this.curator = initCurator();
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
 
         if (item$.isEmpty()) {
@@ -128,34 +139,90 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             return;
         }
 
-        Item item = item$.get();
-        Iterator<Bitstream> bitstreams = this.bitstreamService.getItemBitstreams(context, item);
-
         AmazonS3 amazonS3 = s3Client(this.configurationService);
-        TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
+        TransferManager transferManager = TransferManagerBuilder.standard()
+                                                                .withS3Client(amazonS3)
+                                                                .build();
 
+        Iterator<Bitstream> bitstreams = this.bitstreamService.getItemBitstreams(this.context, item$.get());
+
+        // FASE 1: upload curation task JSON to S3
+        ScheduledProcess scheduledProcess = schedulProcess(bitstreams, amazonS3, transferManager);
+        // FASE 2: check for status files in S3
+        this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
+        // FASE 3: launch curation tasks
+        launchCurationTasks(item$.get(), scheduledProcess);
+    }
+
+    private void launchCurationTasks(Item item, ScheduledProcess scheduledProcess) throws IOException, SQLException {
+        for (ResolvedTask resolvedTask : this.resolvedTasks) {
+            if (resolvedTask.getcTask().isCloudCurationTask()) {
+                ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, scheduledProcess);
+            } else {
+                resolvedTask.perform(item);
+            }
+
+        }
+    }
+
+    private Curator initCurator() {
+        Curator curator = new Curator(this.handler);
+        curator.setInvoked(Curator.Invoked.BATCH);
+        return curator;
+    }
+
+    private ScheduledProcess schedulProcess(Iterator<Bitstream> bitstreams, AmazonS3 amazonS3,
+                     TransferManager transferManager) throws SQLException, IOException, InterruptedException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         while (bitstreams.hasNext()) {
-            Bitstream next = bitstreams.next();
+            Bitstream currentBitstream = bitstreams.next();
             BitStoreService bitStoreService =
-                ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores().get(next.getStoreNumber());
+                ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores()
+                                                                            .get(currentBitstream.getStoreNumber());
             if (!(bitStoreService instanceof S3BitStoreService)) {
-                log.info("Skipping bitstream {} because is not stored on S3!", next.getID());
+                log.info("Skipping bitstream {} because is not stored on S3!", currentBitstream.getID());
                 continue;
             }
+            if (skipBitstream(currentBitstream)) {
+                log.info("Skipping bitstream {} was required during submission!", currentBitstream.getID());
+                continue;
+            }
+
             String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
-            String path = this.bitstreamStorageService.absolutePath(context, next);
-            scheduledCurationTasks.addAll(buildTask(next, bucketName, path));
+            String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
+            scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path));
         }
         ScheduledProcess curationProcess = new ScheduledProcess("cliente", getProcessId(), scheduledCurationTasks);
 
-        String uploadBucket = this.configurationService.getProperty("aws.s3.bucket");
+        String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
         try {
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             transferManager.shutdownNow(false);
         }
+        return curationProcess;
+    }
+
+    private boolean skipBitstream(Bitstream bitstream) {
+        var storeNumber = bitstream.getStoreNumber();
+        BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                                 .get(storeNumber);
+        if (!(bitStoreService instanceof S3BitStoreService)) {
+            log.info("Skipping bitstream {} because is not stored on S3!", bitstream.getID());
+            return true;
+        }
+        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition");
+        if (StringUtils.isEmpty(curationMetadata)) {
+            return false;
+        }
+
+        List<MetadataValue> metadata = this.bitstreamService.getMetadataByMetadataString(bitstream, curationMetadata);
+        if (metadata.isEmpty()) {
+            return false;
+        }
+        //TODO check metadata value
+        return true;
     }
 
     private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
@@ -181,23 +248,40 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return "unknown-" + UUID.randomUUID();
     }
 
-    private List<ScheduledCurationTask> buildTask(Bitstream next, String bucketName, String path) {
+    private List<ScheduledCurationTask> buildTask(Bitstream bitstream, String bucketName, String path)
+            throws IOException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>(tasks.size());
         for (String task : this.tasks) {
-            scheduledCurationTasks.add(new ScheduledCurationTask(next.getID(), bucketName, path, task));
+            ResolvedTask resolvedTask = getResolvedTasks(task);
+            if (resolvedTask.getcTask().isCloudCurationTask()) {
+                scheduledCurationTasks.add(new ScheduledCurationTask(bitstream.getID(), bucketName, path, task));
+                String statusFileName = String.format(STATUS_FILE_PATTER_NAME, bitstream.getID(), task);
+                cloudCurationTasksToCheck.add(statusFileName);
+            }
         }
         return scheduledCurationTasks;
     }
 
+    private ResolvedTask getResolvedTasks(String task) throws IOException {
+        ResolvedTask resolvedTask = this.resolvedTasks.stream()
+                                                      .filter(rt -> rt.getName().equals(task))
+                                                      .findFirst()
+                                                      .orElse(null);
+        if (resolvedTask == null) {
+            resolvedTask = resolver.resolveTask(task);
+            resolvedTask.init(this.curator);
+            this.resolvedTasks.add(resolvedTask);
+        }
+        return resolvedTask;
+    }
+
     private Optional<Item> getItemByUUID() {
-        Optional<Item> item = Optional.empty();
         try {
-            UUID uuid = UUID.fromString(identifier);
-            item = Optional.ofNullable(this.itemService.find(context, uuid));
+            return Optional.ofNullable(this.itemService.find(context, UUID.fromString(identifier)));
         } catch (IllegalArgumentException | SQLException e) {
             log.warn("Cannot convert identifier {} as uuid.", identifier, e);
         }
-        return item;
+        return Optional.empty();
     }
 
     private Optional<Item> getItemByHandle() {
@@ -208,6 +292,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             log.warn("Cannot find the proper item with handle {}", identifier, e);
         }
         return item;
+    }
+
+    private String getUploadBucket() {
+        return this.configurationService.getProperty("aws.s3.bucket");
     }
 
     @Override
