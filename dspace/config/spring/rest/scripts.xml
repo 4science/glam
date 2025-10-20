@@ -134,6 +134,11 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.submission.SubmissionXmlToXls"/>
     </bean>
 
+    <bean id="metadata-update" class="org.dspace.app.metadataupdate.MetadataUpdateScriptConfiguration" primary="true">
+        <property name="description" value="update metadata values"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.metadataupdate.MetadataUpdateScript"/>
+    </bean>
+
     <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerScriptConfiguration" primary="true">
         <property name="description" value="Verifies the checksum of every item within DSpace"/>
         <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerScript"/>
