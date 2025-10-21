@@ -107,8 +107,10 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
             LOG.error("Cannot retrieve the files file of the collectors!", e);
             handler.logError("Cannot retrieve the files file of the collectors!", e);
         } finally {
-            for (File output : files) {
-                writeOutputFile(handler, context, output);
+            if (files != null) {
+                for (File output : files) {
+                    writeOutputFile(handler, context, output);
+                }
             }
         }
     }

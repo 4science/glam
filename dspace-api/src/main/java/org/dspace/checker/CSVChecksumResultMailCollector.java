@@ -160,41 +160,38 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
 
     @Override
     public void complete(Context context) throws SQLException {
-        {
-            try {
-                collectorWriter.close();
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot close the csv writer", e);
+        try {
+            collectorWriter.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot close the csv writer", e);
+        }
+        File attachment = null;
+        try {
+            Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), getEmailTemplate()));
+            // "total",
+            Integer total = results.values().stream().reduce(0, Integer::sum);
+            email.addArgument(total);
+            // "valid"
+            Integer valid = results.getOrDefault(ChecksumResultCode.CHECKSUM_MATCH, 0);
+            email.addArgument(valid);
+            // "not valid"
+            email.addArgument(total - valid);
+
+            attachment = csvWriter.outputFile;
+            if (attachment != null && attachment.exists() && attachment.length() > 0) {
+                email.addAttachment(attachment, getPrefix() + ".csv");
             }
-            File attachment = null;
-            try {
-                Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), getEmailTemplate()));
-                // "total",
-                Integer total = results.values().stream().reduce(0, Integer::sum);
-                email.addArgument(total);
-                // "valid"
-                Integer valid = results.getOrDefault(ChecksumResultCode.CHECKSUM_MATCH, 0);
-                email.addArgument(valid);
-                // "not valid"
-                email.addArgument(total - valid);
 
-                attachment = csvWriter.outputFile;
-                if (attachment != null && attachment.exists() && attachment.length() > 0) {
-                    email.addAttachment(attachment, getPrefix() + ".csv");
-                }
-
-                String[] recipients = getRecipients();
-                for (String recipient : recipients) {
-                    email.addRecipient(recipient);
-                }
-                log.info("Sending the email with the checksum-checker output as attachment.");
-                email.send();
-
-                attachment.delete();
-            } catch (IOException | MessagingException e) {
-                log.error("Cannot create the email using the configured template!", e);
-                throw new RuntimeException("Cannot create the email using the configured template!", e);
+            String[] recipients = getRecipients();
+            for (String recipient : recipients) {
+                email.addRecipient(recipient);
             }
+            log.info("Sending the email with the checksum-checker output as attachment.");
+            email.send();
+
+        } catch (IOException | MessagingException e) {
+            log.error("Cannot create the email using the configured template!", e);
+            throw new RuntimeException("Cannot create the email using the configured template!", e);
         }
     }
 

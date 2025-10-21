@@ -52,6 +52,8 @@ import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamFormatService;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
+import org.dspace.services.ConfigurationService;
+import org.dspace.services.factory.DSpaceServicesFactory;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,12 +67,14 @@ import org.mockito.Mockito;
 public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase {
 
     private static final String TEST_FILE = "./target/testing/dspace/assetstore/droid/empty.pdf";
+    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
 
     private MostRecentChecksumService mostRecentChecksumService;
     private ChecksumHistoryService checksumHistoryService;
     private Collection collection;
     private BitstreamService bitstreamService;
     private BitstreamFormatService bitstreamFormatService;
+    private ConfigurationService configurationService;
 
     private static Matcher<Iterable<? extends String>> headerMatcher() {
         return contains(
@@ -164,6 +168,11 @@ public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase
         checksumHistoryService = CheckerServiceFactory.getInstance().getChecksumHistoryService();
         bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
         bitstreamFormatService = ContentServiceFactory.getInstance().getBitstreamFormatService();
+        configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+
+        // force output folder
+        configurationService.setProperty("droid.csv.checksum.outputfile.tempdir", TEST_OUTPUT);
+        configurationService.setProperty("checksum-checker.collect.files", true);
 
         parentCommunity = CommunityBuilder.createCommunity(context)
                 .build();
@@ -308,7 +317,7 @@ public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase
                 containsString(bitstream2.getID().toString())
             )
         );
-        assertEquals(handler.getErrorMessages().size(), 0);
+        assertEquals(0, handler.getErrorMessages().size());
 
         Mockito.verify(handler)
                .writeFilestream(
