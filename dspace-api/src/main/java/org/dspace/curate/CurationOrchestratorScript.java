@@ -211,13 +211,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private boolean skipBitstream(Bitstream bitstream) {
-        var storeNumber = bitstream.getStoreNumber();
-        BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
-                                                                                                 .get(storeNumber);
-        if (!(bitStoreService instanceof S3BitStoreService)) {
-            log.info("Skipping bitstream {} because is not stored on S3!", bitstream.getID());
-            return true;
-        }
         String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition");
         if (StringUtils.isEmpty(curationMetadata)) {
             return false;
@@ -227,8 +220,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         if (metadata.isEmpty()) {
             return false;
         }
-        //TODO check metadata value
-        return true;
+        return StringUtils.equals("true", metadata.get(0).getValue());
     }
 
     private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
@@ -320,7 +312,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String getUploadBucket() {
-        return this.configurationService.getProperty("aws.s3.bucket");
+        return this.configurationService.getProperty("curation.s3.bucketName-input");
     }
 
     @Override
