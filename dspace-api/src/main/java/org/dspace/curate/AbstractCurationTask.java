@@ -19,6 +19,9 @@ import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
+import org.dspace.content.service.BitstreamFormatService;
+import org.dspace.content.service.BitstreamService;
+import org.dspace.content.service.BundleService;
 import org.dspace.content.service.CommunityService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
@@ -42,16 +45,21 @@ import org.dspace.services.factory.DSpaceServicesFactory;
  * @author richardrodgers
  */
 public abstract class AbstractCurationTask implements CurationTask {
+
     // invoking curator
     protected Curator curator = null;
     // curator-assigned taskId
+    protected int batchSize;
     protected String taskId = null;
+
     protected CommunityService communityService;
     protected ItemService itemService;
     protected HandleService handleService;
+    protected BundleService bundleService;
+    protected BitstreamService bitstreamService;
+    protected BitstreamFormatService bitstreamFormatService;
     protected ConfigurationService configurationService;
     protected SearchService searchService;
-    protected int batchSize;
 
     private void addOrUpdateProcessMetadata(Context context, Item item) throws SQLException {
         List<MetadataValue> existingProcesses = itemService.getMetadata(item, "cris", "curation", "process", Item.ANY);
@@ -113,11 +121,13 @@ public abstract class AbstractCurationTask implements CurationTask {
     public void init(Curator curator, String taskId) throws IOException {
         this.curator = curator;
         this.taskId = taskId;
-        communityService = ContentServiceFactory.getInstance().getCommunityService();
+        searchService = SearchUtils.getSearchService();
         itemService = ContentServiceFactory.getInstance().getItemService();
         handleService = HandleServiceFactory.getInstance().getHandleService();
+        bundleService = ContentServiceFactory.getInstance().getBundleService();
+        bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+        communityService = ContentServiceFactory.getInstance().getCommunityService();
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-        searchService = SearchUtils.getSearchService();
         batchSize = configurationService.getIntProperty("curation.task.batchsize", 100);
     }
 

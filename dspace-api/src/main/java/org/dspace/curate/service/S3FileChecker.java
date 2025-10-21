@@ -95,7 +95,7 @@ public class S3FileChecker {
         if (this.useExponentialBackoff) {
             // Exponential backoff
             double exponentialDelay = this.delayBetweenAttempts * Math.pow(2, attempt - 1);
-            // Limit the maximum delay to 60 seconds.
+            // Limit the maximum delay to 120 seconds.
             long maxDelay = delayTimeUnit.convert(120, TimeUnit.SECONDS);
             long delay = (long) Math.min(exponentialDelay, maxDelay);
             return delay;

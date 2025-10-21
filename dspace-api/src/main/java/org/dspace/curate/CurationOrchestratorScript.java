@@ -37,6 +37,7 @@ import org.dspace.core.Context;
 import org.dspace.curate.service.S3FileChecker;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
+import org.dspace.kernel.ServiceManager;
 import org.dspace.scripts.DSpaceRunnable;
 import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.services.ConfigurationService;
@@ -71,7 +72,7 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
-    private static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
+    public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
     protected S3FileChecker S3FileChecker;
     protected ItemService itemService = ContentServiceFactory.getInstance().getItemService();
@@ -115,8 +116,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     @Override
     public void setup() throws ParseException {
-        //TODO
-        S3FileChecker = new S3FileChecker();
+        ServiceManager serviceManager = new DSpace().getServiceManager();
+        S3FileChecker = serviceManager.getServiceByName("s3FileChecker", S3FileChecker.class);
         if (hasInvalidParameters()) {
             return;
         }
@@ -151,13 +152,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         // FASE 2: check for status files in S3
         this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
-        launchCurationTasks(item$.get(), scheduledProcess);
+        launchCurationTasks(item$.get(), amazonS3, scheduledProcess);
     }
 
-    private void launchCurationTasks(Item item, ScheduledProcess scheduledProcess) throws IOException, SQLException {
+    private void launchCurationTasks(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
+            throws IOException {
         for (ResolvedTask resolvedTask : this.resolvedTasks) {
             if (resolvedTask.getcTask().isCloudCurationTask()) {
-                ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, scheduledProcess);
+                ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, amazonS3, scheduledProcess);
             } else {
                 resolvedTask.perform(item);
             }
@@ -190,9 +192,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
             String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
             String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
-            scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path));
+            scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path.substring(1)));
         }
-        ScheduledProcess curationProcess = new ScheduledProcess("cliente", getProcessId(), scheduledCurationTasks);
+        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(), scheduledCurationTasks);
 
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
@@ -202,6 +204,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             transferManager.shutdownNow(false);
         }
         return curationProcess;
+    }
+
+    private String getCustomerId() {
+        return configurationService.getProperty("customer-id", "customer-id");
     }
 
     private boolean skipBitstream(Bitstream bitstream) {
@@ -233,12 +239,30 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private void uploadFile(ScheduledProcess curationProcess, TransferManager transferManager, String uploadBucket)
             throws IOException, InterruptedException {
-        File tempFile = File.createTempFile("temp-", "upload.json");
-        tempFile.deleteOnExit();
-        objectMapper.writeValue(tempFile, curationProcess);
-        var key = "pdfa-input/" + curationProcess.id() + "/" + curationProcess.process() + ".json";
-        Upload upload = transferManager.upload(uploadBucket, key, tempFile);
-        upload.waitForUploadResult();
+        String tempDirectory = getTempDirectory();
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile("curation-task-temp-" + UUID.randomUUID(), ".json", new File(tempDirectory));
+            tempFile.deleteOnExit();
+            objectMapper.writeValue(tempFile, curationProcess);
+            var key = getUploadCustomerFolder() + "/" + curationProcess.id() + "/" + curationProcess.process() + ".json";
+            Upload upload = transferManager.upload(uploadBucket, key, tempFile);
+            upload.waitForUploadResult();
+        } finally {
+            if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
+                log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
+                tempFile.deleteOnExit();
+            }
+        }
+    }
+
+    private String getTempDirectory() {
+        return configurationService.hasProperty("upload.temp.dir")
+               ? configurationService.getProperty("upload.temp.dir") : System.getProperty("java.io.tmpdir");
+    }
+
+    private String getUploadCustomerFolder() {
+        return configurationService.getProperty("curation.s3.upload.customer.folder");
     }
 
     private String getProcessId() {
