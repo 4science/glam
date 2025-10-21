@@ -194,7 +194,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
             scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path.substring(1)));
         }
-        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(), scheduledCurationTasks);
+        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(),scheduledCurationTasks);
 
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
@@ -245,7 +245,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             tempFile = File.createTempFile("curation-task-temp-" + UUID.randomUUID(), ".json", new File(tempDirectory));
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
-            var key = getUploadCustomerFolder() + "/" + curationProcess.id() + "/" + curationProcess.process() + ".json";
+            var key = getUploadCustomerFolder() + "/" +
+                      curationProcess.id() + "/" + curationProcess.process() + ".json";
             Upload upload = transferManager.upload(uploadBucket, key, tempFile);
             upload.waitForUploadResult();
         } finally {
