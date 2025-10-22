@@ -11,7 +11,7 @@ definitions:
     # Please mind to start with a comma if you add one or more addon profiles
     &setEnv export MAVEN_OPTS="-Xmx4096M" &&
     export MAVEN_ARGS="-Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS" &&
-    export ADDON_PROFILES=",addon-iiif,addon-ocr,addon-video,addon-document-viewer,addon-analytics,addon-dataquality,addon-networklab,addon-loginmiur,addon-importplus"
+    export ADDON_PROFILES=",addon-iiif,addon-ocr,addon-video,addon-document-viewer,addon-analytics,addon-networklab,addon-loginmiur,addon-importplus"
   steps:
     - step: &install
         runs-on:
