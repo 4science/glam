@@ -35,8 +35,8 @@
           to dashes in environment variables.
         -->
         <dspaceenv/>
-        <!-- CUSTOMER_CFG=customers/allegheny.cfg ./bin/dspace dsprop -p dspace.name -->
-        <properties fileName="${CUSTOMER_CFG}" throwExceptionOnMissing="false" config-name="customer" config-optional="true"
+        <!-- CUSTOMER_CFG=customers/customer.cfg ./bin/dspace dsprop -p dspace.name -->
+        <properties fileName="${CUSTOMER_DIR}/${CUSTOMER_CFG}" throwExceptionOnMissing="false" config-name="customer" config-optional="true"
                     encoding="UTF-8" config-reload="true" reloadingRefreshDelay="5000"/>
 
         <!-- Allow user to override any configs in a local.cfg -->

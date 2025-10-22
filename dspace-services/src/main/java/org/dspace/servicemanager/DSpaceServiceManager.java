@@ -627,6 +627,9 @@ public final class DSpaceServiceManager implements ServiceManagerSystem {
         } else {
             //Retrieve all our spring file locations depending on the deployed module
             String[] springLoaderClassNames = configurationService.getArrayProperty("spring.springloader.modules");
+            if (log.isInfoEnabled()) {
+                log.info("Loading configurations {}", Arrays.toString(springLoaderClassNames));
+            }
             if (springLoaderClassNames != null) {
                 for (String springLoaderClassName : springLoaderClassNames) {
                     try {

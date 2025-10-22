@@ -6,10 +6,10 @@ ARG BASE_IMAGE=dspace-cris/base:arm64
 
 # Stage 1 - Define base image and java one
 FROM ${BASE_IMAGE_REGISTRY}/${BASE_IMAGE} AS base
-FROM ${DOCKER_REGISTRY}/eclipse-temurin:${JDK_VERSION}-jre as jre
+FROM ${DOCKER_REGISTRY}/eclipse-temurin:${JDK_VERSION}-jre AS jre
 
 # Stage 2 - Copy java from jre and artifacts from build
-FROM base as install
+FROM base AS install
 EXPOSE 8080
 COPY --from=jre /opt/java/openjdk /usr/local/java
 ENV JAVA_HOME=/usr/local/java
@@ -23,14 +23,15 @@ ENV DATA_FOLDER=/data \
     UPLOAD_DIR=/dspace/upload \
     VAR_DIR=/dspace/var \
     OAI_DIR=/dspace/var/oai \
-    TEMP_DIR=/dspace/temp
+    CUSTOMER_DIR=/dspace/customer \
+    CUSTOMER_SPRING_DIR=/dspace/customer/spring
 
 RUN useradd -m -d /home/dspace -s /bin/bash dspace
 
 COPY --chown=dspace ./dspace/modules/server-boot/target/server-boot-*.jar /home/dspace/server-boot.jar
 RUN java -Djarmode=tools -jar /home/dspace/server-boot.jar extract --destination $DSPACE_INSTALL --libraries lib
 
-RUN install -g dspace -o dspace -d $DATA_FOLDER $ASSETSTORE $DSPACE_INSTALL $HANDLE_DIR $TRIPLESTORE_DIR $DOWNLOAD_DIR $UPLOAD_DIR $VAR_DIR $OAI_DIR $TEMP_DIR
+RUN install -g dspace -o dspace -d $DATA_FOLDER $ASSETSTORE $DSPACE_INSTALL $HANDLE_DIR $TRIPLESTORE_DIR $DOWNLOAD_DIR $UPLOAD_DIR $VAR_DIR $OAI_DIR $CUSTOMER_DIR $CUSTOMER_SPRING_DIR
 
 COPY --chown=dspace ./dspace/config/ $DSPACE_INSTALL/config/
 COPY --chown=dspace ./dspace/etc/conftool $DSPACE_INSTALL/config/conftool
@@ -43,4 +44,4 @@ WORKDIR $DSPACE_INSTALL
 USER dspace
 ENV JAVA_TOOL_OPTIONS="-XX:MinRAMPercentage=20.0 -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC"
 ENTRYPOINT ["java", "-XX:+PrintVMOptions", "-jar", "server-boot.jar", \
-    "--dspace.dir=${DSPACE_INSTALL}", "--logging.config=${DSPACE_INSTALL}/config/log4j2-eks.xml"]
+    "--dspace.dir=${DSPACE_INSTALL}", "--logging.config=${DSPACE_INSTALL}/config/log4j2-container.xml"]
