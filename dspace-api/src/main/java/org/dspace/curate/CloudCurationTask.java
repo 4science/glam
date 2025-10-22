@@ -8,8 +8,11 @@
 package org.dspace.curate;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3;
+import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
 import org.dspace.core.Context;
 
@@ -19,5 +22,7 @@ import org.dspace.core.Context;
 public interface CloudCurationTask extends CurationTask {
 
     int perform(Context ctx, Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess) throws IOException;
+
+    List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException;
 
 }

@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.authorize.AuthorizeException;
+import org.dspace.content.Bitstream;
 import org.dspace.content.DCDate;
 import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
@@ -37,6 +38,7 @@ import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.storage.bitstore.service.BitstreamStorageService;
 
 /**
  * AbstractCurationTask encapsulates a few common patterns of task use,
@@ -52,14 +54,15 @@ public abstract class AbstractCurationTask implements CurationTask {
     protected int batchSize;
     protected String taskId = null;
 
-    protected CommunityService communityService;
     protected ItemService itemService;
+    protected SearchService searchService;
     protected HandleService handleService;
     protected BundleService bundleService;
     protected BitstreamService bitstreamService;
-    protected BitstreamFormatService bitstreamFormatService;
+    protected CommunityService communityService;
     protected ConfigurationService configurationService;
-    protected SearchService searchService;
+    protected BitstreamFormatService bitstreamFormatService;
+    protected BitstreamStorageService bitstreamStorageService;
 
     private void addOrUpdateProcessMetadata(Context context, Item item) throws SQLException {
         List<MetadataValue> existingProcesses = itemService.getMetadata(item, "cris", "curation", "process", Item.ANY);
@@ -128,6 +131,9 @@ public abstract class AbstractCurationTask implements CurationTask {
         bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
         communityService = ContentServiceFactory.getInstance().getCommunityService();
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+        bitstreamFormatService = ContentServiceFactory.getInstance().getBitstreamFormatService();
+        bitstreamStorageService = DSpaceServicesFactory.getInstance().getServiceManager()
+            .getServiceByName(BitstreamStorageService.class.getName(), BitstreamStorageService.class);
         batchSize = configurationService.getIntProperty("curation.task.batchsize", 100);
     }
 
@@ -468,4 +474,18 @@ public abstract class AbstractCurationTask implements CurationTask {
             return configurationService.getArrayProperty(name);
         }
     }
+
+    protected boolean skipBitstream(Bitstream bitstream) {
+        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition");
+        if (StringUtils.isEmpty(curationMetadata)) {
+            return false;
+        }
+
+        List<MetadataValue> metadata = this.bitstreamService.getMetadataByMetadataString(bitstream, curationMetadata);
+        if (metadata.isEmpty()) {
+            return false;
+        }
+        return StringUtils.equals("true", metadata.get(0).getValue());
+    }
+
 }

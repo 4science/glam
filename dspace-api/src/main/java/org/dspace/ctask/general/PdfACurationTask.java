@@ -18,6 +18,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -44,6 +46,9 @@ import org.dspace.curate.Curator;
 import org.dspace.curate.ScheduledCurationTask;
 import org.dspace.curate.ScheduledProcess;
 import org.dspace.curate.dto.StatusJsonDTO;
+import org.dspace.storage.bitstore.BitStoreService;
+import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
+import org.dspace.storage.bitstore.S3BitStoreService;
 
 /**
  * PdfA curation task.
@@ -89,13 +94,52 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
                 }
             }
         } catch (SQLException | AuthorizeException e) {
-            log.error("ERROR while creating bitstream PDF/A for Item:{} due to: {} .",
-                      item.getID().toString(), e.getMessage());
+            var message = "ERROR while creating bitstream PDF/A for Item:{} due to: {} .";
+            log.error(message, item.getID().toString(), e.getMessage());
             return CURATE_FAIL;
         } finally {
             transferManager.shutdownNow(false);
         }
         return CURATE_SUCCESS;
+    }
+
+    @Override
+    public List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException {
+        List<Bitstream> processableBitstreams = new ArrayList<>();
+        Iterator<Bitstream> bitstreams = this.bitstreamService.getItemBitstreams(context, item);
+        while (bitstreams.hasNext()) {
+            Bitstream currentBitstream = bitstreams.next();
+            BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
+            if (!(bitStoreService instanceof S3BitStoreService)) {
+                log.info("Skipping bitstream {} because is not stored on S3!", currentBitstream.getID());
+                continue;
+            }
+            if (skipBitstream(currentBitstream)) {
+                log.info("Skipping bitstream {} was required during submission!", currentBitstream.getID());
+                continue;
+            }
+            if (!isPDF(context, currentBitstream)) {
+                var message = "Skipping bitstream: {}  of item {}, because is not a PDF!";
+                log.info(message, currentBitstream.getID(), item.getID());
+                continue;
+            }
+            processableBitstreams.add(currentBitstream);
+        }
+        return processableBitstreams;
+    }
+
+    private boolean isPDF(Context context, Bitstream currentBitstream) {
+        BitstreamFormat bitstreamFormat = null;
+        try {
+            bitstreamFormat = bitstreamFormatService.guessFormat(context, currentBitstream);
+        } catch (SQLException e) {
+            var message = "Error while getting bitstream format for bitstream id: {} , due to: {} ";
+            log.error(message, currentBitstream.getID(), e);
+        }
+        var info = "Bitstream format for bitstream id: {} is: {} ";
+        log.info(info, currentBitstream.getID(), bitstreamFormat.getMIMEType());
+        return bitstreamFormat != null && StringUtils.equalsIgnoreCase(bitstreamFormat.getMIMEType(),"application/pdf");
     }
 
     private String downloadJSON(AmazonS3 s3Client, ScheduledCurationTask scheduledTask) {

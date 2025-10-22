@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
-import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
@@ -133,6 +131,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     public void internalRun() throws Exception {
         this.context = new Context(Context.Mode.READ_ONLY);
         this.curator = initCurator();
+        log.info("START CurationOrchestrator script for Item:{} ", identifier);
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
 
         if (item$.isEmpty()) {
@@ -145,14 +144,13 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                                 .withS3Client(amazonS3)
                                                                 .build();
 
-        Iterator<Bitstream> bitstreams = this.bitstreamService.getItemBitstreams(this.context, item$.get());
-
         // FASE 1: upload curation task JSON to S3
-        ScheduledProcess scheduledProcess = schedulProcess(bitstreams, amazonS3, transferManager);
+        ScheduledProcess scheduledProcess = schedulProcess(item$.get(), amazonS3, transferManager);
         // FASE 2: check for status files in S3
         this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
         launchCurationTasks(item$.get(), amazonS3, scheduledProcess);
+        log.info("END CurationOrchestrator script for Item:{} ", identifier);
     }
 
     private void launchCurationTasks(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
@@ -163,7 +161,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             } else {
                 resolvedTask.perform(item);
             }
-
         }
     }
 
@@ -173,33 +170,35 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess schedulProcess(Iterator<Bitstream> bitstreams, AmazonS3 amazonS3,
-                     TransferManager transferManager) throws SQLException, IOException, InterruptedException {
+    private ScheduledProcess schedulProcess(Item item, AmazonS3 amazonS3, TransferManager transferManager)
+             throws SQLException, IOException, InterruptedException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
-        while (bitstreams.hasNext()) {
-            Bitstream currentBitstream = bitstreams.next();
-            BitStoreService bitStoreService =
-                ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores()
-                                                                            .get(currentBitstream.getStoreNumber());
-            if (!(bitStoreService instanceof S3BitStoreService)) {
-                log.info("Skipping bitstream {} because is not stored on S3!", currentBitstream.getID());
-                continue;
-            }
-            if (skipBitstream(currentBitstream)) {
-                log.info("Skipping bitstream {} was required during submission!", currentBitstream.getID());
-                continue;
-            }
+        for (String task : this.tasks) {
+            ResolvedTask resolvedTask = getResolvedTasks(task);
+            if (resolvedTask.getcTask().isCloudCurationTask()) {
+                List<Bitstream> bitstreams =
+                                  ((CloudCurationTask) resolvedTask.getcTask()).getProcessableBitstreams(context, item);
+                for (Bitstream currentBitstream : bitstreams) {
+                    BitStoreService bitStoreService =
+                            ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
 
-            String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
-            String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
-            scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path.substring(1)));
+                    String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
+                    String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
+                    scheduledCurationTasks.add(new ScheduledCurationTask(currentBitstream.getID(),
+                                                                        bucketName, path.substring(1), task));
+
+                    String statusFileName = String.format(STATUS_FILE_PATTER_NAME, currentBitstream.getID(), task);
+                    cloudCurationTasksToCheck.add(statusFileName);
+                }
+            }
         }
         ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(),
                                                                 getBucketNameOutput(), scheduledCurationTasks);
-
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
         try {
+            log.info("Uploading curation process {} to S3 bucket: {} .", curationProcess.id(), uploadBucket);
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             transferManager.shutdownNow(false);
@@ -215,21 +214,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return configurationService.getProperty("customer-id", "customer-id");
     }
 
-    private boolean skipBitstream(Bitstream bitstream) {
-        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition");
-        if (StringUtils.isEmpty(curationMetadata)) {
-            return false;
-        }
-
-        List<MetadataValue> metadata = this.bitstreamService.getMetadataByMetadataString(bitstream, curationMetadata);
-        if (metadata.isEmpty()) {
-            return false;
-        }
-        return StringUtils.equals("true", metadata.get(0).getValue());
-    }
-
     private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
         if (!amazonS3.doesBucketExistV2(uploadBucket)) {
+            log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
             amazonS3.createBucket(uploadBucket);
         }
     }
@@ -243,9 +230,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
             var key = getUploadCustomerFolder() + "/" +
-                      curationProcess.id() + "/" + curationProcess.process() + ".json";
+                           curationProcess.id() + "/" + curationProcess.process() + ".json";
+            log.info("Uploading curation process file:{} to S3!", key);
             Upload upload = transferManager.upload(uploadBucket, key, tempFile);
             upload.waitForUploadResult();
+            log.info("Curation process file: {} uploaded successfully to S3 bucket!", key);
         } finally {
             if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
                 log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
@@ -268,20 +257,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             return ((ProcessDSpaceRunnableHandler) handler).getProcessId().toString();
         }
         return "unknown-" + UUID.randomUUID();
-    }
-
-    private List<ScheduledCurationTask> buildTask(Bitstream bitstream, String bucketName, String path)
-            throws IOException {
-        List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>(tasks.size());
-        for (String task : this.tasks) {
-            ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask().isCloudCurationTask()) {
-                scheduledCurationTasks.add(new ScheduledCurationTask(bitstream.getID(), bucketName, path, task));
-                String statusFileName = String.format(STATUS_FILE_PATTER_NAME, bitstream.getID(), task);
-                cloudCurationTasksToCheck.add(statusFileName);
-            }
-        }
-        return scheduledCurationTasks;
     }
 
     private ResolvedTask getResolvedTasks(String task) throws IOException {
