@@ -194,7 +194,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
             scheduledCurationTasks.addAll(buildTask(currentBitstream, bucketName, path.substring(1)));
         }
-        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(),scheduledCurationTasks);
+        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(),
+                                                                getBucketNameOutput(), scheduledCurationTasks);
 
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
@@ -204,6 +205,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             transferManager.shutdownNow(false);
         }
         return curationProcess;
+    }
+
+    private String getBucketNameOutput() {
+        return configurationService.getProperty("curation.s3.bucketName-output");
     }
 
     private String getCustomerId() {
