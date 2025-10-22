@@ -18,6 +18,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.curate.FilesNotFoundAfterRetriesException;
+import org.dspace.services.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Service to check the presence of files in an S3 bucket with retry mechanism.
@@ -29,10 +31,12 @@ public class S3FileChecker {
     private static final Logger log = LogManager.getLogger(S3FileChecker.class);
 
     private int maxAttempts;
-    private String bucketName;
     private TimeUnit delayTimeUnit;
     private long delayBetweenAttempts;
     private boolean useExponentialBackoff;
+
+    @Autowired
+    private ConfigurationService configurationService;
 
     public void checkFiles(AmazonS3 s3Client, List<String> filesToCheck)
             throws InterruptedException, FilesNotFoundAfterRetriesException {
@@ -41,6 +45,7 @@ public class S3FileChecker {
             return;
         }
 
+        var bucketName = getOutPutBucketName();
         int attempt = 0;
         while (!filesToCheck.isEmpty() && attempt < this.maxAttempts) {
             attempt++;
@@ -54,7 +59,7 @@ public class S3FileChecker {
             while (iterator.hasNext()) {
                 String fileKey = iterator.next();
                 try {
-                    if (s3Client.doesObjectExist(this.bucketName, fileKey)) {
+                    if (s3Client.doesObjectExist(bucketName, fileKey)) {
                         log.info("File found: %s", fileKey);
                         iterator.remove();
                         filesFoundInThisAttempt++;
@@ -91,6 +96,10 @@ public class S3FileChecker {
         throw new FilesNotFoundAfterRetriesException(filesToCheck, attempt);
     }
 
+    private String getOutPutBucketName() {
+        return this.configurationService.getProperty("curation.s3.bucketName-output");
+    }
+
     private long calculateSleepTime(int attempt) {
         if (this.useExponentialBackoff) {
             // Exponential backoff
@@ -100,13 +109,8 @@ public class S3FileChecker {
             long delay = (long) Math.min(exponentialDelay, maxDelay);
             return delay;
         } else {
-            // Delay costante
             return this.delayBetweenAttempts;
         }
-    }
-
-    public void setBucketName(String bucketName) {
-        this.bucketName = bucketName;
     }
 
     public void setDelayBetweenAttempts(long delayBetweenAttempts) {
