@@ -38,6 +38,7 @@ import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
 
 /**
@@ -132,8 +133,7 @@ public abstract class AbstractCurationTask implements CurationTask {
         communityService = ContentServiceFactory.getInstance().getCommunityService();
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
         bitstreamFormatService = ContentServiceFactory.getInstance().getBitstreamFormatService();
-        bitstreamStorageService = DSpaceServicesFactory.getInstance().getServiceManager()
-            .getServiceByName(BitstreamStorageService.class.getName(), BitstreamStorageService.class);
+        bitstreamStorageService =  StorageServiceFactory.getInstance().getBitstreamStorageService();
         batchSize = configurationService.getIntProperty("curation.task.batchsize", 100);
     }
 

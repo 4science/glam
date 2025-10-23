@@ -179,11 +179,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 List<Bitstream> bitstreams =
                                   ((CloudCurationTask) resolvedTask.getcTask()).getProcessableBitstreams(context, item);
                 for (Bitstream currentBitstream : bitstreams) {
-                    BitStoreService bitStoreService =
-                            ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
-                                                                                .get(currentBitstream.getStoreNumber());
-
-                    String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
+                    String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
                     String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
                     scheduledCurationTasks.add(new ScheduledCurationTask(currentBitstream.getID(),
                                                                         bucketName, path.substring(1), task));
@@ -204,6 +200,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             transferManager.shutdownNow(false);
         }
         return curationProcess;
+    }
+
+    private String getBucketNameOfCurrentBitstream(Bitstream currentBitstream) {
+        BitStoreService bitStoreService =
+                ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                       .get(currentBitstream.getStoreNumber());
+        String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
+        return bucketName;
     }
 
     private String getBucketNameOutput() {
