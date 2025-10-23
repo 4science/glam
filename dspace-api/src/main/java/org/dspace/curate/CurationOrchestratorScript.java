@@ -235,7 +235,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 log.info("Creating temporary directory: {}", tempDirectory);
                 tempDir.mkdirs();
             }
-            tempFile = File.createTempFile(curationProcess.process(), ".json", tempDir);
+            var fileName = curationProcess.process() + "-" + curationProcess.id();
+            tempFile = File.createTempFile(fileName, ".json", tempDir);
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
             var directory = getUploadCustomerFolder() + "/" + curationProcess.id() + "/";
