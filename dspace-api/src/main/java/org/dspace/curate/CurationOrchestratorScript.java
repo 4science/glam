@@ -18,6 +18,9 @@ import java.util.UUID;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.transfer.MultipleFileUpload;
+import com.amazonaws.services.s3.transfer.Transfer;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
@@ -140,12 +143,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
 
         AmazonS3 amazonS3 = s3Client(this.configurationService);
-        TransferManager transferManager = TransferManagerBuilder.standard()
-                                                                .withS3Client(amazonS3)
-                                                                .build();
 
         // FASE 1: upload curation task JSON to S3
-        ScheduledProcess scheduledProcess = schedulProcess(item$.get(), amazonS3, transferManager);
+        ScheduledProcess scheduledProcess = schedulProcess(item$.get(), amazonS3);
         // FASE 2: check for status files in S3
         this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
@@ -170,7 +170,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess schedulProcess(Item item, AmazonS3 amazonS3, TransferManager transferManager)
+    private ScheduledProcess schedulProcess(Item item, AmazonS3 amazonS3)
              throws SQLException, IOException, InterruptedException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
@@ -193,11 +193,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                                 getBucketNameOutput(), scheduledCurationTasks);
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
+        TransferManager transferManager = null;
         try {
+            transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
             log.info("Uploading curation process {} to S3 bucket: {} .", curationProcess.id(), uploadBucket);
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
-            transferManager.shutdownNow(false);
+            if (transferManager != null) {
+                transferManager.shutdownNow(false);
+            }
         }
         return curationProcess;
     }
@@ -227,18 +231,24 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private void uploadFile(ScheduledProcess curationProcess, TransferManager transferManager, String uploadBucket)
             throws IOException, InterruptedException {
-        String tempDirectory = getTempDirectory();
         File tempFile = null;
         try {
-            tempFile = File.createTempFile("curation-task-temp-" + UUID.randomUUID(), ".json", new File(tempDirectory));
+            String tempDirectory = getTempDirectory() + "/" + curationProcess.id() + "/";
+            File tempDir = new File(tempDirectory);
+            if (!tempDir.exists()) {
+                log.info("Creating temporary directory: {}", tempDirectory);
+                tempDir.mkdirs();
+            }
+            tempFile = File.createTempFile(curationProcess.process(), ".json", tempDir);
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
-            var key = getUploadCustomerFolder() + "/" +
-                           curationProcess.id() + "/" + curationProcess.process() + ".json";
-            log.info("Uploading curation process file:{} to S3!", key);
-            Upload upload = transferManager.upload(uploadBucket, key, tempFile);
-            upload.waitForUploadResult();
-            log.info("Curation process file: {} uploaded successfully to S3 bucket!", key);
+            var directory = getUploadCustomerFolder() + "/" + curationProcess.id() + "/";
+            var file = curationProcess.process() + ".json";
+            log.info("Uploading curation process file:{} to S3!", directory + file);
+            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directory, tempDir, true);
+            multipleFileUpload.waitForCompletion();
+            log.info("Curation process upload state: {}", multipleFileUpload.getState());
+            log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
         } finally {
             if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
                 log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
