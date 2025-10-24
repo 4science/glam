@@ -41,10 +41,10 @@ import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.core.Context;
 import org.dspace.curate.AbstractCurationTask;
-import org.dspace.curate.CloudCurationTask;
 import org.dspace.curate.Curator;
 import org.dspace.curate.ScheduledCurationTask;
 import org.dspace.curate.ScheduledProcess;
+import org.dspace.curate.ServerlessCurationTask;
 import org.dspace.curate.dto.StatusJsonDTO;
 import org.dspace.storage.bitstore.BitStoreService;
 import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
@@ -55,7 +55,7 @@ import org.dspace.storage.bitstore.S3BitStoreService;
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
-public class PdfACurationTask extends AbstractCurationTask implements CloudCurationTask {
+public class PdfACurationTask extends AbstractCurationTask implements ServerlessCurationTask {
 
     private static final Logger log = LogManager.getLogger(PdfACurationTask.class);
 
@@ -67,12 +67,12 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
             throws IOException {
         TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
         try {
-            for (ScheduledCurationTask scheduledCurationTask : scheduledProcess.tasks()) {
+            for (ScheduledCurationTask scheduledCurationTask : scheduledProcess.files()) {
                 if (!StringUtils.equals(taskId, scheduledCurationTask.jobType())) {
                     continue;
                 }
 
-                String json = downloadJSON(amazonS3, scheduledCurationTask);
+                String json = downloadJSON(amazonS3, scheduledProcess, scheduledCurationTask);
                 StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
                 if (statusJsonDTO == null) {
                     return CURATE_FAIL;
@@ -142,10 +142,13 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
         return bitstreamFormat != null && StringUtils.equalsIgnoreCase(bitstreamFormat.getMIMEType(),"application/pdf");
     }
 
-    private String downloadJSON(AmazonS3 s3Client, ScheduledCurationTask scheduledTask) {
-        var jsonName = String.format(STATUS_FILE_PATTER_NAME, scheduledTask.uuid(), scheduledTask.jobType());
+    private String downloadJSON(AmazonS3 s3Client, ScheduledProcess scheduledProcess, ScheduledCurationTask sTask) {
         try {
-            S3Object s3Object = s3Client.getObject(getBucketName(), jsonName);
+            var jsonName = String.format(STATUS_FILE_PATTER_NAME, sTask.uuid(), sTask.jobType());
+            var fileKey =  scheduledProcess.process() + "/" + jsonName;
+            var message = "Downloading output JSON file with key: {} from bucket: {} .";
+            log.info(message, fileKey, scheduledProcess.bucketNameOutput());
+            S3Object s3Object = s3Client.getObject(scheduledProcess.bucketNameOutput(), fileKey);
             try (InputStream is = s3Object.getObjectContent()) {
                 return IOUtils.toString(is, Charset.defaultCharset());
             }
@@ -158,7 +161,7 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
     private InputStream downloadPdfA(TransferManager transferManager, String filePath) {
         try {
             Path tempFile = Files.createTempFile("temp-pdf-file", ".pdf");
-
+            log.info("Downloading PDF/A file from S3 path: {} .", filePath);
             Download download = transferManager.download(getBucketName(), filePath, tempFile.toFile());
             download.waitForCompletion();
 
@@ -204,23 +207,50 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
         }
 
         log.info("Creating PDF/A bitstream for item: " + item.getID());
-        Bitstream bitstream = bitstreamService.create(context, pdfaBundle, is);
+        Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
+        Bitstream originalBitstream = getOriginalBitstream(item, dto.getOutputPath());
+        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "originalBitstream", null,
+                                     originalBitstream.getID().toString());
 
-        String fileName = getPDFaName(dto.getOutputPath());
-        if (StringUtils.isBlank(fileName)) {
-            fileName = bitstream.getID().toString() + ".pdf";
-        }
-
+        String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
         log.info("Setting PDF/A bitstream name to: " + fileName + " for item: " + item.getID());
-        bitstream.setName(context, fileName);
-        BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, bitstream);
-        bitstreamService.setFormat(context, bitstream, bitstreamFormat);
-        bitstreamService.update(context, bitstream);
-        return bitstream;
+
+        pdfaBitstream.setName(context, fileName);
+        BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, pdfaBitstream);
+        bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
+        bitstreamService.update(context, pdfaBitstream);
+        return pdfaBitstream;
     }
 
-    private String getPDFaName(String outputPath) {
-        return outputPath.substring(outputPath.lastIndexOf('/') + 1);
+    private String getPDFaName(Bitstream originalBitstream, String outputPath) {
+        String generatedName = getGeneratedName(outputPath);
+        if (originalBitstream == null) {
+            log.error("Cannot find original bitstream for PDF/A! Used generated name: {} ", generatedName);
+            return generatedName;
+        }
+        log.info("Using original bitstream name: {} for PDF/A bitstream! ", originalBitstream.getName());
+        return originalBitstream.getName();
+    }
+
+    private String getGeneratedName(String outputPath) {
+        String generatedName = outputPath.substring(outputPath.lastIndexOf('/') + 1);
+        return generatedName;
+    }
+
+    private  Bitstream getOriginalBitstream(Item item, String outputPath) {
+        String generatedName = getGeneratedName(outputPath);
+        String [] splitedGeneratedName = generatedName.split("_");
+        if (splitedGeneratedName.length < 2) {
+            log.error("Generated name for PDF/A is not in expected format! Used generated name: {} ", generatedName);
+            return null;
+        }
+        return item.getBundles("ORIGINAL")
+                   .get(0)
+                   .getBitstreams()
+                   .stream()
+                   .filter( b -> StringUtils.equals(b.getInternalId(), splitedGeneratedName[0]))
+                   .findFirst()
+                   .orElse(null);
     }
 
     private String getBucketName() {
@@ -240,11 +270,6 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
     @Override
     public int perform(Context ctx, String id) throws IOException {
         return 0;
-    }
-
-    @Override
-    public boolean isCloudCurationTask() {
-        return true;
     }
 
 }

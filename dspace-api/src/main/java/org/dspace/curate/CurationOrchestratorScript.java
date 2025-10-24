@@ -7,6 +7,8 @@
  */
 package org.dspace.curate;
 
+import static org.dspace.curate.Curator.CURATE_FAIL;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -21,6 +23,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.mail.MessagingException;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +34,11 @@ import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
+import org.dspace.core.Email;
+import org.dspace.core.I18nUtil;
 import org.dspace.curate.service.S3FileChecker;
+import org.dspace.eperson.EPerson;
+import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.kernel.ServiceManager;
@@ -69,6 +76,7 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
+    public static final String EMAIL_TEMPLATE = "curation_task_report_template";
     public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
     protected S3FileChecker S3FileChecker;
@@ -128,8 +136,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     @Override
     public void internalRun() throws Exception {
-        this.context = new Context(Context.Mode.READ_ONLY);
+        this.context = new Context();
         this.curator = initCurator();
+        assignCurrentUserInContext();
         log.info("START CurationOrchestrator script for Item:{} ", identifier);
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
 
@@ -141,9 +150,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         AmazonS3 amazonS3 = s3Client(this.configurationService);
 
         // FASE 1: upload curation task JSON to S3
-        ScheduledProcess scheduledProcess = schedulProcess(item$.get(), amazonS3);
+        ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
+        sendEmailToSubmitter(item$.get(), scheduledProcess);
         // FASE 2: check for status files in S3
-        this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
+        this.S3FileChecker.checkFiles(amazonS3, scheduledProcess, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
         launchCurationTasks(item$.get(), amazonS3, scheduledProcess);
         log.info("END CurationOrchestrator script for Item:{} ", identifier);
@@ -152,11 +162,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private void launchCurationTasks(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
             throws IOException {
         for (ResolvedTask resolvedTask : this.resolvedTasks) {
-            if (resolvedTask.getcTask().isCloudCurationTask()) {
-                ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, amazonS3, scheduledProcess);
-            } else {
-                resolvedTask.perform(item);
+            int status = performTask(item, amazonS3, scheduledProcess, resolvedTask);
+            if (status == CURATE_FAIL) {
+                throw new RuntimeException("Failed to process Curation task: " + resolvedTask);
             }
+        }
+    }
+
+    private int performTask(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess, ResolvedTask resolvedTask)
+             throws IOException {
+        if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
+            return ((ServerlessCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3,scheduledProcess);
+        } else {
+            return resolvedTask.perform(item);
         }
     }
 
@@ -166,19 +184,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess schedulProcess(Item item, AmazonS3 amazonS3)
+    private ScheduledProcess scheduleProcess(Item item, AmazonS3 amazonS3)
              throws SQLException, IOException, InterruptedException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask().isCloudCurationTask()) {
-                List<Bitstream> bitstreams =
-                                  ((CloudCurationTask) resolvedTask.getcTask()).getProcessableBitstreams(context, item);
+            if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
+                List<Bitstream> bitstreams = ((ServerlessCurationTask) resolvedTask.getcTask())
+                                                                              .getProcessableBitstreams(context, item);
                 for (Bitstream currentBitstream : bitstreams) {
+                    String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
-                    String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
                     scheduledCurationTasks.add(new ScheduledCurationTask(currentBitstream.getID(),
-                                                                        bucketName, path.substring(1), task));
+                                               bucketName, path, task));
 
                     String statusFileName = String.format(STATUS_FILE_PATTER_NAME, currentBitstream.getID(), task);
                     cloudCurationTasksToCheck.add(statusFileName);
@@ -192,7 +210,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         TransferManager transferManager = null;
         try {
             transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
-            log.info("Uploading curation process {} to S3 bucket: {} .", curationProcess.id(), uploadBucket);
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             if (transferManager != null) {
@@ -202,12 +219,18 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curationProcess;
     }
 
+    private String getPathOfCurrentBitstream(Bitstream currentBitstream) {
+        BitStoreService bitStoreService =
+                         ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
+        return ((S3BitStoreService) bitStoreService).getRelativePath(currentBitstream.getInternalId());
+    }
+
     private String getBucketNameOfCurrentBitstream(Bitstream currentBitstream) {
         BitStoreService bitStoreService =
-                ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
-                                                                       .get(currentBitstream.getStoreNumber());
-        String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
-        return bucketName;
+                         ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
+        return ((S3BitStoreService) bitStoreService).getBucketName();
     }
 
     private String getBucketNameOutput() {
@@ -215,7 +238,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String getCustomerId() {
-        return configurationService.getProperty("customer-id", "customer-id");
+        return configurationService.getProperty("curation.s3.customer-id");
     }
 
     private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
@@ -229,20 +252,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             throws IOException, InterruptedException {
         File tempFile = null;
         try {
-            String tempDirectory = getTempDirectory() + "/" + curationProcess.id() + "/";
-            File tempDir = new File(tempDirectory);
-            if (!tempDir.exists()) {
-                log.info("Creating temporary directory: {}", tempDirectory);
-                tempDir.mkdirs();
-            }
-            var fileName = curationProcess.process() + "-" + curationProcess.id();
-            tempFile = File.createTempFile(fileName, ".json", tempDir);
+            File tempDir = getTempDir(curationProcess);
+            var prefixTempFile = curationProcess.id() + "-" + curationProcess.process() + "-";
+            tempFile = File.createTempFile(prefixTempFile, ".json", tempDir);
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
-            var directory = getUploadCustomerFolder() + "/" + curationProcess.id() + "/";
-            var file = curationProcess.process() + ".json";
-            log.info("Uploading curation process file:{} to S3!", directory + file);
-            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directory, tempDir, true);
+
+            var directoryOnS3 = curationProcess.id() + "/";
+            log.info("Uploading curation JSON with key:{} to S3!", directoryOnS3 + tempFile.getName());
+            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directoryOnS3, tempDir, true);
             multipleFileUpload.waitForCompletion();
             log.info("Curation process upload state: {}", multipleFileUpload.getState());
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
@@ -254,13 +272,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
+    private File getTempDir(ScheduledProcess curationProcess) {
+        String tempDirectory = getTempDirectory() + "/" + curationProcess.id() + "/";
+        File tempDir = new File(tempDirectory);
+        if (!tempDir.exists()) {
+            log.info("Creating temporary directory: {} .", tempDirectory);
+            tempDir.mkdirs();
+        }
+        return tempDir;
+    }
+
     private String getTempDirectory() {
         return configurationService.hasProperty("upload.temp.dir")
                ? configurationService.getProperty("upload.temp.dir") : System.getProperty("java.io.tmpdir");
-    }
-
-    private String getUploadCustomerFolder() {
-        return configurationService.getProperty("curation.s3.upload.customer.folder");
     }
 
     private String getProcessId() {
@@ -304,6 +328,51 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private String getUploadBucket() {
         return this.configurationService.getProperty("curation.s3.bucketName-input");
+    }
+
+    private void sendEmailToSubmitter(Item item, ScheduledProcess scheduledProcess) {
+        if (!isSendingReportEnabled()) {
+            return;
+        }
+        String recipient = item.getSubmitter().getEmail();
+        if (StringUtils.isBlank(recipient)) {
+            handler.logError("No mail address found for the submitter: " + item.getSubmitter().getID());
+            return;
+        }
+
+        try {
+            Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), EMAIL_TEMPLATE));
+            email.addRecipient(recipient);
+
+            // Create list of tasks with their status and links
+            List<String> taskList = new ArrayList<>();
+            for (ScheduledCurationTask scheduledProces : scheduledProcess.files()) {
+                String taskInfo = scheduledProces.jobType() + " : RUNNING";
+                taskList.add(taskInfo);
+            }
+
+            email.addArgument(taskList);
+
+            var baseUrl = configurationService.getProperty("dspace.ui.url");
+            var processLink = baseUrl + "/process/" + scheduledProcess.process();
+            email.addArgument(processLink);
+
+            email.send();
+        } catch (IOException | MessagingException e) {
+            handler.logError("Error sending curation report email to: " + recipient, e);
+        }
+    }
+
+    private boolean isSendingReportEnabled() {
+        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
+    }
+
+    private void assignCurrentUserInContext() throws SQLException {
+        UUID uuid = getEpersonIdentifier();
+        if (uuid != null) {
+            EPerson ePerson = EPersonServiceFactory.getInstance().getEPersonService().find(context, uuid);
+            context.setCurrentUser(ePerson);
+        }
     }
 
     @Override

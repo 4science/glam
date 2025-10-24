@@ -19,7 +19,7 @@ import org.dspace.core.Context;
 /**
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  **/
-public interface CloudCurationTask extends CurationTask {
+public interface ServerlessCurationTask extends CurationTask {
 
     int perform(Context ctx, Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess) throws IOException;
 
