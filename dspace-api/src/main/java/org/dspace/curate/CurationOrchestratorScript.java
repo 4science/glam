@@ -192,7 +192,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         TransferManager transferManager = null;
         try {
             transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
-            log.info("Uploading curation process {} to S3 bucket: {} .", curationProcess.id(), uploadBucket);
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             if (transferManager != null) {
