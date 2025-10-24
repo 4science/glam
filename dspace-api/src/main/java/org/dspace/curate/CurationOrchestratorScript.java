@@ -172,13 +172,13 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
             if (resolvedTask.getcTask().isCloudCurationTask()) {
-                List<Bitstream> bitstreams =
-                                  ((CloudCurationTask) resolvedTask.getcTask()).getProcessableBitstreams(context, item);
+                List<Bitstream> bitstreams = ((CloudCurationTask) resolvedTask.getcTask())
+                                                                              .getProcessableBitstreams(context, item);
                 for (Bitstream currentBitstream : bitstreams) {
+                    String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
-                    String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
                     scheduledCurationTasks.add(new ScheduledCurationTask(currentBitstream.getID(),
-                                               bucketName, path.substring(1), task));
+                                               bucketName, path, task));
 
                     String statusFileName = String.format(STATUS_FILE_PATTER_NAME, currentBitstream.getID(), task);
                     cloudCurationTasksToCheck.add(statusFileName);
@@ -202,12 +202,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curationProcess;
     }
 
+    private String getPathOfCurrentBitstream(Bitstream currentBitstream) {
+        BitStoreService bitStoreService =
+                         ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
+        String relativePath = ((S3BitStoreService) bitStoreService).getRelativePath(currentBitstream.getInternalId());
+        return StringUtils.isNotBlank(relativePath) ? relativePath.substring(1) : relativePath;
+    }
+
     private String getBucketNameOfCurrentBitstream(Bitstream currentBitstream) {
         BitStoreService bitStoreService =
-                ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
-                                                                       .get(currentBitstream.getStoreNumber());
-        String bucketName = ((S3BitStoreService) bitStoreService).getBucketName();
-        return bucketName;
+                         ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                .get(currentBitstream.getStoreNumber());
+        return ((S3BitStoreService) bitStoreService).getBucketName();
     }
 
     private String getBucketNameOutput() {
