@@ -208,7 +208,7 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
     public void testSearchDuplicatesWithReservedSolrCharacters() throws Exception {
 
 
-
+        context.turnOffAuthorisationSystem();
         Item item4 = ItemBuilder.createItem(context, col)
                 .withTitle("Testing: An Important Development Step")
                 .withIssueDate(item1IssueDate)
@@ -221,6 +221,7 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
                 .withAuthor("Smith, Donald X.")
                 .withSubject("ExtraEntry 2")
                 .build();
+        context.restoreAuthSystemState();
 
         // Get potential duplicates of item 4 and make sure no exceptions are thrown
         List<PotentialDuplicate> potentialDuplicates = new ArrayList<>();
@@ -252,6 +253,8 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
     @Test
     public void testSearchDuplicatesWithVeryLongTitle() throws Exception {
 
+        context.turnOffAuthorisationSystem();
+    
         Item item6 = ItemBuilder.createItem(context, col)
                 .withTitle("Testing: This title is over 200 characters long and should behave just the same as a " +
                         "shorter title, with or without reserved characters. This integration test will prove that " +
@@ -269,6 +272,8 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
                 .withAuthor("Smith, Donald X.")
                 .withSubject("ExtraEntry 2")
                 .build();
+
+        context.restoreAuthSystemState();
 
         // Get potential duplicates of item 4 and make sure no exceptions are thrown
         List<PotentialDuplicate> potentialDuplicates = new ArrayList<>();
@@ -301,6 +306,8 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
         // Set distance to 0 manually
         configurationService.setProperty("duplicate.comparison.distance", 0);
 
+        context.turnOffAuthorisationSystem();
+
         Item item8 = ItemBuilder.createItem(context, col)
                 .withTitle("This integration test will prove that the edit distance of 0 results in an exact match")
                 .withIssueDate(item1IssueDate)
@@ -321,7 +328,7 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
                 .withAuthor("Smith, Donald X.")
                 .withSubject("ExtraEntry")
                 .build();
-
+        context.restoreAuthSystemState();
         // Get potential duplicates of item 4 and make sure no exceptions are thrown
         List<PotentialDuplicate> potentialDuplicates = new ArrayList<>();
         try {
@@ -385,6 +392,8 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
         configurationService.setProperty("duplicate.comparison.metadata.field",
                 new String[]{"dc.title", "dc.contributor.author"});
 
+        context.turnOffAuthorisationSystem();
+
         Item item10 = ItemBuilder.createItem(context, col)
                 .withTitle("Compare both title and author")
                 .withIssueDate(item1IssueDate)
@@ -404,6 +413,8 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
                 .withAuthor("Lastname, First.")
                 .withSubject("ExtraEntry 2")
                 .build();
+
+        context.restoreAuthSystemState();
 
         // Get potential duplicates of item 10 and make sure no exceptions are thrown
         List<PotentialDuplicate> potentialDuplicates = new ArrayList<>();
