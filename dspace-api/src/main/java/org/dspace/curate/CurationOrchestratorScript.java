@@ -141,9 +141,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         AmazonS3 amazonS3 = s3Client(this.configurationService);
 
         // FASE 1: upload curation task JSON to S3
-        ScheduledProcess scheduledProcess = schedulProcess(item$.get(), amazonS3);
+        ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
         // FASE 2: check for status files in S3
-        this.S3FileChecker.checkFiles(amazonS3, this.cloudCurationTasksToCheck);
+        this.S3FileChecker.checkFiles(amazonS3, scheduledProcess, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
         launchCurationTasks(item$.get(), amazonS3, scheduledProcess);
         log.info("END CurationOrchestrator script for Item:{} ", identifier);
@@ -152,7 +152,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private void launchCurationTasks(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
             throws IOException {
         for (ResolvedTask resolvedTask : this.resolvedTasks) {
-            if (resolvedTask.getcTask().isCloudCurationTask()) {
+            if (resolvedTask.getcTask() instanceof CloudCurationTask) {
                 ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, amazonS3, scheduledProcess);
             } else {
                 resolvedTask.perform(item);
@@ -166,12 +166,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess schedulProcess(Item item, AmazonS3 amazonS3)
+    private ScheduledProcess scheduleProcess(Item item, AmazonS3 amazonS3)
              throws SQLException, IOException, InterruptedException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask().isCloudCurationTask()) {
+            if (resolvedTask.getcTask() instanceof CloudCurationTask) {
                 List<Bitstream> bitstreams = ((CloudCurationTask) resolvedTask.getcTask())
                                                                               .getProcessableBitstreams(context, item);
                 for (Bitstream currentBitstream : bitstreams) {

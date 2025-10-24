@@ -49,8 +49,4 @@ public interface CurationTask {
      */
     int perform(Context ctx, String id) throws IOException;
 
-    default boolean isCloudCurationTask() {
-        return false;
-    }
-
 }

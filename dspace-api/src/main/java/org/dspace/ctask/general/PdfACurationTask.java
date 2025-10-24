@@ -72,7 +72,7 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
                     continue;
                 }
 
-                String json = downloadJSON(amazonS3, scheduledCurationTask);
+                String json = downloadJSON(amazonS3, scheduledProcess, scheduledCurationTask);
                 StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
                 if (statusJsonDTO == null) {
                     return CURATE_FAIL;
@@ -142,10 +142,13 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
         return bitstreamFormat != null && StringUtils.equalsIgnoreCase(bitstreamFormat.getMIMEType(),"application/pdf");
     }
 
-    private String downloadJSON(AmazonS3 s3Client, ScheduledCurationTask scheduledTask) {
-        var jsonName = String.format(STATUS_FILE_PATTER_NAME, scheduledTask.uuid(), scheduledTask.jobType());
+    private String downloadJSON(AmazonS3 s3Client, ScheduledProcess scheduledProcess, ScheduledCurationTask sTask) {
         try {
-            S3Object s3Object = s3Client.getObject(getBucketName(), jsonName);
+            var jsonName = String.format(STATUS_FILE_PATTER_NAME, sTask.uuid(), sTask.jobType());
+            var fileKey =  scheduledProcess.process() + "/" + jsonName;
+            var message = "Downloading output JSON file with key: {} from bucket: {} .";
+            log.info(message, fileKey, scheduledProcess.bucketNameOutput());
+            S3Object s3Object = s3Client.getObject(scheduledProcess.bucketNameOutput(), fileKey);
             try (InputStream is = s3Object.getObjectContent()) {
                 return IOUtils.toString(is, Charset.defaultCharset());
             }
@@ -158,7 +161,9 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
     private InputStream downloadPdfA(TransferManager transferManager, String filePath) {
         try {
             Path tempFile = Files.createTempFile("temp-pdf-file", ".pdf");
-
+            filePath = filePath.contains("s3://") ? filePath.substring(filePath.indexOf("results/"))
+                                                  : filePath;
+            log.info("Downloading PDF/A file from S3 path: {} .", filePath);
             Download download = transferManager.download(getBucketName(), filePath, tempFile.toFile());
             download.waitForCompletion();
 
@@ -240,11 +245,6 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
     @Override
     public int perform(Context ctx, String id) throws IOException {
         return 0;
-    }
-
-    @Override
-    public boolean isCloudCurationTask() {
-        return true;
     }
 
 }

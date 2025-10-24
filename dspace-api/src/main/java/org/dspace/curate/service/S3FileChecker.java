@@ -18,6 +18,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.curate.FilesNotFoundAfterRetriesException;
+import org.dspace.curate.ScheduledProcess;
 import org.dspace.services.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -38,7 +39,7 @@ public class S3FileChecker {
     @Autowired
     private ConfigurationService configurationService;
 
-    public void checkFiles(AmazonS3 s3Client, List<String> filesToCheck)
+    public void checkFiles(AmazonS3 s3Client, ScheduledProcess scheduledProcess, List<String> filesToCheck)
             throws InterruptedException, FilesNotFoundAfterRetriesException {
 
         if (CollectionUtils.isEmpty(filesToCheck)) {
@@ -47,29 +48,29 @@ public class S3FileChecker {
 
         var bucketName = getOutPutBucketName();
         int attempt = 0;
+        sleep(attempt);
         while (!filesToCheck.isEmpty() && attempt < this.maxAttempts) {
             attempt++;
-            log.info(String.format("Attempt %d/%d - Files remaining to be checked: %d",
-                                   attempt, maxAttempts, filesToCheck.size()));
+            log.info("Attempt {}/{} - Files remaining to be checked: {}", attempt, maxAttempts, filesToCheck.size());
 
             // Scroll through the list and remove the files found.
             Iterator<String> iterator = filesToCheck.iterator();
             int filesFoundInThisAttempt = 0;
 
             while (iterator.hasNext()) {
-                String fileKey = iterator.next();
+                String fileName = iterator.next();
                 try {
+                    String fileKey = scheduledProcess.id() + "/" + fileName;
+                    log.info("Checking for key: {} , into bucket: {} ", fileKey, bucketName);
                     if (s3Client.doesObjectExist(bucketName, fileKey)) {
                         log.info("File found: %s", fileKey);
                         iterator.remove();
                         filesFoundInThisAttempt++;
                     }
                 } catch (AmazonServiceException e) {
-                    var error = String.format("S3 error while checking file: '%s': %s", fileKey,e.getErrorMessage());
-                    log.error(error);
+                    log.error("S3 error while checking file: {} : , {} ", fileName, e.getErrorMessage());
                 } catch (SdkClientException e) {
-                    var error = String.format("SDK client error while checking file '%s': %s", fileKey, e.getMessage());
-                    log.error(error);
+                    log.error("SDK client error while checking file: {} , {}", fileName, e.getMessage());
                 }
             }
             log.info(String.format("Files found in this attempt: %d", filesFoundInThisAttempt));
@@ -81,19 +82,23 @@ public class S3FileChecker {
 
             // If this is not your last attempt, wait until the next cycle.
             if (attempt < this.maxAttempts) {
-                long sleepTime = calculateSleepTime(attempt);
-                var delayTime = delayTimeUnit.toString().toLowerCase();
-                log.info(String.format("Wait %d %s before the next attempt...", sleepTime, delayTime));
-                try {
-                    delayTimeUnit.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new InterruptedException("Thread interrupted while waiting between attempts");
-                }
+                sleep(attempt);
             }
         }
 
         throw new FilesNotFoundAfterRetriesException(filesToCheck, attempt);
+    }
+
+    private void sleep(int attempt) throws InterruptedException {
+        long sleepTime = calculateSleepTime(attempt);
+        var delayTime = delayTimeUnit.toString().toLowerCase();
+        log.info("Wait {} {} before the next attempt.", sleepTime, delayTime);
+        try {
+            delayTimeUnit.sleep(sleepTime);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedException("Thread interrupted while waiting between attempts");
+        }
     }
 
     private String getOutPutBucketName() {
