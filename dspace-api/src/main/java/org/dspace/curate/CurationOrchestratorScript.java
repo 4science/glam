@@ -206,8 +206,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         BitStoreService bitStoreService =
                          ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
                                                                                 .get(currentBitstream.getStoreNumber());
-        String relativePath = ((S3BitStoreService) bitStoreService).getRelativePath(currentBitstream.getInternalId());
-        return StringUtils.isNotBlank(relativePath) ? relativePath.substring(1) : relativePath;
+        return ((S3BitStoreService) bitStoreService).getRelativePath(currentBitstream.getInternalId());
     }
 
     private String getBucketNameOfCurrentBitstream(Bitstream currentBitstream) {
