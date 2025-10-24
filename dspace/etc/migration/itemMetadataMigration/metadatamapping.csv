@@ -4,7 +4,7 @@ dc.relation.conference,dc.relation.event,AudioVideo
 dc.coverage.spatialabbreviation,dc.coverage.spatialpvcn,AudioVideo
 dc.relation,dc.relation.project,"AudioVideo, ArchivalMaterial, Publication, MusicalLibrettos"
 dc.subject,glam.subject,"Artwork, Coin, Picture"
-dc.accessRights,dcTerms.accessRights, ArchivalMaterial
+dc.accessRights,dcterms.accessRights, ArchivalMaterial
 dc.relation.url,dc.relation.otherlinks,"Artwork, Coin, ScientificMaterial"
 dc.source.content,dc.description.abstract,ArchivalMaterial
 dc.relation.bibliographytitle,glam.bibliography,"ArchivalMaterial, Picture, ScientificMaterial"
