@@ -178,7 +178,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
                     String path = this.bitstreamStorageService.absolutePath(context, currentBitstream);
                     scheduledCurationTasks.add(new ScheduledCurationTask(currentBitstream.getID(),
-                                                                        bucketName, path.substring(1), task));
+                                               bucketName, path.substring(1), task));
 
                     String statusFileName = String.format(STATUS_FILE_PATTER_NAME, currentBitstream.getID(), task);
                     cloudCurationTasksToCheck.add(statusFileName);
@@ -215,7 +215,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String getCustomerId() {
-        return configurationService.getProperty("customer-id", "customer-id");
+        return configurationService.getProperty("curation.s3.customer-id");
     }
 
     private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
@@ -229,20 +229,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             throws IOException, InterruptedException {
         File tempFile = null;
         try {
-            String tempDirectory = getTempDirectory() + "/" + curationProcess.id() + "/";
-            File tempDir = new File(tempDirectory);
-            if (!tempDir.exists()) {
-                log.info("Creating temporary directory: {}", tempDirectory);
-                tempDir.mkdirs();
-            }
-            var fileName = curationProcess.process() + "-" + curationProcess.id();
-            tempFile = File.createTempFile(fileName, ".json", tempDir);
+            File tempDir = getTempDir(curationProcess);
+            var prefixTempFile = curationProcess.id() + "-" + curationProcess.process() + "-";
+            tempFile = File.createTempFile(prefixTempFile, ".json", tempDir);
             tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
-            var directory = getUploadCustomerFolder() + "/" + curationProcess.id() + "/";
-            var file = curationProcess.process() + ".json";
-            log.info("Uploading curation process file:{} to S3!", directory + file);
-            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directory, tempDir, true);
+
+            var directoryOnS3 = curationProcess.id() + "/";
+            log.info("Uploading curation JSON with key:{} to S3!", directoryOnS3 + tempFile.getName());
+            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directoryOnS3, tempDir, true);
             multipleFileUpload.waitForCompletion();
             log.info("Curation process upload state: {}", multipleFileUpload.getState());
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
@@ -254,13 +249,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
+    private File getTempDir(ScheduledProcess curationProcess) {
+        String tempDirectory = getTempDirectory() + "/" + curationProcess.id() + "/";
+        File tempDir = new File(tempDirectory);
+        if (!tempDir.exists()) {
+            log.info("Creating temporary directory: {} .", tempDirectory);
+            tempDir.mkdirs();
+        }
+        return tempDir;
+    }
+
     private String getTempDirectory() {
         return configurationService.hasProperty("upload.temp.dir")
                ? configurationService.getProperty("upload.temp.dir") : System.getProperty("java.io.tmpdir");
-    }
-
-    private String getUploadCustomerFolder() {
-        return configurationService.getProperty("curation.s3.upload.customer.folder");
     }
 
     private String getProcessId() {

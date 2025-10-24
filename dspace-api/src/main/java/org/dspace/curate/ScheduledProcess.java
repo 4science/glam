@@ -17,6 +17,6 @@ public record ScheduledProcess(
     String id,
     String process,
     String bucketNameOutput,
-    List<ScheduledCurationTask> tasks
+    List<ScheduledCurationTask> files
 ) {
 }

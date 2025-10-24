@@ -67,7 +67,7 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
             throws IOException {
         TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
         try {
-            for (ScheduledCurationTask scheduledCurationTask : scheduledProcess.tasks()) {
+            for (ScheduledCurationTask scheduledCurationTask : scheduledProcess.files()) {
                 if (!StringUtils.equals(taskId, scheduledCurationTask.jobType())) {
                     continue;
                 }
