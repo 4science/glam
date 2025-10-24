@@ -9800,8 +9800,8 @@
     </value-pairs>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
-        <displayed-value>Crea PDF/A</displayed-value>
-        <stored-value>pdfacreate</stored-value>
+        <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>
