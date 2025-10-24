@@ -254,7 +254,6 @@ public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
     public void testSearchDuplicatesWithVeryLongTitle() throws Exception {
 
         context.turnOffAuthorisationSystem();
-    
         Item item6 = ItemBuilder.createItem(context, col)
                 .withTitle("Testing: This title is over 200 characters long and should behave just the same as a " +
                         "shorter title, with or without reserved characters. This integration test will prove that " +
