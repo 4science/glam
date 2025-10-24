@@ -31,7 +31,6 @@ import org.dspace.discovery.SearchServiceException;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.xmlworkflow.storedcomponents.XmlWorkflowItem;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -40,7 +39,7 @@ import org.junit.Test;
  *
  * @author Kim Shepherd
  */
-public class DuplicateDetectionTest extends AbstractIntegrationTestWithDatabase {
+public class DuplicateDetectionIT extends AbstractIntegrationTestWithDatabase {
     private DuplicateDetectionService duplicateDetectionService = ContentServiceFactory.getInstance()
             .getDuplicateDetectionService();
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
@@ -56,7 +55,6 @@ public class DuplicateDetectionTest extends AbstractIntegrationTestWithDatabase 
 
     private static final Logger log = LogManager.getLogger();
 
-    @Before
     public void setUp() throws Exception {
         super.setUp();
         // Temporarily enable duplicate detection and set comparison distance to 1
@@ -100,7 +98,7 @@ public class DuplicateDetectionTest extends AbstractIntegrationTestWithDatabase 
                 .withAuthor("Smith, Donald Y.")
                 .withSubject("ExtraEntry 3")
                 .build();
-
+        context.restoreAuthSystemState();
 
     }
 
