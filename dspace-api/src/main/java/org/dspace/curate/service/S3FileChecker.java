@@ -60,7 +60,7 @@ public class S3FileChecker {
             while (iterator.hasNext()) {
                 String fileName = iterator.next();
                 try {
-                    String fileKey = scheduledProcess.id() + "/" + fileName;
+                    String fileKey = scheduledProcess.process() + "/" + fileName;
                     log.info("Checking for key: {} , into bucket: {} ", fileKey, bucketName);
                     if (s3Client.doesObjectExist(bucketName, fileKey)) {
                         log.info("File found: %s", fileKey);
