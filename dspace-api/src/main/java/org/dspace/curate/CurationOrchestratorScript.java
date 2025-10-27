@@ -7,6 +7,8 @@
  */
 package org.dspace.curate;
 
+import static org.dspace.curate.Curator.CURATE_FAIL;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -32,6 +34,8 @@ import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.curate.service.S3FileChecker;
+import org.dspace.eperson.EPerson;
+import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.kernel.ServiceManager;
@@ -130,6 +134,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     public void internalRun() throws Exception {
         this.context = new Context(Context.Mode.READ_ONLY);
         this.curator = initCurator();
+        assignCurrentUserInContext();
         log.info("START CurationOrchestrator script for Item:{} ", identifier);
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
 
@@ -152,11 +157,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private void launchCurationTasks(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
             throws IOException {
         for (ResolvedTask resolvedTask : this.resolvedTasks) {
-            if (resolvedTask.getcTask() instanceof CloudCurationTask) {
-                ((CloudCurationTask) resolvedTask.getcTask()).perform(this.context, item, amazonS3, scheduledProcess);
-            } else {
-                resolvedTask.perform(item);
+            int status = performTask(item, amazonS3, scheduledProcess, resolvedTask);
+            if (status == CURATE_FAIL) {
+                throw new RuntimeException("Failed to process Curation task: " + resolvedTask);
             }
+        }
+    }
+
+    private int performTask(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess, ResolvedTask resolvedTask)
+             throws IOException {
+        if (resolvedTask.getcTask() instanceof CloudCurationTask) {
+            return ((CloudCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3, scheduledProcess);
+        } else {
+            return resolvedTask.perform(item);
         }
     }
 
@@ -310,6 +323,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private String getUploadBucket() {
         return this.configurationService.getProperty("curation.s3.bucketName-input");
+    }
+
+    private void assignCurrentUserInContext() throws SQLException {
+        UUID uuid = getEpersonIdentifier();
+        if (uuid != null) {
+            EPerson ePerson = EPersonServiceFactory.getInstance().getEPersonService().find(context, uuid);
+            context.setCurrentUser(ePerson);
+        }
     }
 
     @Override
