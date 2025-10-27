@@ -132,7 +132,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     @Override
     public void internalRun() throws Exception {
-        this.context = new Context(Context.Mode.READ_ONLY);
+        this.context = new Context();
         this.curator = initCurator();
         assignCurrentUserInContext();
         log.info("START CurationOrchestrator script for Item:{} ", identifier);
