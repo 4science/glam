@@ -23,8 +23,9 @@ ENV DATA_FOLDER=/data \
     UPLOAD_DIR=/dspace/upload \
     VAR_DIR=/dspace/var \
     OAI_DIR=/dspace/var/oai \
-    CUSTOMER_DIR=/dspace/customer \
-    CUSTOMER_SPRING_DIR=/dspace/customer/spring
+    CUSTOMER_DIR=/data/config \
+    CUSTOMER_CFG=config/local-customer.cfg \
+    CUSTOMER_SPRING_DIR=/data/config/spring
 
 RUN useradd -m -d /home/dspace -s /bin/bash dspace
 
