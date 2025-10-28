@@ -23,6 +23,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.mail.MessagingException;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -33,6 +34,8 @@ import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
+import org.dspace.core.Email;
+import org.dspace.core.I18nUtil;
 import org.dspace.curate.service.S3FileChecker;
 import org.dspace.eperson.EPerson;
 import org.dspace.eperson.factory.EPersonServiceFactory;
@@ -73,6 +76,7 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
+    public static final String EMAIL_TEMPLATE = "curation_task_report_template";
     public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
     protected S3FileChecker S3FileChecker;
@@ -147,6 +151,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
         // FASE 1: upload curation task JSON to S3
         ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
+        sendEmailToSubmitter(item$.get(), scheduledProcess);
         // FASE 2: check for status files in S3
         this.S3FileChecker.checkFiles(amazonS3, scheduledProcess, this.cloudCurationTasksToCheck);
         // FASE 3: launch curation tasks
@@ -167,7 +172,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private int performTask(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess, ResolvedTask resolvedTask)
              throws IOException {
         if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
-            return ((ServerlessCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3, scheduledProcess);
+            return ((ServerlessCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3,scheduledProcess);
         } else {
             return resolvedTask.perform(item);
         }
@@ -323,6 +328,43 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private String getUploadBucket() {
         return this.configurationService.getProperty("curation.s3.bucketName-input");
+    }
+
+    private void sendEmailToSubmitter(Item item, ScheduledProcess scheduledProcess) {
+        if (!isSendingReportEnabled()) {
+            return;
+        }
+        String recipient = item.getSubmitter().getEmail();
+        if (StringUtils.isBlank(recipient)) {
+            handler.logError("No mail address found for the submitter: " + item.getSubmitter().getID());
+            return;
+        }
+
+        try {
+            Email email = Email.getEmail(I18nUtil.getEmailFilename(context.getCurrentLocale(), EMAIL_TEMPLATE));
+            email.addRecipient(recipient);
+
+            // Create list of tasks with their status and links
+            List<String> taskList = new ArrayList<>();
+            for (ScheduledCurationTask scheduledProces : scheduledProcess.files()) {
+                String taskInfo = scheduledProces.jobType() + " : RUNNING";
+                taskList.add(taskInfo);
+            }
+
+            email.addArgument(taskList);
+
+            var baseUrl = configurationService.getProperty("dspace.ui.url");
+            var processLink = baseUrl + "/process/" + scheduledProcess.process();
+            email.addArgument(processLink);
+
+            email.send();
+        } catch (IOException | MessagingException e) {
+            handler.logError("Error sending curation report email to: " + recipient, e);
+        }
+    }
+
+    private boolean isSendingReportEnabled() {
+        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
     }
 
     private void assignCurrentUserInContext() throws SQLException {
