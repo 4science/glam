@@ -41,7 +41,7 @@ import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.core.Context;
 import org.dspace.curate.AbstractCurationTask;
-import org.dspace.curate.CloudCurationTask;
+import org.dspace.curate.ServerlessCurationTask;
 import org.dspace.curate.Curator;
 import org.dspace.curate.ScheduledCurationTask;
 import org.dspace.curate.ScheduledProcess;
@@ -55,7 +55,7 @@ import org.dspace.storage.bitstore.S3BitStoreService;
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
-public class PdfACurationTask extends AbstractCurationTask implements CloudCurationTask {
+public class PdfACurationTask extends AbstractCurationTask implements ServerlessCurationTask {
 
     private static final Logger log = LogManager.getLogger(PdfACurationTask.class);
 
@@ -161,8 +161,6 @@ public class PdfACurationTask extends AbstractCurationTask implements CloudCurat
     private InputStream downloadPdfA(TransferManager transferManager, String filePath) {
         try {
             Path tempFile = Files.createTempFile("temp-pdf-file", ".pdf");
-            filePath = filePath.contains("s3://") ? filePath.substring(filePath.indexOf("results/"))
-                                                  : filePath;
             log.info("Downloading PDF/A file from S3 path: {} .", filePath);
             Download download = transferManager.download(getBucketName(), filePath, tempFile.toFile());
             download.waitForCompletion();

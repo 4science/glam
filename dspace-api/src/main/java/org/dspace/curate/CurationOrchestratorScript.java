@@ -166,8 +166,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private int performTask(Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess, ResolvedTask resolvedTask)
              throws IOException {
-        if (resolvedTask.getcTask() instanceof CloudCurationTask) {
-            return ((CloudCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3, scheduledProcess);
+        if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
+            return ((ServerlessCurationTask) resolvedTask.getcTask()).perform(context, item, amazonS3, scheduledProcess);
         } else {
             return resolvedTask.perform(item);
         }
@@ -184,8 +184,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask() instanceof CloudCurationTask) {
-                List<Bitstream> bitstreams = ((CloudCurationTask) resolvedTask.getcTask())
+            if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
+                List<Bitstream> bitstreams = ((ServerlessCurationTask) resolvedTask.getcTask())
                                                                               .getProcessableBitstreams(context, item);
                 for (Bitstream currentBitstream : bitstreams) {
                     String path = getPathOfCurrentBitstream(currentBitstream);
