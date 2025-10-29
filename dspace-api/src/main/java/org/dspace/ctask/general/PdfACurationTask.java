@@ -209,7 +209,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         log.info("Creating PDF/A bitstream for item: " + item.getID());
         Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
         Bitstream originalBitstream = getOriginalBitstream(item, dto.getOutputPath());
-        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "relation", null,
+        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "originalBitstream", null,
                                      originalBitstream.getID().toString());
 
         String fileName = getPDFaName(originalBitstream, dto.getOutputPath());

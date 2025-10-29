@@ -61,7 +61,7 @@
     <dc-type>
         <schema>bitstream</schema>
         <element>curation</element>
-        <qualifier>relation</qualifier>
+        <qualifier>originalBitstream</qualifier>
     </dc-type>
 
 </dspace-dc-types>
