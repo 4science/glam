@@ -207,23 +207,50 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         }
 
         log.info("Creating PDF/A bitstream for item: " + item.getID());
-        Bitstream bitstream = bitstreamService.create(context, pdfaBundle, is);
+        Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
+        Bitstream originalBitstream = getOriginalBitstream(item, dto.getOutputPath());
+        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "relation", null,
+                                     originalBitstream.getID().toString());
 
-        String fileName = getPDFaName(dto.getOutputPath());
-        if (StringUtils.isBlank(fileName)) {
-            fileName = bitstream.getID().toString() + ".pdf";
-        }
-
+        String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
         log.info("Setting PDF/A bitstream name to: " + fileName + " for item: " + item.getID());
-        bitstream.setName(context, fileName);
-        BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, bitstream);
-        bitstreamService.setFormat(context, bitstream, bitstreamFormat);
-        bitstreamService.update(context, bitstream);
-        return bitstream;
+
+        pdfaBitstream.setName(context, fileName);
+        BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, pdfaBitstream);
+        bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
+        bitstreamService.update(context, pdfaBitstream);
+        return pdfaBitstream;
     }
 
-    private String getPDFaName(String outputPath) {
-        return outputPath.substring(outputPath.lastIndexOf('/') + 1);
+    private String getPDFaName(Bitstream originalBitstream, String outputPath) {
+        String generatedName = getGeneratedName(outputPath);
+        if (originalBitstream == null) {
+            log.error("Cannot find original bitstream for PDF/A! Used generated name: {} ", generatedName);
+            return generatedName;
+        }
+        log.info("Using original bitstream name: {} for PDF/A bitstream! ", originalBitstream.getName());
+        return originalBitstream.getName();
+    }
+
+    private String getGeneratedName(String outputPath) {
+        String generatedName = outputPath.substring(outputPath.lastIndexOf('/') + 1);
+        return generatedName;
+    }
+
+    private  Bitstream getOriginalBitstream(Item item, String outputPath) {
+        String generatedName = getGeneratedName(outputPath);
+        String [] splitedGeneratedName = generatedName.split("_");
+        if (splitedGeneratedName.length < 2) {
+            log.error("Generated name for PDF/A is not in expected format! Used generated name: {} ", generatedName);
+            return null;
+        }
+        return item.getBundles("ORIGINAL")
+                   .get(0)
+                   .getBitstreams()
+                   .stream()
+                   .filter( b -> StringUtils.equals(b.getInternalId(), splitedGeneratedName[0]))
+                   .findFirst()
+                   .orElse(null);
     }
 
     private String getBucketName() {
