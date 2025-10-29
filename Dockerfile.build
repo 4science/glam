@@ -24,7 +24,7 @@ ENV DATA_FOLDER=/data \
     VAR_DIR=/dspace/var \
     OAI_DIR=/dspace/var/oai \
     CUSTOMER_DIR=/data/config \
-    CUSTOMER_CFG=config/local-customer.cfg \
+    CUSTOMER_CFG=conf/local-customer.cfg \
     CUSTOMER_SPRING_DIR=/data/config/spring
 
 RUN useradd -m -d /home/dspace -s /bin/bash dspace
