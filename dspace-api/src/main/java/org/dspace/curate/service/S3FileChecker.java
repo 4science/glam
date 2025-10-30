@@ -87,9 +87,22 @@ public class S3FileChecker {
                         ServerlessCurationTask serverlessTask = getResolvedTask(allResolvedTasks,
                                                                                 scheduledCurationTask);
                         // Launch ExecutorService to process the file just found
-                        CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() ->
-                                executeCurationTask(context, item, s3Client, scheduledProcess.process(),
-                                                    scheduledCurationTask, serverlessTask), executorService);
+                        CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() -> {
+                            // Create a new Context for this thread to avoid Hibernate session conflicts
+                            Context threadContext = new Context();
+                            threadContext.setCurrentUser(context.getCurrentUser());
+                            try {
+                                return executeCurationTask(threadContext, item, s3Client, scheduledProcess.process(),
+                                                    scheduledCurationTask, serverlessTask);
+                            } finally {
+                                // Always clean up the context
+                                try {
+                                    threadContext.complete();
+                                } catch (Exception e) {
+                                    log.warn("Error completing thread context", e);
+                                }
+                            }
+                        }, executorService);
                         futures.add(future);
                     }
                 } catch (AmazonServiceException e) {
