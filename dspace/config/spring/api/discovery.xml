@@ -4572,7 +4572,7 @@
 
     <bean id="searchFilterConference"
           class="org.dspace.discovery.configuration.DiscoverySearchFilterFacet">
-        <property name="indexFieldName" value="aggregation" />
+        <property name="indexFieldName" value="conference" />
         <property name="metadataFields">
             <list>
                 <value>dc.relation.conference</value>
