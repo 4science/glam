@@ -49,21 +49,20 @@ public class S3FileChecker {
     @Autowired
     private ConfigurationService configurationService;
 
-    public List<CompletableFuture<CurationTaskResult>> checkFiles(Context context, AmazonS3 s3Client, Item item,
-                ExecutorService executorService, ScheduledProcess scheduledProcess, List<ResolvedTask> allResolvedTasks)
-                throws InterruptedException, FilesNotFoundAfterRetriesException {
+    public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(Context context,
+            AmazonS3 s3Client, Item item, ExecutorService executorService, ScheduledProcess scheduledProcess,
+            List<ResolvedTask> allResolvedTasks) throws InterruptedException, FilesNotFoundAfterRetriesException {
 
         List<ScheduledCurationTask> remainingFiles = new ArrayList<>(scheduledProcess.files());
         List<CompletableFuture<CurationTaskResult>> futures = new ArrayList<>();
 
         if (CollectionUtils.isEmpty(remainingFiles)) {
-            return List.of();
+            return futures;
         }
 
-        var bucketName = getOutPutBucketName();
         int attempt = 0;
-
         sleep(attempt);
+        var bucketName = getOutPutBucketName();
         while (!remainingFiles.isEmpty() && attempt < this.maxAttempts) {
             attempt++;
             log.info("Attempt {}/{} - Files remaining to be checked: {}", attempt, maxAttempts, remainingFiles.size());

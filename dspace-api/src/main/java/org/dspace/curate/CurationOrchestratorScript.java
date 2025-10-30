@@ -16,9 +16,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.ClientConfiguration;
@@ -150,39 +152,40 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.context = new Context();
         this.curator = initCurator();
         assignCurrentUserInContext();
-        log.info("**START** : CurationOrchestrator script for Item:{} ", identifier);
+        handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
-
         if (item$.isEmpty()) {
             log.info("Cannot find any related item with identifier: {}", identifier);
             return;
         }
 
-        AmazonS3 amazonS3 = s3Client(this.configurationService);
+        try {
+            AmazonS3 amazonS3 = s3Client(this.configurationService);
+            // PHASE 1: upload curation task JSON to S3
+            ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
 
-        // FASE 1: upload curation task JSON to S3
-        ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
+            // Send email to submitter with process details
+            sendEmailToSubmitter(item$.get(), scheduledProcess);
 
-        // FASE 2: check for status files in S3
-        List<Future<Integer>> resultServerExecutions = launchServerCurationTasks(item$.get());
-        List<CompletableFuture<CurationTaskResult>> futures = S3FileChecker.checkFiles(context, amazonS3, item$.get(),
+            // PHASE 2: Launch all tasks AND save futures for final result checking
+            List<Future<Integer>> serverFutures = launchServerCurationTasks(item$.get());
+            List<CompletableFuture<CurationTaskResult>> serverlessFutures =
+                    S3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3, item$.get(),
                                                                    executorService, scheduledProcess, allResolvedTasks);
-        sendEmailToSubmitter(item$.get(), scheduledProcess);
 
-        executorService.shutdown();
-
-        // Wait for all curation tasks to complete and collect results
-        for (CompletableFuture<CurationTaskResult> future : futures) {
-            try {
-                CurationTaskResult result = future.get(30, TimeUnit.SECONDS); // 30 second timeout per task
-            } catch (Exception e) {
-                log.error("Error waiting for curation task completion: {}", e.getMessage());
+            executorService.shutdown();
+            // Wait for completion with 3 retry attempts
+            boolean allCompleted = waitForTasksWithRetries();
+            if (allCompleted) {
+                // Check results and throw exception if there are failures
+                checkTaskResults(serverFutures, serverlessFutures);
+            } else {
+                throw new RuntimeException("Tasks did not complete after maximum retries");
             }
+        } finally {
+            cleanup();
         }
-
-        // Await termination of all tasks
-        executorService.awaitTermination(30, TimeUnit.MINUTES);
-        log.info("**END** : All server curation tasks completed for Item:{} ", identifier);
+        handler.logInfo("**END** : All Curation Tasks completed successfully!");
     }
 
     private List<Future<Integer>> launchServerCurationTasks(Item item) {
@@ -197,7 +200,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             return executorService.invokeAll(serverTasks);
         } catch (InterruptedException e) {
             handler.logError("Error executing server curation tasks for item: " + item.getID(), e);
-            return null;
+            return List.of();
         }
     }
 
@@ -393,6 +396,192 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             EPerson ePerson = EPersonServiceFactory.getInstance().getEPersonService().find(context, uuid);
             context.setCurrentUser(ePerson);
         }
+    }
+
+    /**
+     * Cleanup resources with robust error handling.
+     */
+    private void cleanup() {
+        try {
+            if (executorService != null && !executorService.isTerminated()) {
+                if (!executorService.isShutdown()) {
+                    executorService.shutdown();
+                }
+                boolean terminated = executorService.awaitTermination(5, TimeUnit.SECONDS);
+                if (!terminated) {
+                    log.warn("Forcing executor shutdown during cleanup");
+                    executorService.shutdownNow();
+                    executorService.awaitTermination(2, TimeUnit.SECONDS);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error during executor cleanup", e);
+        }
+        try {
+            if (context != null) {
+                context.complete();
+            }
+        } catch (Exception e) {
+            log.warn("Error during context cleanup", e);
+        }
+    }
+
+    /**
+     * Check results of all tasks and throw exception if there are failures.
+     */
+    private void checkTaskResults(List<Future<Integer>> serverFutures,
+                            List<CompletableFuture<CurationTaskResult>> s3Futures) throws CurationTasksFailedException {
+        List<String> failedServerTasks = new ArrayList<>();
+        // Check server task results - count successes and failures
+        ServerTaskCounts counts = countServerTaskResults(serverFutures);
+        if (counts.failed > 0) {
+            var message = String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total);
+            handler.logInfo(message);
+            failedServerTasks.add(message);
+        }
+
+        // Check Serverless task results
+        List<String> failedServerlessTasks = new ArrayList<>();
+        for (CompletableFuture<CurationTaskResult> future : s3Futures) {
+            try {
+                CurationTaskResult result = future.get();
+                if (!result.successful()) {
+                    String error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+                    failedServerlessTasks.add(result.curationTask() + " [" + result.uuid() + "]: " + error);
+                }
+            } catch (ExecutionException e) {
+                failedServerlessTasks.add("Serverless task (exception: " + e.getCause().getMessage() + ")");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                failedServerlessTasks.add("Serverless task (interrupted)");
+            }
+        }
+        // Throw exception if there are failures
+        if (!failedServerlessTasks.isEmpty() || !failedServerTasks.isEmpty()) {
+            throw new CurationTasksFailedException(failedServerlessTasks, failedServerTasks);
+        }
+        log.info("All curation tasks completed successfully");
+    }
+
+    private record ServerTaskCounts(int total, int successful, int failed) {}
+
+    private ServerTaskCounts countServerTaskResults(List<Future<Integer>> serverFutures) {
+        if (serverFutures == null) {
+            return new ServerTaskCounts(0, 0, 0);
+        }
+        int total = serverFutures.size();
+        int successful = 0;
+        int failed = 0;
+
+        for (Future<Integer> future : serverFutures) {
+            try {
+                Integer result = future.get();
+                if (result == 0) {
+                    successful++;
+                } else {
+                    failed++;
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                failed++; // Any exception = failed
+            }
+        }
+
+        return new ServerTaskCounts(total, successful, failed);
+    }
+
+    /**
+     * Wait for task completion with multiple retry attempts.
+     * IMPORTANT: shutdown() is called only once at the beginning.
+     */
+    private boolean waitForTasksWithRetries() {
+        final int MAX_RETRIES = 3;
+        final int TIMEOUT_PER_RETRY_MINUTES = getTotalTimeout();
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            var info = "Attempt {}/{}: Waiting for task completion (timeout: {} minutes)";
+            log.info(info, attempt, MAX_RETRIES, TIMEOUT_PER_RETRY_MINUTES);
+            try {
+                boolean finished = executorService.awaitTermination(TIMEOUT_PER_RETRY_MINUTES, TimeUnit.MINUTES);
+                if (finished) {
+                    log.info("All tasks completed successfully on attempt {}/{}", attempt, MAX_RETRIES);
+                    return true;
+                }
+                // Handle timeout case
+                TimeoutResult result = handleTaskTimeout(attempt, MAX_RETRIES, TIMEOUT_PER_RETRY_MINUTES);
+                if (result == TimeoutResult.COMPLETED) {
+                    return true;
+                }
+                if (result == TimeoutResult.FAILED) {
+                    return false;
+                }
+                // Continue to next attempt if RETRY
+            } catch (InterruptedException e) {
+                return handleInterruption(attempt, MAX_RETRIES, e);
+            }
+        }
+        return false;
+    }
+
+    private enum TimeoutResult {
+        RETRY,// Continue with next attempt
+        COMPLETED,// All tasks are actually done
+        FAILED// Maximum retries exceeded
+    }
+
+    private TimeoutResult handleTaskTimeout(int attempt, int maxRetries, int timeoutMinutes) {
+        var message = "Tasks did not complete within {} minutes on attempt {}/{} ";
+        log.warn(message, timeoutMinutes, attempt, maxRetries);
+
+        // If this was the last attempt, force shutdown
+        if (attempt >= maxRetries) {
+            performForcedShutdown(maxRetries);
+            return TimeoutResult.FAILED;
+        }
+
+        // Check if tasks are actually still running
+        int activeTasks = getActiveTaskCount();
+        log.info("Active tasks remaining: {}", activeTasks);
+
+        if (activeTasks == 0) {
+            log.info("No active tasks found, considering as completed");
+            return TimeoutResult.COMPLETED;
+        }
+
+        log.info("Retrying... ({}/{} attempts remaining)",maxRetries - attempt, maxRetries);
+        return TimeoutResult.RETRY;
+    }
+
+    private void performForcedShutdown(int maxRetries) {
+        log.error("Maximum retries ({}) exceeded. Forcing shutdown.", maxRetries);
+        executorService.shutdownNow();
+
+        try {
+            executorService.awaitTermination(30, TimeUnit.SECONDS);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private boolean handleInterruption(int attempt, int maxRetries, InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("Task execution interrupted on attempt {}/{} ", attempt, maxRetries, e);
+        return false;
+    }
+
+    private int getActiveTaskCount() {
+        if (executorService instanceof ThreadPoolExecutor) {
+            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
+            return tpe.getActiveCount();
+        }
+        // Fallback: assume there are active tasks if not terminated
+        return executorService.isTerminated() ? 0 : 1;
+    }
+
+    private int getTotalTimeout() {
+        return configurationService.getIntProperty("curation.total.timeout.minutes", 10);
     }
 
     @Override
