@@ -7,6 +7,7 @@
  */
 package org.dspace.curate.service;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.content.Item;
+import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.core.Context;
 import org.dspace.curate.FilesNotFoundAfterRetriesException;
 import org.dspace.curate.ResolvedTask;
@@ -91,9 +93,18 @@ public class S3FileChecker {
                             // Create a new Context for this thread to avoid Hibernate session conflicts
                             Context threadContext = new Context();
                             threadContext.setCurrentUser(context.getCurrentUser());
+                            // Reload item in this thread's context to avoid Hibernate session conflicts
+                            Item threadItem = null;
                             try {
-                                return executeCurationTask(threadContext, item, s3Client, scheduledProcess.process(),
-                                                    scheduledCurationTask, serverlessTask);
+                                threadItem = ContentServiceFactory.getInstance()
+                                                                  .getItemService()
+                                                                  .find(threadContext, item.getID());
+                            } catch (SQLException e) {
+                                log.error("Error reloading item:{} in thread context:{}", item.getID(), e.getMessage());
+                            }
+                            try {
+                                return executeCurationTask(threadContext, threadItem, s3Client,
+                                                     scheduledProcess.process(), scheduledCurationTask, serverlessTask);
                             } finally {
                                 // Always clean up the context
                                 try {
