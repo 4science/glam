@@ -84,11 +84,12 @@ public class S3FileChecker {
                         iterator.remove();
                         filesFoundInThisAttempt++;
 
-                        ResolvedTask resolvedTask = getResolvedTask(allResolvedTasks, scheduledCurationTask);
+                        ServerlessCurationTask serverlessTask = getResolvedTask(allResolvedTasks,
+                                                                                scheduledCurationTask);
                         // Launch ExecutorService to process the file just found
                         CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() ->
-                                executeCurationTask(context, item, s3Client, resolvedTask,
-                                                   scheduledCurationTask, scheduledProcess.process()), executorService);
+                                executeCurationTask(context, item, s3Client, scheduledProcess.process(),
+                                                    scheduledCurationTask, serverlessTask), executorService);
                         futures.add(future);
                     }
                 } catch (AmazonServiceException e) {
@@ -116,22 +117,22 @@ public class S3FileChecker {
         return futures;
     }
 
-    private ResolvedTask getResolvedTask(List<ResolvedTask> allResolvedTasks, ScheduledCurationTask scheduledTask) {
-        return allResolvedTasks.stream()
-                               .filter(rt -> StringUtils.equals(rt.getName(), scheduledTask.jobType()))
-                               .findFirst()
-                               .get();
+    private ServerlessCurationTask getResolvedTask(List<ResolvedTask> allResolvedTasks, ScheduledCurationTask task) {
+        var resolvedTask = allResolvedTasks.stream()
+                                           .filter(rt -> StringUtils.equals(rt.getName(), task.jobType()))
+                                           .findFirst()
+                                           .get();
+        return (ServerlessCurationTask) resolvedTask.getcTask();
     }
 
     /**
      * Executes the curation task for a specific file.
      */
-    private CurationTaskResult executeCurationTask(Context ctx, Item item, AmazonS3 s3Client, ResolvedTask resolvedTask,
-                                                   ScheduledCurationTask scheduledTask, String processId) {
+    private CurationTaskResult executeCurationTask(Context ctx, Item item, AmazonS3 s3Client, String processId,
+                                           ScheduledCurationTask scheduledTask, ServerlessCurationTask serverlessTask) {
         try {
             log.info("Executing curation task {} for bitstream: {}", scheduledTask.jobType(), scheduledTask.uuid());
-            int statusCode =
-                         ((ServerlessCurationTask) resolvedTask).perform(ctx, item, s3Client, scheduledTask, processId);
+            int statusCode = serverlessTask.perform(ctx, item, s3Client, scheduledTask, processId);
             if (statusCode == 0) {
                 var message = "Curation Task:{} completed successfully for bitstream:{} with status:{} ";
                 log.info(message, scheduledTask.jobType(), scheduledTask.uuid(), statusCode);
