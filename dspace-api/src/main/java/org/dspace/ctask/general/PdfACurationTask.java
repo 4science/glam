@@ -43,7 +43,6 @@ import org.dspace.core.Context;
 import org.dspace.curate.AbstractCurationTask;
 import org.dspace.curate.Curator;
 import org.dspace.curate.ScheduledCurationTask;
-import org.dspace.curate.ScheduledProcess;
 import org.dspace.curate.ServerlessCurationTask;
 import org.dspace.curate.dto.StatusJsonDTO;
 import org.dspace.storage.bitstore.BitStoreService;
@@ -63,38 +62,32 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     private static final String JSON_SUCCESS_STATUS = "success";
 
     @Override
-    public int perform(Context ctx, Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess)
-            throws IOException {
+    public int perform(Context context, Item item, AmazonS3 amazonS3,
+                       ScheduledCurationTask scheduledTask, String processId) throws IOException {
         TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
         try {
-            for (ScheduledCurationTask scheduledCurationTask : scheduledProcess.files()) {
-                if (!StringUtils.equals(taskId, scheduledCurationTask.jobType())) {
-                    continue;
-                }
+            String json = downloadJSON(amazonS3, processId, scheduledTask);
+            StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
+            if (statusJsonDTO == null) {
+                return CURATE_FAIL;
+            }
 
-                String json = downloadJSON(amazonS3, scheduledProcess, scheduledCurationTask);
-                StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
-                if (statusJsonDTO == null) {
+            if (!StringUtils.equals(JSON_SUCCESS_STATUS, statusJsonDTO.getStatus())) {
+                var message = "PDF/A CurationTask failed for bitstream:{} with error:{} ";
+                log.error(message, scheduledTask.uuid(), statusJsonDTO.getError());
+                return CURATE_FAIL;
+            }
+
+            try (InputStream pdfaInputStream = downloadPdfA(transferManager, statusJsonDTO.getOutputPath())) {
+                if (pdfaInputStream == null) {
+                    log.error("ERROR downloading PDF/A file from S3 for Item:{} ", item.getID());
                     return CURATE_FAIL;
                 }
-
-                if (!StringUtils.equals(JSON_SUCCESS_STATUS, statusJsonDTO.getStatus())) {
-                    log.error("PDF/A curation task failed for bitstream with uuid:{} due error: {} .",
-                              scheduledCurationTask.uuid(), statusJsonDTO.getError());
-                    return CURATE_FAIL;
-                }
-
-                try (InputStream pdfaInputStream = downloadPdfA(transferManager, statusJsonDTO.getOutputPath())) {
-                    if (pdfaInputStream == null) {
-                        log.error("ERROR downloading PDF/A file from S3 for Item:{} .", item.getID().toString());
-                        return CURATE_FAIL;
-                    }
-                    log.info("Creating PDF/A bitstream for Item:{} .", item.getID().toString());
-                    createBitstream(ctx, item, statusJsonDTO, pdfaInputStream);
-                }
+                log.info("Creating PDF/A bitstream for Item:{} ", item.getID());
+                createBitstream(context, item, statusJsonDTO, pdfaInputStream);
             }
         } catch (SQLException | AuthorizeException e) {
-            var message = "ERROR while creating bitstream PDF/A for Item:{} due to: {} .";
+            var message = "ERROR while creating bitstream PDF/A for Item:{} due to:{} ";
             log.error(message, item.getID().toString(), e.getMessage());
             return CURATE_FAIL;
         } finally {
@@ -142,13 +135,14 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return bitstreamFormat != null && StringUtils.equalsIgnoreCase(bitstreamFormat.getMIMEType(),"application/pdf");
     }
 
-    private String downloadJSON(AmazonS3 s3Client, ScheduledProcess scheduledProcess, ScheduledCurationTask sTask) {
+    private String downloadJSON(AmazonS3 s3Client, String processId, ScheduledCurationTask sTask) {
         try {
-            var jsonName = String.format(STATUS_FILE_PATTER_NAME, sTask.uuid(), sTask.jobType());
-            var fileKey =  scheduledProcess.process() + "/" + jsonName;
-            var message = "Downloading output JSON file with key: {} from bucket: {} .";
-            log.info(message, fileKey, scheduledProcess.bucketNameOutput());
-            S3Object s3Object = s3Client.getObject(scheduledProcess.bucketNameOutput(), fileKey);
+            String outputBucketName = getBucketName();
+            String jsonName = String.format(STATUS_FILE_PATTER_NAME, sTask.uuid(), sTask.jobType());
+            String fileKey =  processId + "/" + jsonName;
+
+            log.info("Downloading output JSON file with key: {} from bucket: {} .", fileKey, outputBucketName);
+            S3Object s3Object = s3Client.getObject(outputBucketName, fileKey);
             try (InputStream is = s3Object.getObjectContent()) {
                 return IOUtils.toString(is, Charset.defaultCharset());
             }

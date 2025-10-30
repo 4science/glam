@@ -21,7 +21,8 @@ import org.dspace.core.Context;
  **/
 public interface ServerlessCurationTask extends CurationTask {
 
-    int perform(Context ctx, Item item, AmazonS3 amazonS3, ScheduledProcess scheduledProcess) throws IOException;
+    int perform(Context context, Item item, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask, String processId)
+            throws IOException;
 
     List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException;
 

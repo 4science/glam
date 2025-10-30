@@ -18,19 +18,18 @@ import java.util.List;
 public class FilesNotFoundAfterRetriesException extends Exception {
 
     private final int attemptsMade;
-    private final List<String> missingFiles;
+    private final List<ScheduledCurationTask> missingCurationTasks;
 
-    public FilesNotFoundAfterRetriesException(List<String> missingFiles, int attemptsMade) {
+    public FilesNotFoundAfterRetriesException(List<ScheduledCurationTask> missingFiles, int attemptsMade) {
         super(String.format(
-              "Not all files were found after %d attempts. Missing files: %d", attemptsMade, missingFiles.size()));
-        this.missingFiles = Collections.unmodifiableList(missingFiles);
+                   "Not all files were found after %d attempts. Missing files: %d", attemptsMade, missingFiles.size()));
+        this.missingCurationTasks = Collections.unmodifiableList(missingFiles);
         this.attemptsMade = attemptsMade;
     }
 
-    public List<String> getMissingFiles() {
-        return missingFiles;
+    public List<ScheduledCurationTask> getMissingCurationTasks() {
+        return missingCurationTasks;
     }
-
     public int getAttemptsMade() {
         return attemptsMade;
     }
