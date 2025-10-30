@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
@@ -84,7 +85,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                     return CURATE_FAIL;
                 }
                 log.info("Creating PDF/A bitstream for Item:{} ", item.getID());
-                createBitstream(context, item, statusJsonDTO, pdfaInputStream);
+                createBitstream(context, item, scheduledTask, statusJsonDTO, pdfaInputStream);
             }
         } catch (SQLException | AuthorizeException e) {
             var message = "ERROR while creating bitstream PDF/A for Item:{} due to:{} ";
@@ -189,8 +190,8 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return null;
     }
 
-    private Bitstream createBitstream(Context context, Item item, StatusJsonDTO dto, InputStream is)
-             throws SQLException, AuthorizeException, IOException {
+    private Bitstream createBitstream(Context context, Item item, ScheduledCurationTask scheduledTask,
+                               StatusJsonDTO dto, InputStream is) throws SQLException, AuthorizeException, IOException {
         Bundle pdfaBundle;
         List<Bundle> bundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
         if (bundles.size() < 1) {
@@ -202,9 +203,8 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
         log.info("Creating PDF/A bitstream for item: " + item.getID());
         Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
-        Bitstream originalBitstream = getOriginalBitstream(item, dto.getOutputPath());
-        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "originalBitstream", null,
-                                     originalBitstream.getID().toString());
+        Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
+        addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
 
         String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
         log.info("Setting PDF/A bitstream name to: " + fileName + " for item: " + item.getID());
@@ -214,6 +214,12 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
         bitstreamService.update(context, pdfaBitstream);
         return pdfaBitstream;
+    }
+
+    private void addReferenceToOriginalBitstream(Context context, Bitstream pdfaBitstream, Bitstream originalBitstream)
+            throws SQLException {
+        var uuid = originalBitstream.getID().toString();
+        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "originalBitstream", null, uuid);
     }
 
     private String getPDFaName(Bitstream originalBitstream, String outputPath) {
@@ -231,20 +237,8 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return generatedName;
     }
 
-    private  Bitstream getOriginalBitstream(Item item, String outputPath) {
-        String generatedName = getGeneratedName(outputPath);
-        String [] splitedGeneratedName = generatedName.split("_");
-        if (splitedGeneratedName.length < 2) {
-            log.error("Generated name for PDF/A is not in expected format! Used generated name: {} ", generatedName);
-            return null;
-        }
-        return item.getBundles("ORIGINAL")
-                   .get(0)
-                   .getBitstreams()
-                   .stream()
-                   .filter( b -> StringUtils.equals(b.getInternalId(), splitedGeneratedName[0]))
-                   .findFirst()
-                   .orElse(null);
+    private Bitstream getOriginalBitstream(Context context, UUID bitstreamUUID) throws SQLException {
+        return bitstreamService.find(context, bitstreamUUID);
     }
 
     private String getBucketName() {

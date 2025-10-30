@@ -561,13 +561,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         try {
             executorService.awaitTermination(30, TimeUnit.SECONDS);
         } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
+            handler.logError("Interrupted during forced shutdown", ie);
         }
     }
 
     private boolean handleInterruption(int attempt, int maxRetries, InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Task execution interrupted on attempt {}/{} ", attempt, maxRetries, e);
+        handler.logError("Task execution interrupted on attempt:" + attempt);
         return false;
     }
 
