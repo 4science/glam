@@ -51,7 +51,7 @@ import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
 import org.dspace.storage.bitstore.S3BitStoreService;
 
 /**
- * PdfA curation task.
+ * PDF/A Curation Task that processes PDF bitstreams and creates PDF/A compliant versions.
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
@@ -62,6 +62,41 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     private static final String PDFA_BUNDLE_NAME = "PDFA";
     private static final String JSON_SUCCESS_STATUS = "success";
 
+    /**
+     * Initializes the curation task by ensuring a PDFA bundle exists for the item.
+     * Creates a new PDFA bundle if one doesn't already exist.
+     *
+     * @param context the DSpace context
+     * @param item the item to process
+     * @param scheduledCurationTask the scheduled task configuration
+     */
+    @Override
+    public void init(Context context, Item item, ScheduledCurationTask scheduledCurationTask) {
+        try {
+            List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
+            if (pdfaBundles.size() < 1) {
+                log.info("Creating new PDFA bundle for item: " + item.getID());
+                bundleService.create(context, item, PDFA_BUNDLE_NAME);
+            }
+        } catch (SQLException | AuthorizeException e) {
+            var message = "ERROR while creating PDFA bundle for Item:{} due to:{} ";
+            log.error(message, item.getID().toString(), e.getMessage());
+        }
+    }
+
+    /**
+     * Performs the PDF/A conversion process for a single bitstream.
+     * Downloads the conversion result from S3, validates the status, and creates
+     * a new PDF/A bitstream in the PDFA bundle.
+     *
+     * @param context the DSpace context
+     * @param item the item containing the bitstream
+     * @param amazonS3 the S3 client for downloading files
+     * @param scheduledTask the scheduled task containing bitstream information
+     * @param processId the process ID for locating result files
+     * @return CURATE_SUCCESS if successful, CURATE_FAIL otherwise
+     * @throws IOException if file operations fail
+     */
     @Override
     public int perform(Context context, Item item, AmazonS3 amazonS3,
                        ScheduledCurationTask scheduledTask, String processId) throws IOException {
@@ -97,6 +132,15 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return CURATE_SUCCESS;
     }
 
+    /**
+     * Retrieves all bitstreams from an item that can be processed for PDF/A conversion.
+     * Only includes PDF bitstreams that are stored in S3.
+     *
+     * @param context the DSpace context
+     * @param item the item to analyze
+     * @return list of bitstreams eligible for PDF/A conversion
+     * @throws SQLException if database operations fail
+     */
     @Override
     public List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException {
         List<Bitstream> processableBitstreams = new ArrayList<>();
@@ -192,15 +236,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     private Bitstream createBitstream(Context context, Item item, ScheduledCurationTask scheduledTask,
                                StatusJsonDTO dto, InputStream is) throws SQLException, AuthorizeException, IOException {
-        Bundle pdfaBundle;
-        List<Bundle> bundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
-        if (bundles.size() < 1) {
-            log.info("Creating new PDFA bundle for item: " + item.getID());
-            pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
-        } else {
-            pdfaBundle = bundles.iterator().next();
-        }
-
+        Bundle pdfaBundle = itemService.getBundles(item, PDFA_BUNDLE_NAME).get(0);
         log.info("Creating PDF/A bitstream for item: " + item.getID());
         Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
         Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
@@ -252,12 +288,12 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     @Override
     public int perform(DSpaceObject dso) throws IOException {
-        return 0;
+        return 1;
     }
 
     @Override
     public int perform(Context ctx, String id) throws IOException {
-        return 0;
+        return 1;
     }
 
 }

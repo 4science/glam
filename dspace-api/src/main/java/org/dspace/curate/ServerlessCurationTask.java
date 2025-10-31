@@ -17,9 +17,13 @@ import org.dspace.content.Item;
 import org.dspace.core.Context;
 
 /**
+ * Interface for serverless curation tasks.
+ *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  **/
 public interface ServerlessCurationTask extends CurationTask {
+
+    void init(Context context, Item item, ScheduledCurationTask scheduledCurationTask);
 
     int perform(Context context, Item item, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask, String processId)
             throws IOException;
