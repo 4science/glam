@@ -77,6 +77,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             if (pdfaBundles.size() < 1) {
                 log.info("Creating new PDFA bundle for item: " + item.getID());
                 bundleService.create(context, item, PDFA_BUNDLE_NAME);
+                itemService.update(context, item);
             }
         } catch (SQLException | AuthorizeException e) {
             var message = "ERROR while creating PDFA bundle for Item:{} due to:{} ";
