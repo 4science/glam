@@ -88,7 +88,6 @@ public class S3FileChecker {
 
                         ServerlessCurationTask serverlessTask = getResolvedTask(allResolvedTasks,
                                                                                 scheduledCurationTask);
-                        serverlessTask.init(context, item, scheduledCurationTask);
                         // Launch ExecutorService to process the file just found
                         CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() -> {
                             // Create a new Context for this thread to avoid Hibernate session conflicts

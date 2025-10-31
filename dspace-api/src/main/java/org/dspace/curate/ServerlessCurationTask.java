@@ -23,7 +23,7 @@ import org.dspace.core.Context;
  **/
 public interface ServerlessCurationTask extends CurationTask {
 
-    void init(Context context, Item item, ScheduledCurationTask scheduledCurationTask);
+    void init(Context context, Item item);
 
     int perform(Context context, Item item, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask, String processId)
             throws IOException;

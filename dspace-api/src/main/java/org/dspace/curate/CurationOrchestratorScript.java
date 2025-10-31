@@ -216,8 +216,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
             if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
-                List<Bitstream> bitstreams = ((ServerlessCurationTask) resolvedTask.getcTask())
-                                                                              .getProcessableBitstreams(context, item);
+                ServerlessCurationTask serverlessCurationTask = ((ServerlessCurationTask) resolvedTask.getcTask());
+                List<Bitstream> bitstreams = serverlessCurationTask.getProcessableBitstreams(this.context, item);
+                if (!bitstreams.isEmpty()) {
+                    serverlessCurationTask.init(this.context, item);
+                }
                 for (Bitstream currentBitstream : bitstreams) {
                     String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);

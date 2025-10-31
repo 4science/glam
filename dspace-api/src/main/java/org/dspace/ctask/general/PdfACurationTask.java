@@ -68,16 +68,14 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
      *
      * @param context the DSpace context
      * @param item the item to process
-     * @param scheduledCurationTask the scheduled task configuration
      */
     @Override
-    public void init(Context context, Item item, ScheduledCurationTask scheduledCurationTask) {
+    public void init(Context context, Item item) {
         try {
             List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
             if (pdfaBundles.size() < 1) {
                 log.info("Creating new PDFA bundle for item: " + item.getID());
-                Bundle newBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
-                bundleService.update(context, newBundle);
+                bundleService.create(context, item, PDFA_BUNDLE_NAME);
                 context.commit();
             }
         } catch (SQLException | AuthorizeException e) {
