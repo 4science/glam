@@ -236,7 +236,14 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     private Bitstream createBitstream(Context context, Item item, ScheduledCurationTask scheduledTask,
                                StatusJsonDTO dto, InputStream is) throws SQLException, AuthorizeException, IOException {
-        Bundle pdfaBundle = itemService.getBundles(item, PDFA_BUNDLE_NAME).get(0);
+        Bundle pdfaBundle = null;
+        List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
+        if (pdfaBundles.isEmpty()) {
+            log.error("PDFA bundle not found for item:{} ", item.getID());
+            throw new IllegalStateException("PDFA bundle not found for item: " + item.getID());
+        } else {
+            pdfaBundle = pdfaBundles.get(0);
+        }
         log.info("Creating PDF/A bitstream for item: " + item.getID());
         Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
         Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
