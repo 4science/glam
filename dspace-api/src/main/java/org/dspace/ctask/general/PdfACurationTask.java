@@ -76,8 +76,8 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
             if (pdfaBundles.size() < 1) {
                 log.info("Creating new PDFA bundle for item: " + item.getID());
-                bundleService.create(context, item, PDFA_BUNDLE_NAME);
-                itemService.update(context, item);
+                Bundle newBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
+                bundleService.update(context, newBundle);
             }
         } catch (SQLException | AuthorizeException e) {
             var message = "ERROR while creating PDFA bundle for Item:{} due to:{} ";
@@ -237,7 +237,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     private Bitstream createBitstream(Context context, Item item, ScheduledCurationTask scheduledTask,
                                StatusJsonDTO dto, InputStream is) throws SQLException, AuthorizeException, IOException {
-        Bundle pdfaBundle = null;
+        Bundle pdfaBundle;
         List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
         if (pdfaBundles.isEmpty()) {
             log.error("PDFA bundle not found for item:{} ", item.getID());
