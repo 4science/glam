@@ -121,9 +121,6 @@ public class S3FileChecker {
                     log.error("S3 error while checking file: {} : , {} ", outputFileName, e.getErrorMessage());
                 } catch (SdkClientException e) {
                     log.error("SDK client error while checking file: {} , {}", outputFileName, e.getMessage());
-                } catch (SQLException e) {
-                    var message = "SQL error while init curation task:{} with error:{} ";
-                    log.error(message, scheduledCurationTask.jobType(), e.getMessage());
                 }
             }
             log.info(String.format("Files found in this attempt: %d", filesFoundInThisAttempt));
