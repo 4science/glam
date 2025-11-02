@@ -277,7 +277,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             log.error(message, generatedName);
             return generatedName;
         }
-        var message = "PdfACurationTask: Using original bitstream name:{} for PDF/A bitstream! ";
+        var message = "PdfACurationTask: Using original bitstream name: {} for PDF/A bitstream! ";
         log.info(message, originalBitstream.getName());
         return originalBitstream.getName();
     }
