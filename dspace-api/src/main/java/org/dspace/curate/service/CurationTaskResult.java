@@ -7,7 +7,9 @@
  */
 package org.dspace.curate.service;
 
-import java.util.UUID;
+import java.util.List;
+
+import org.dspace.content.Bitstream;
 
 /**
  * Represents the result of a curation task execution.
@@ -16,7 +18,7 @@ import java.util.UUID;
  */
 public record CurationTaskResult(
     String curationTask,
-    UUID uuid,
+    List<Bitstream> bitsreams,
     boolean successful,
     String errorMessage
 ) {
@@ -24,15 +26,15 @@ public record CurationTaskResult(
     /**
      * Creates a successful result.
      */
-    public static CurationTaskResult success(String curationTask, UUID uuid) {
-        return new CurationTaskResult(curationTask, uuid, true, null);
+    public static CurationTaskResult success(String curationTask, List<Bitstream> bitsreams) {
+        return new CurationTaskResult(curationTask, bitsreams, true, null);
     }
 
     /**
      * Creates a failed result.
      */
-    public static CurationTaskResult failure(String curationTask, UUID uuid, String errorMessage) {
-        return new CurationTaskResult(curationTask, uuid, false, errorMessage);
+    public static CurationTaskResult failure(String curationTask, List<Bitstream> bitsreams, String errorMessage) {
+        return new CurationTaskResult(curationTask, bitsreams, false, errorMessage);
     }
 
 }

@@ -8,8 +8,6 @@
 package org.dspace.ctask.general;
 
 import static org.dspace.curate.CurationOrchestratorScript.STATUS_FILE_PATTER_NAME;
-import static org.dspace.curate.Curator.CURATE_FAIL;
-import static org.dspace.curate.Curator.CURATE_SUCCESS;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -46,6 +44,7 @@ import org.dspace.curate.Curator;
 import org.dspace.curate.ScheduledCurationTask;
 import org.dspace.curate.ServerlessCurationTask;
 import org.dspace.curate.dto.StatusJsonDTO;
+import org.dspace.curate.service.CurationTaskResult;
 import org.dspace.storage.bitstore.BitStoreService;
 import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
 import org.dspace.storage.bitstore.S3BitStoreService;
@@ -62,74 +61,63 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     private static final String PDFA_BUNDLE_NAME = "PDFA";
     private static final String JSON_SUCCESS_STATUS = "success";
 
-    /**
-     * Initializes the curation task by ensuring a PDFA bundle exists for the item.
-     * Creates a new PDFA bundle if one doesn't already exist.
-     *
-     * @param context the DSpace context
-     * @param item the item to process
-     */
     @Override
-    public void init(Context context, Item item) {
-        try {
-            List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
-            if (pdfaBundles.size() < 1) {
-                log.info("PdfACurationTask: Creating new PDFA bundle for item: " + item.getID());
-                bundleService.create(context, item, PDFA_BUNDLE_NAME);
-                context.commit();
-            }
-        } catch (SQLException | AuthorizeException e) {
-            var message = "PdfACurationTask: ERROR while creating PDFA bundle for Item:{} due to:{} ";
-            log.error(message, item.getID().toString(), e.getMessage());
-        }
-    }
+    public CurationTaskResult initPerform(Context context, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask,
+                                          String processId) {
 
-    /**
-     * Performs the PDF/A conversion process for a single bitstream.
-     * Downloads the conversion result from S3, validates the status, and creates
-     * a new PDF/A bitstream in the PDFA bundle.
-     *
-     * @param context the DSpace context
-     * @param item the item containing the bitstream
-     * @param amazonS3 the S3 client for downloading files
-     * @param scheduledTask the scheduled task containing bitstream information
-     * @param processId the process ID for locating result files
-     * @return CURATE_SUCCESS if successful, CURATE_FAIL otherwise
-     * @throws IOException if file operations fail
-     */
-    @Override
-    public int perform(Context context, Item item, AmazonS3 amazonS3,
-                       ScheduledCurationTask scheduledTask, String processId) throws IOException {
+        String json = downloadJSON(amazonS3, processId, scheduledTask);
+        StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
+        if (statusJsonDTO == null) {
+            var errorMessage = "Unable to parse output status JSON for bitstream:" + scheduledTask.uuid();
+            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), errorMessage);
+        }
+
+        if (!StringUtils.equals(JSON_SUCCESS_STATUS, statusJsonDTO.getStatus())) {
+            var message = "PdfACurationTask: PDF/A CurationTask failed for bitstream:{} with error:{} ";
+            log.error(message, scheduledTask.uuid(), statusJsonDTO.getError());
+            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), statusJsonDTO.getError());
+        }
+
         TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
         try {
-            String json = downloadJSON(amazonS3, processId, scheduledTask);
-            StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
-            if (statusJsonDTO == null) {
-                return CURATE_FAIL;
-            }
-
-            if (!StringUtils.equals(JSON_SUCCESS_STATUS, statusJsonDTO.getStatus())) {
-                var message = "PdfACurationTask: PDF/A CurationTask failed for bitstream:{} with error:{} ";
-                log.error(message, scheduledTask.uuid(), statusJsonDTO.getError());
-                return CURATE_FAIL;
-            }
-
             try (InputStream pdfaInputStream = downloadPdfA(transferManager, statusJsonDTO.getOutputPath())) {
                 if (pdfaInputStream == null) {
-                    log.error("PdfACurationTask: ERROR downloading PDF/A file from S3 for Item:{} ", item.getID());
-                    return CURATE_FAIL;
+                    var errorMessage = "PDF/A file could not be downloaded from S3 for bitstream:";
+                    log.error(errorMessage + scheduledTask.uuid());
+                    return CurationTaskResult.failure(scheduledTask.jobType(), List.of(),
+                                           errorMessage + scheduledTask.uuid());
                 }
-                log.info("PdfACurationTask: Creating PDF/A bitstream for Item:{} ", item.getID());
-                createBitstream(context, item, scheduledTask, statusJsonDTO, pdfaInputStream);
+                log.info("PdfACurationTask: Creating PDF/A bitstream");
+                Bitstream pdfaBitstream = createBitstream(context, pdfaInputStream, scheduledTask, statusJsonDTO);
+                return CurationTaskResult.success(scheduledTask.jobType(), List.of(pdfaBitstream));
+            } catch (IOException e) {
+                log.error("PdfACurationTask: ERROR while creating bitstream PDF/A due to:{} ", e.getMessage());
+                return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), e.getMessage());
             }
-        } catch (SQLException | AuthorizeException e) {
-            var message = "PdfACurationTask: ERROR while creating bitstream PDF/A for Item:{} due to:{} ";
-            log.error(message, item.getID().toString(), e.getMessage());
-            return CURATE_FAIL;
+        } catch (SQLException e) {
+            var message = "PdfACurationTask: ERROR while creating bitstream PDF/A for origin Bitstream:{} due to:{} ";
+            log.error(message, scheduledTask.uuid(), e.getMessage());
+            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(),
+                    "ERROR while creating bitstream PDF/A for origin Bitstream:" + scheduledTask.uuid());
         } finally {
             transferManager.shutdownNow(false);
         }
-        return CURATE_SUCCESS;
+    }
+
+    @Override
+    public void finalizeTask(Context context, Item item, CurationTaskResult CurationTaskResult)
+            throws SQLException, AuthorizeException {
+        Bundle pdfaBundle;
+        List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
+        if (pdfaBundles.size() < 1) {
+            log.info("PdfACurationTask: Creating new PDFA bundle for item: " + item.getID());
+            pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
+        } else {
+            pdfaBundle = pdfaBundles.get(0);
+        }
+        for (Bitstream bitstream : CurationTaskResult.bitsreams()) {
+            addBitstreamToBundle(context, bitstream, pdfaBundle);
+        }
     }
 
     /**
@@ -233,35 +221,32 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             return new ObjectMapper().readValue(json, StatusJsonDTO.class);
         } catch (JsonProcessingException e) {
             log.error("PdfACurationTask: Unable to process json response, " + e.getMessage(), e);
+            return null;
         }
-        return null;
     }
 
-    private Bitstream createBitstream(Context context, Item item, ScheduledCurationTask scheduledTask,
-                               StatusJsonDTO dto, InputStream is) throws SQLException, AuthorizeException, IOException {
-        Bundle pdfaBundle;
-        List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
-        if (pdfaBundles.isEmpty()) {
-            log.error("PdfACurationTask: PDFA bundle not found for item:{} ", item.getID());
-            throw new IllegalStateException("PDFA bundle not found for item: " + item.getID());
-        } else {
-            pdfaBundle = bundleService.find(context, pdfaBundles.get(0).getID());
-        }
-        log.info("PdfACurationTask: Creating PDF/A bitstream for item: " + item.getID());
-        Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
-        var message = "PdfACurationTask: PDF/A bitstream created with id:{} for item:{} ";
-        log.info(message, pdfaBitstream.getID(), item.getID());
+    private Bitstream createBitstream(Context context, InputStream is, ScheduledCurationTask scheduledTask,
+                                      StatusJsonDTO dto) throws SQLException, IOException {
+        log.info("PdfACurationTask: Creating PDF/A bitstream without bundle association.");
+        Bitstream pdfaBitstream = bitstreamService.create(context, is);
+
+        log.info("PdfACurationTask: PDF/A bitstream created with id:{} .", pdfaBitstream.getID());
         Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
         addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
-
         String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
-        log.info("PdfACurationTask: Setting PDF/A bitstream name to:{} for item:{} ", fileName, item.getID());
 
+        log.info("PdfACurationTask: Setting PDF/A bitstream name to:{} ", fileName);
         pdfaBitstream.setName(context, fileName);
         BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, pdfaBitstream);
         bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
-        bitstreamService.update(context, pdfaBitstream);
         return pdfaBitstream;
+    }
+
+    private void addBitstreamToBundle(Context context, Bitstream pdfaBitstream, Bundle pdfaBundle)
+            throws SQLException, AuthorizeException {
+        var message = "PdfACurationTask: Adding PDF/A bitstream:{} to PDFA bundle:{} .";
+        log.info(message, pdfaBitstream.getID(), pdfaBundle.getID());
+        bundleService.addBitstream(context, pdfaBundle, pdfaBitstream);
     }
 
     private void addReferenceToOriginalBitstream(Context context, Bitstream pdfaBitstream, Bitstream originalBitstream)

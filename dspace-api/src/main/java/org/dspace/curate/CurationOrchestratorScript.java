@@ -170,7 +170,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             // PHASE 2: Launch all tasks AND save futures for final result checking
             List<Future<Integer>> serverFutures = launchServerCurationTasks(item$.get());
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
-                    S3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3, item$.get(),
+                    S3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
                                                                    executorService, scheduledProcess, allResolvedTasks);
 
             executorService.shutdown();
@@ -182,10 +182,27 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             } else {
                 throw new RuntimeException("Tasks did not complete after maximum retries");
             }
+            // PHASE 3
+            launchFinalizationTasks(serverlessFutures, item$.get());
         } finally {
             cleanup();
         }
         handler.logInfo("**END** : All Curation Tasks completed successfully!");
+    }
+
+    private void launchFinalizationTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures, Item item) {
+        for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
+            try {
+                CurationTaskResult result = future.get();
+                ResolvedTask resolvedTask = getResolvedTasks(result.curationTask());
+                if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
+                    ServerlessCurationTask serverlessCurationTask = (ServerlessCurationTask) resolvedTask.getcTask();
+                    serverlessCurationTask.finalizeTask(context, item, result);
+                }
+            } catch (Exception e) {
+                handler.logError("Error during finalization of serverless task", e.getCause());
+            }
+        }
     }
 
     private List<Future<Integer>> launchServerCurationTasks(Item item) {
@@ -218,9 +235,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
                 ServerlessCurationTask serverlessCurationTask = ((ServerlessCurationTask) resolvedTask.getcTask());
                 List<Bitstream> bitstreams = serverlessCurationTask.getProcessableBitstreams(this.context, item);
-                if (!bitstreams.isEmpty()) {
-                    serverlessCurationTask.init(this.context, item);
-                }
                 for (Bitstream currentBitstream : bitstreams) {
                     String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
@@ -450,7 +464,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 CurationTaskResult result = future.get();
                 if (!result.successful()) {
                     String error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-                    failedServerlessTasks.add(result.curationTask() + " [" + result.uuid() + "]: " + error);
+                    failedServerlessTasks.add(result.curationTask() + " [" + result.curationTask() + "]: " + error);
                 }
             } catch (ExecutionException e) {
                 failedServerlessTasks.add("Serverless task (exception: " + e.getCause().getMessage() + ")");

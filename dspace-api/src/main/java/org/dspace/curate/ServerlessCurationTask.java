@@ -7,14 +7,15 @@
  */
 package org.dspace.curate;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
 import com.amazonaws.services.s3.AmazonS3;
+import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
 import org.dspace.core.Context;
+import org.dspace.curate.service.CurationTaskResult;
 
 /**
  * Interface for serverless curation tasks.
@@ -23,10 +24,11 @@ import org.dspace.core.Context;
  **/
 public interface ServerlessCurationTask extends CurationTask {
 
-    void init(Context context, Item item);
+    CurationTaskResult initPerform(Context context, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask,
+                                   String processId);
 
-    int perform(Context context, Item item, AmazonS3 amazonS3, ScheduledCurationTask scheduledTask, String processId)
-            throws IOException;
+    void finalizeTask(Context context, Item item, CurationTaskResult CurationTaskResult)
+         throws SQLException, AuthorizeException;
 
     List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException;
 

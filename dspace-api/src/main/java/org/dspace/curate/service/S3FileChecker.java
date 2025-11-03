@@ -7,7 +7,6 @@
  */
 package org.dspace.curate.service;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,15 +14,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dspace.content.Item;
-import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.core.Context;
 import org.dspace.curate.FilesNotFoundAfterRetriesException;
 import org.dspace.curate.ResolvedTask;
@@ -52,7 +48,7 @@ public class S3FileChecker {
     private ConfigurationService configurationService;
 
     public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(Context context,
-            AmazonS3 s3Client, Item item, ExecutorService executorService, ScheduledProcess scheduledProcess,
+            AmazonS3 s3Client, ExecutorService executorService, ScheduledProcess scheduledProcess,
             List<ResolvedTask> allResolvedTasks) throws InterruptedException, FilesNotFoundAfterRetriesException {
 
         List<ScheduledCurationTask> remainingFiles = new ArrayList<>(scheduledProcess.files());
@@ -91,35 +87,19 @@ public class S3FileChecker {
                         // Launch ExecutorService to process the file just found
                         CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() -> {
                             // Create a new Context for this thread to avoid Hibernate session conflicts
-                            Context threadContext = new Context();
-                            threadContext.setCurrentUser(context.getCurrentUser());
-                            // Reload item in this thread's context to avoid Hibernate session conflicts
-                            Item threadItem = null;
+                            Context threadContext = createThreadContext(context);
                             try {
-                                threadItem = ContentServiceFactory.getInstance()
-                                                                  .getItemService()
-                                                                  .find(threadContext, item.getID());
-                            } catch (SQLException e) {
-                                log.error("Error reloading item:{} in thread context:{}", item.getID(), e.getMessage());
-                            }
-                            try {
-                                return executeCurationTask(threadContext, threadItem, s3Client,
-                                                     scheduledProcess.process(), scheduledCurationTask, serverlessTask);
+                                logStartInitPerform(scheduledCurationTask);
+                                return serverlessTask.initPerform(threadContext, s3Client, scheduledCurationTask,
+                                                                  scheduledProcess.process());
                             } finally {
-                                // Always clean up the context
-                                try {
-                                    threadContext.complete();
-                                } catch (Exception e) {
-                                    log.warn("Error completing thread context", e);
-                                }
+                                cleanUpContext(threadContext);
                             }
                         }, executorService);
                         futures.add(future);
                     }
-                } catch (AmazonServiceException e) {
-                    log.error("S3 error while checking file: {} : , {} ", outputFileName, e.getErrorMessage());
                 } catch (SdkClientException e) {
-                    log.error("SDK client error while checking file: {} , {}", outputFileName, e.getMessage());
+                    log.error("Error while checking file: {} : , due to: {} .", outputFileName, e.getMessage());
                 }
             }
             log.info(String.format("Files found in this attempt: %d", filesFoundInThisAttempt));
@@ -141,38 +121,31 @@ public class S3FileChecker {
         return futures;
     }
 
+    private static void cleanUpContext(Context threadContext) {
+        try {
+            threadContext.complete();
+        } catch (Exception e) {
+            log.error("S3FileChecker: Error completing thread context", e);
+        }
+    }
+
+    private static Context createThreadContext(Context context) {
+        Context threadContext = new Context();
+        threadContext.setCurrentUser(context.getCurrentUser());
+        return threadContext;
+    }
+
+    private static void logStartInitPerform(ScheduledCurationTask scheduledCurationTask) {
+        var message = "Executing curation task {} for bitstream: {}";
+        log.info(message, scheduledCurationTask.jobType(), scheduledCurationTask.uuid());
+    }
+
     private ServerlessCurationTask getResolvedTask(List<ResolvedTask> allResolvedTasks, ScheduledCurationTask task) {
         var resolvedTask = allResolvedTasks.stream()
                                            .filter(rt -> StringUtils.equals(rt.getName(), task.jobType()))
                                            .findFirst()
                                            .get();
         return (ServerlessCurationTask) resolvedTask.getcTask();
-    }
-
-    /**
-     * Executes the curation task for a specific file.
-     */
-    private CurationTaskResult executeCurationTask(Context ctx, Item item, AmazonS3 s3Client, String processId,
-                                           ScheduledCurationTask scheduledTask, ServerlessCurationTask serverlessTask) {
-        try {
-            log.info("Executing curation task {} for bitstream: {}", scheduledTask.jobType(), scheduledTask.uuid());
-            int statusCode = serverlessTask.perform(ctx, item, s3Client, scheduledTask, processId);
-            if (statusCode == 0) {
-                var message = "Curation Task:{} completed successfully for bitstream:{} with status:{} ";
-                log.info(message, scheduledTask.jobType(), scheduledTask.uuid(), statusCode);
-                return CurationTaskResult.success(scheduledTask.jobType(), scheduledTask.uuid());
-            } else {
-                var message = "Curation Task:{} completed with ERROR status:{} for bitstream: {} ";
-                log.error(message, scheduledTask.jobType(), statusCode, scheduledTask.uuid());
-                return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(),
-                                      "Task completed with error status: " + statusCode);
-            }
-        } catch (Exception e) {
-            var message = "**FAILED** executing Curation Task:{} for bistream:{} , with error: {} ";
-            log.error(message, scheduledTask.jobType(), scheduledTask.uuid(), e.getMessage());
-            return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(),
-                                  "Exception during task execution: " + e.getMessage());
-        }
     }
 
     private void sleep(int attempt) throws InterruptedException {
