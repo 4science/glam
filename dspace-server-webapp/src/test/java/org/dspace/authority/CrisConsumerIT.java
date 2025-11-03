@@ -59,8 +59,11 @@ import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.WorkspaceItem;
 import org.dspace.content.authority.ChoiceAuthorityServiceImpl;
+import org.dspace.content.authority.DCInputAuthority;
+import org.dspace.content.authority.factory.ContentAuthorityServiceFactory;
 import org.dspace.content.authority.service.MetadataAuthorityService;
 import org.dspace.content.service.ItemService;
+import org.dspace.core.factory.CoreServiceFactory;
 import org.dspace.eperson.EPerson;
 import org.dspace.external.OrcidRestConnector;
 import org.dspace.external.provider.impl.OrcidV3AuthorDataProvider;
@@ -123,6 +126,11 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
 
     @Override
     public void setUp() throws Exception {
+
+        DCInputAuthority.reset();
+        CoreServiceFactory.getInstance().getPluginService().clearNamedPluginClasses();
+        ContentAuthorityServiceFactory.getInstance().getChoiceAuthorityService().clearCache();
+
         super.setUp();
 
         context.turnOffAuthorisationSystem();
@@ -688,7 +696,6 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
             .build();
 
         Item publication = ItemBuilder.createItem(context, publicationCollection)
-            .withEntityType("Publication")
             .withAuthor("Walter White", AuthorityValueService.GENERATE + "ORCID::0000-0002-9079-593X")
             .build();
 
@@ -717,7 +724,6 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
         createCollection("Collection of persons", "Person", subCommunity);
 
         Item publication = ItemBuilder.createItem(context, publicationCollection)
-            .withEntityType("Publication")
             .withAuthor("Walter White", AuthorityValueService.GENERATE + "ORCID::0000-0002-9079-593X")
             .build();
 
@@ -748,7 +754,6 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
             .build();
 
         Item publication = ItemBuilder.createItem(context, publicationCollection)
-            .withEntityType("Publication")
             .withAuthor("Walter White", AuthorityValueService.REFERENCE + "ORCID::0000-0002-9079-593X")
             .build();
 
@@ -779,7 +784,6 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
         createCollection("Collection of persons", "Person", subCommunity);
 
         Item publication = ItemBuilder.createItem(context, publicationCollection)
-            .withEntityType("Publication")
             .withAuthor("Walter White", AuthorityValueService.REFERENCE + "ORCID::0000-0002-9079-593X")
             .build();
 
@@ -1043,7 +1047,6 @@ public class CrisConsumerIT extends AbstractControllerIntegrationTest {
             .build();
 
         Item publication = ItemBuilder.createItem(context, publicationCollection)
-            .withEntityType("Publication")
             .withAuthor("Walter White", AuthorityValueService.REFERENCE + "ORCID::0000-0002-9079-593X")
             .build();
 
