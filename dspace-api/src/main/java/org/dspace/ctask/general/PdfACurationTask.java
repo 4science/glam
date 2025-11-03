@@ -245,7 +245,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             log.error("PdfACurationTask: PDFA bundle not found for item:{} ", item.getID());
             throw new IllegalStateException("PDFA bundle not found for item: " + item.getID());
         } else {
-            pdfaBundle = context.reloadEntity(pdfaBundles.get(0));
+            pdfaBundle = bundleService.find(context, pdfaBundles.get(0).getID());
         }
         log.info("PdfACurationTask: Creating PDF/A bitstream for item: " + item.getID());
         Bitstream pdfaBitstream = bitstreamService.create(context, pdfaBundle, is);
