@@ -141,11 +141,14 @@ public class S3FileChecker {
     }
 
     private ServerlessCurationTask getResolvedTask(List<ResolvedTask> allResolvedTasks, ScheduledCurationTask task) {
-        var resolvedTask = allResolvedTasks.stream()
-                                           .filter(rt -> StringUtils.equals(rt.getName(), task.jobType()))
-                                           .findFirst()
-                                           .get();
-        return (ServerlessCurationTask) resolvedTask.getcTask();
+        var message = "Cannot find ResolvedTask for job type: ";
+        return allResolvedTasks.stream()
+                               .filter(rt -> StringUtils.equals(rt.getName(), task.jobType()))
+                               .findFirst()
+                               .map(ResolvedTask::getcTask)
+                               .filter(ServerlessCurationTask.class::isInstance)
+                               .map(ServerlessCurationTask.class::cast)
+                               .orElseThrow(() -> new IllegalStateException(message + task.jobType()));
     }
 
     private void sleep(int attempt) throws InterruptedException {
@@ -155,7 +158,6 @@ public class S3FileChecker {
         try {
             delayTimeUnit.sleep(sleepTime);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
             throw new InterruptedException("Thread interrupted while waiting between attempts");
         }
     }

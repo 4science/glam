@@ -7,7 +7,7 @@
  */
 package org.dspace.ctask.general;
 
-import static org.dspace.curate.CurationOrchestratorScript.STATUS_FILE_PATTER_NAME;
+import static org.dspace.curate.CurationOrchestratorScript.STATUS_FILE_PATTERN_NAME;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,6 +57,7 @@ import org.dspace.storage.bitstore.S3BitStoreService;
 public class PdfACurationTask extends AbstractCurationTask implements ServerlessCurationTask {
 
     private static final Logger log = LogManager.getLogger(PdfACurationTask.class);
+    private static final String SUPPORTED_MIME_TYPE = "application/pdf";
 
     private static final String PDFA_BUNDLE_NAME = "PDFA";
     private static final String JSON_SUCCESS_STATUS = "success";
@@ -158,22 +159,28 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     }
 
     private boolean isPDF(Context context, Bitstream currentBitstream) {
-        BitstreamFormat bitstreamFormat = null;
         try {
-            bitstreamFormat = bitstreamFormatService.guessFormat(context, currentBitstream);
+            BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, currentBitstream);
+            if (bitstreamFormat == null) {
+                log.info("PdfACurationTask: Cannot determine format for bitstream:{} ", currentBitstream.getID());
+                return false;
+            }
+            String mimeType = bitstreamFormat.getMIMEType();
+            var message = "PdfACurationTask: Bitstream format for bitstream id: {} is: {} ";
+            log.info(message, currentBitstream.getID(), mimeType);
+
+            return SUPPORTED_MIME_TYPE.equalsIgnoreCase(mimeType);
         } catch (SQLException e) {
-            var message = "PdfACurationTask: Error while getting bitstream format for bitstream id: {} , due to: {} ";
-            log.error(message, currentBitstream.getID(), e);
+            var errorMessage = "PdfACurationTask: Error getting bitstream format for bitstream id:{} ";
+            log.error(errorMessage, currentBitstream.getID(), e);
+            return false;
         }
-        var info = "PdfACurationTask: Bitstream format for bitstream id: {} is: {} ";
-        log.info(info, currentBitstream.getID(), bitstreamFormat.getMIMEType());
-        return bitstreamFormat != null && StringUtils.equalsIgnoreCase(bitstreamFormat.getMIMEType(),"application/pdf");
     }
 
     private String downloadJSON(AmazonS3 s3Client, String processId, ScheduledCurationTask sTask) {
         try {
             String outputBucketName = getBucketName();
-            String jsonName = String.format(STATUS_FILE_PATTER_NAME, sTask.uuid(), sTask.jobType());
+            String jsonName = String.format(STATUS_FILE_PATTERN_NAME, sTask.uuid(), sTask.jobType());
             String fileKey =  processId + "/" + jsonName;
 
             var message = "PdfACurationTask: Downloading output JSON file with key: {} from bucket: {} .";

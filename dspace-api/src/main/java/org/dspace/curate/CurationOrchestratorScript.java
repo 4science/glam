@@ -85,9 +85,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
     public static final String EMAIL_TEMPLATE = "curation_task_report_template";
-    public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
+    public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
-    protected S3FileChecker S3FileChecker;
+    protected S3FileChecker s3FileChecker;
     protected ItemService itemService = ContentServiceFactory.getInstance().getItemService();
     protected HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
     protected BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
@@ -130,7 +130,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     @Override
     public void setup() throws ParseException {
         ServiceManager serviceManager = new DSpace().getServiceManager();
-        S3FileChecker = serviceManager.getServiceByName("s3FileChecker", S3FileChecker.class);
+        s3FileChecker = serviceManager.getServiceByName("s3FileChecker", S3FileChecker.class);
         if (hasInvalidParameters()) {
             return;
         }
@@ -170,7 +170,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             // PHASE 2: Launch all tasks AND save futures for final result checking
             List<Future<Integer>> serverFutures = launchServerCurationTasks(item$.get());
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
-                    S3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
+                    s3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
                                                                    executorService, scheduledProcess, allResolvedTasks);
 
             executorService.shutdown();
@@ -195,9 +195,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             try {
                 CurationTaskResult result = future.get();
                 ResolvedTask resolvedTask = getResolvedTasks(result.curationTask());
-                if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
-                    ServerlessCurationTask serverlessCurationTask = (ServerlessCurationTask) resolvedTask.getcTask();
-                    serverlessCurationTask.finalizeTask(context, item, result);
+                if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
+                    serverlessTask.finalizeTask(context, item, result);
                 }
             } catch (Exception e) {
                 handler.logError("Error during finalization of serverless task", e.getCause());
@@ -232,9 +231,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask() instanceof ServerlessCurationTask) {
-                ServerlessCurationTask serverlessCurationTask = ((ServerlessCurationTask) resolvedTask.getcTask());
-                List<Bitstream> bitstreams = serverlessCurationTask.getProcessableBitstreams(this.context, item);
+            if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
+                List<Bitstream> bitstreams = serverlessTask.getProcessableBitstreams(this.context, item);
                 for (Bitstream currentBitstream : bitstreams) {
                     String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
