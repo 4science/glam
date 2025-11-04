@@ -9,6 +9,7 @@ package org.dspace.app.configuration;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.dspace.kernel.config.SpringLoader;
@@ -25,13 +26,14 @@ import org.slf4j.LoggerFactory;
 public class CustomerSpringLoader implements SpringLoader {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerSpringLoader.class);
+    public static final String CUSTOMER_SPRING_DIR = "CUSTOMER_SPRING_DIR";
 
     @Override
     public String[] getResourcePaths(ConfigurationService configurationService) {
-        log.info("Trying to load customer config from folder.");
+        log.info("Attempting to load customer config from CUSTOMER_SPRING_DIR: {}",
+                 Arrays.toString(configurationService.getArrayProperty("CUSTOMER_SPRING_DIR")));
         try {
-
-            String[] customerSpringDir = configurationService.getArrayProperty("CUSTOMER_SPRING_DIR");
+            String[] customerSpringDir = configurationService.getArrayProperty(CUSTOMER_SPRING_DIR);
             if (customerSpringDir == null || customerSpringDir.length < 1) {
                 return new String[0];
             }
@@ -43,10 +45,10 @@ public class CustomerSpringLoader implements SpringLoader {
                     String configPath = Path.of(config).toUri().toURL() + XML_SUFFIX;
                     customerConfigs.add(configPath);
                 } catch (Exception e) {
-                    log.error("Cannot load the customer-spring config from {}!", config, e);
+                    log.error("Cannot load the customer-spring config from {}", config, e);
                 }
             }
-            return customerConfigs.toArray(new String[]{});
+            return customerConfigs.toArray(String[]::new);
         } catch (Exception e) {
             log.error("Error while loading configurations from CUSTOMER_SPRING_DIR property!", e);
             return new String[0];

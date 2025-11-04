@@ -9,6 +9,7 @@ package org.dspace.servicemanager.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -28,6 +30,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
@@ -43,6 +46,20 @@ public class DSpaceConfigurationServiceTest {
 
     // Path to our main test config file (local.properties)
     private String propertyFilePath;
+
+    private static Path customerFilePath;
+
+    @BeforeClass
+    public static void initEnv() {
+        String dSpaceHome = new DSpaceConfigurationService().getDSpaceHome(null);
+        String customerFolderPath = "config/customer";
+        Path customerFolder = Path.of(dSpaceHome, customerFolderPath);
+        String customerPropertiesFilePath = "conf/customer.properties";
+        Path customerProperties = Path.of(customerPropertiesFilePath);
+        System.setProperty("CUSTOMER_DIR", customerFolder.toString());
+        System.setProperty("CUSTOMER_CFG", customerProperties.toString());
+        customerFilePath = Path.of(customerFolder.toString(), customerPropertiesFilePath);
+    }
 
     @Before
     public void init() {
@@ -670,5 +687,46 @@ public class DSpaceConfigurationServiceTest {
 
         // reset DSPACE_HOME to previous value
         System.setProperty(DSpaceConfigurationService.DSPACE_HOME, previousValue);
+    }
+
+
+    @Test
+    public void testGetCustomerConfigProperty() throws IOException, InterruptedException {
+        // Initialize new config service
+        DSpaceConfigurationService dscs = new DSpaceConfigurationService();
+
+        assertEquals("Custom DSpace Config!", dscs.getProperty("dspace.name"));
+        assertEquals("My custom title!", dscs.getProperty("dspace.title"));
+
+        // create temp file
+        File tempFile = File.createTempFile("temp", "properties");
+        FileUtils.copyFile(customerFilePath.toFile(), tempFile);
+
+        try {
+            // delete file!
+            FileUtils.delete(customerFilePath.toFile());
+
+            FileUtils.copyFile(Path.of(propertyFilePath).toFile(), customerFilePath.toFile());
+
+            Thread.sleep(3_000);
+
+            // Assert old value still in Configuration
+            assertNotEquals("Custom DSpace Config!", dscs.getProperty("dspace.name"));
+            assertNotEquals("My custom title!", dscs.getProperty("dspace.title"));
+
+        } finally {
+            // copy temp file back
+            FileUtils.copyFile(tempFile, customerFilePath.toFile());
+
+            // delete temp file!
+            FileUtils.delete(tempFile);
+        }
+
+        Thread.sleep(3_000);
+
+        assertEquals("Custom DSpace Config!", dscs.getProperty("dspace.name"));
+        assertEquals("My custom title!", dscs.getProperty("dspace.title"));
+
+        dscs.clear();
     }
 }
