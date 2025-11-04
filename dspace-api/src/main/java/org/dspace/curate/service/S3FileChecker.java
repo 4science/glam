@@ -63,7 +63,8 @@ public class S3FileChecker {
         var bucketName = getOutPutBucketName();
         while (!remainingFiles.isEmpty() && attempt < this.maxAttempts) {
             attempt++;
-            log.info("Attempt {}/{} - Files remaining to be checked: {}", attempt, maxAttempts, remainingFiles.size());
+            var message = "S3FileChecker: Attempt {}/{} - Files remaining to be checked: {} ";
+            log.info(message, attempt, maxAttempts, remainingFiles.size());
 
             // Scroll through the list and remove the files found.
             Iterator<ScheduledCurationTask> iterator = remainingFiles.iterator();
@@ -75,10 +76,10 @@ public class S3FileChecker {
                                                                                scheduledCurationTask.jobType());
                 try {
                     String fileKey = scheduledProcess.process() + "/" + outputFileName;
-                    log.info("Checking for key: {} , into bucket: {} ", fileKey, bucketName);
+                    log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
 
                     if (s3Client.doesObjectExist(bucketName, fileKey)) {
-                        log.info("**FILE: {} found!*", fileKey);
+                        log.info("S3FileChecker: FILE:{} found!", fileKey);
                         iterator.remove();
                         filesFoundInThisAttempt++;
 
@@ -99,13 +100,14 @@ public class S3FileChecker {
                         futures.add(future);
                     }
                 } catch (SdkClientException e) {
-                    log.error("Error while checking file: {} : , due to: {} .", outputFileName, e.getMessage());
+                    var errorMessage = "S3FileChecker: Error while checking file:{} , due to:{} .";
+                    log.error(errorMessage, outputFileName, e.getMessage());
                 }
             }
-            log.info(String.format("Files found in this attempt: %d", filesFoundInThisAttempt));
+            log.info("S3FileChecker: Files found in this attempt:{} .", filesFoundInThisAttempt);
 
             if (remainingFiles.isEmpty()) {
-                log.info("All files have been found!");
+                log.info("S3FileChecker: All files have been found!");
                 break;
             }
 
@@ -136,12 +138,12 @@ public class S3FileChecker {
     }
 
     private static void logStartInitPerform(ScheduledCurationTask scheduledCurationTask) {
-        var message = "Executing curation task {} for bitstream: {}";
+        var message = "S3FileChecker: Executing curation task:{} for bitstream:{} .";
         log.info(message, scheduledCurationTask.jobType(), scheduledCurationTask.uuid());
     }
 
     private ServerlessCurationTask getResolvedTask(List<ResolvedTask> allResolvedTasks, ScheduledCurationTask task) {
-        var message = "Cannot find ResolvedTask for job type: ";
+        var message = "S3FileChecker: Cannot find ResolvedTask for job type: ";
         return allResolvedTasks.stream()
                                .filter(rt -> StringUtils.equals(rt.getName(), task.jobType()))
                                .findFirst()
@@ -154,10 +156,11 @@ public class S3FileChecker {
     private void sleep(int attempt) throws InterruptedException {
         long sleepTime = calculateSleepTime(attempt);
         var delayTime = delayTimeUnit.toString().toLowerCase();
-        log.info("Wait {} {} before the next attempt.", sleepTime, delayTime);
+        log.info("S3FileChecker: Wait {} {} before the next attempt.", sleepTime, delayTime);
         try {
             delayTimeUnit.sleep(sleepTime);
         } catch (InterruptedException e) {
+            log.error("S3FileChecker: Thread interrupted while waiting between attempts.", e);
             throw new InterruptedException("Thread interrupted while waiting between attempts");
         }
     }

@@ -20,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.ClientConfiguration;
@@ -174,15 +173,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                                    executorService, scheduledProcess, allResolvedTasks);
 
             executorService.shutdown();
-            // Wait for completion with 3 retry attempts
-            boolean allCompleted = waitForTasksWithRetries();
+            boolean allCompleted = waitForTasksToComplete();
             if (allCompleted) {
                 // Check results and throw exception if there are failures
                 checkTaskResults(serverFutures, serverlessFutures);
             } else {
                 throw new RuntimeException("Tasks did not complete after maximum retries");
             }
-            // PHASE 3
+            // PHASE 3: Finalization of serverless tasks
+            log.info("Launching finalization tasks for serverless curation tasks.");
             launchFinalizationTasks(serverlessFutures, item$.get());
         } finally {
             cleanup();
@@ -241,8 +240,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 }
             }
         }
-        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(),
-                                                                getBucketNameOutput(), scheduledCurationTasks);
+        ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(), getBucketNameOutput(),
+                                                                scheduledCurationTasks);
         String uploadBucket = getUploadBucket();
         checkBucket(amazonS3, uploadBucket);
         TransferManager transferManager = null;
@@ -321,13 +320,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String getTempDirectory() {
-        return configurationService.hasProperty("upload.temp.dir")
-               ? configurationService.getProperty("upload.temp.dir") : System.getProperty("java.io.tmpdir");
+        return configurationService.hasProperty("upload.temp.dir") ?
+                     configurationService.getProperty("upload.temp.dir") :
+                                    System.getProperty("java.io.tmpdir");
     }
 
     private String getProcessId() {
-        if (handler instanceof ProcessDSpaceRunnableHandler) {
-            return ((ProcessDSpaceRunnableHandler) handler).getProcessId().toString();
+        if (handler instanceof ProcessDSpaceRunnableHandler processDSpaceRunnableHandler) {
+            return processDSpaceRunnableHandler.getProcessId().toString();
         }
         return "unknown-" + UUID.randomUUID();
     }
@@ -349,19 +349,18 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         try {
             return Optional.ofNullable(this.itemService.find(context, UUID.fromString(identifier)));
         } catch (IllegalArgumentException | SQLException e) {
-            log.warn("Cannot convert identifier {} as uuid.", identifier, e);
+            handler.logError("Cannot convert identifier " + identifier + " as uuid.", e);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     private Optional<Item> getItemByHandle() {
-        Optional<Item> item = Optional.empty();
         try {
-            item = Optional.ofNullable((Item) this.handleService.resolveToObject(context, identifier));
+            return Optional.ofNullable((Item) this.handleService.resolveToObject(context, identifier));
         } catch (Exception e) {
-            log.warn("Cannot find the proper item with handle {}", identifier, e);
+            handler.logError("Cannot find the proper item with handle: " + identifier, e);
+            return Optional.empty();
         }
-        return item;
     }
 
     private String getUploadBucket() {
@@ -430,14 +429,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 }
             }
         } catch (Exception e) {
-            log.warn("Error during executor cleanup", e);
+            handler.logError("Error during executor cleanup", e);
         }
         try {
             if (context != null) {
                 context.complete();
             }
         } catch (Exception e) {
-            log.warn("Error during context cleanup", e);
+            handler.logError("Error during context cleanup", e);
         }
     }
 
@@ -465,9 +464,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                     failedServerlessTasks.add(result.curationTask() + " [" + result.curationTask() + "]: " + error);
                 }
             } catch (ExecutionException e) {
+                handler.logError("Error executing serverless task", e.getCause());
                 failedServerlessTasks.add("Serverless task (exception: " + e.getCause().getMessage() + ")");
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                handler.logError("Serverless task interrupted", e);
                 failedServerlessTasks.add("Serverless task (interrupted)");
             }
         }
@@ -478,7 +478,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         log.info("All curation tasks completed successfully");
     }
 
-    private record ServerTaskCounts(int total, int successful, int failed) {}
+    private record ServerTaskCounts(int total, int successful, int failed) { }
 
     private ServerTaskCounts countServerTaskResults(List<Future<Integer>> serverFutures) {
         if (serverFutures == null) {
@@ -497,105 +497,26 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                     failed++;
                 }
             } catch (ExecutionException | InterruptedException e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                }
+                handler.logError("Error executing server task", e);
                 failed++; // Any exception = failed
             }
         }
-
         return new ServerTaskCounts(total, successful, failed);
     }
 
-    /**
-     * Wait for task completion with multiple retry attempts.
-     * IMPORTANT: shutdown() is called only once at the beginning.
-     */
-    private boolean waitForTasksWithRetries() {
-        final int MAX_RETRIES = 3;
-        final int TIMEOUT_PER_RETRY_MINUTES = getTotalTimeout();
-
-        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            var info = "Attempt {}/{}: Waiting for task completion (timeout: {} minutes)";
-            log.info(info, attempt, MAX_RETRIES, TIMEOUT_PER_RETRY_MINUTES);
-            try {
-                boolean finished = executorService.awaitTermination(TIMEOUT_PER_RETRY_MINUTES, TimeUnit.MINUTES);
-                if (finished) {
-                    log.info("All tasks completed successfully on attempt {}/{}", attempt, MAX_RETRIES);
-                    return true;
-                }
-                // Handle timeout case
-                TimeoutResult result = handleTaskTimeout(attempt, MAX_RETRIES, TIMEOUT_PER_RETRY_MINUTES);
-                if (result == TimeoutResult.COMPLETED) {
-                    return true;
-                }
-                if (result == TimeoutResult.FAILED) {
-                    return false;
-                }
-                // Continue to next attempt if RETRY
-            } catch (InterruptedException e) {
-                return handleInterruption(attempt, MAX_RETRIES, e);
-            }
-        }
-        return false;
-    }
-
-    private enum TimeoutResult {
-        RETRY,// Continue with next attempt
-        COMPLETED,// All tasks are actually done
-        FAILED// Maximum retries exceeded
-    }
-
-    private TimeoutResult handleTaskTimeout(int attempt, int maxRetries, int timeoutMinutes) {
-        var message = "Tasks did not complete within {} minutes on attempt {}/{} ";
-        log.warn(message, timeoutMinutes, attempt, maxRetries);
-
-        // If this was the last attempt, force shutdown
-        if (attempt >= maxRetries) {
-            performForcedShutdown(maxRetries);
-            return TimeoutResult.FAILED;
-        }
-
-        // Check if tasks are actually still running
-        int activeTasks = getActiveTaskCount();
-        log.info("Active tasks remaining: {}", activeTasks);
-
-        if (activeTasks == 0) {
-            log.info("No active tasks found, considering as completed");
-            return TimeoutResult.COMPLETED;
-        }
-
-        log.info("Retrying... ({}/{} attempts remaining)",maxRetries - attempt, maxRetries);
-        return TimeoutResult.RETRY;
-    }
-
-    private void performForcedShutdown(int maxRetries) {
-        log.error("Maximum retries ({}) exceeded. Forcing shutdown.", maxRetries);
-        executorService.shutdownNow();
-
+    private boolean waitForTasksToComplete() {
         try {
-            executorService.awaitTermination(30, TimeUnit.SECONDS);
-        } catch (InterruptedException ie) {
-            handler.logError("Interrupted during forced shutdown", ie);
+            final int TIMEOUT_PER_RETRY_MINUTES = getTotalTimeout();
+            log.info("Waiting for tasks to complete with timeout of {} minutes.", TIMEOUT_PER_RETRY_MINUTES);
+            return executorService.awaitTermination(TIMEOUT_PER_RETRY_MINUTES, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            handler.logError("Task execution interrupted with error:" + e.getMessage());
+            return false;
         }
-    }
-
-    private boolean handleInterruption(int attempt, int maxRetries, InterruptedException e) {
-        handler.logError("Task execution interrupted on attempt:" + attempt);
-        return false;
-    }
-
-    private int getActiveTaskCount() {
-        if (executorService instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
-            return tpe.getActiveCount();
-        }
-        // Fallback: assume there are active tasks if not terminated
-        return executorService.isTerminated() ? 0 : 1;
     }
 
     private int getTotalTimeout() {
-        return configurationService.getIntProperty("curation.total.timeout.minutes", 10);
+        return configurationService.getIntProperty("curation.total.timeout.minutes", 20);
     }
 
     @Override
