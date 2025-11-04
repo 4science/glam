@@ -186,13 +186,16 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         } finally {
             cleanup();
         }
-        handler.logInfo("**END** : All Curation Tasks completed successfully!");
+        handler.logInfo("**END** : All Curation Tasks completed!");
     }
 
     private void launchFinalizationTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures, Item item) {
         for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
             try {
                 CurationTaskResult result = future.get();
+                if (!result.successful()) {
+                    continue;
+                }
                 ResolvedTask resolvedTask = getResolvedTasks(result.curationTask());
                 if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
                     serverlessTask.finalizeTask(context, item, result);
@@ -444,7 +447,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      * Check results of all tasks and throw exception if there are failures.
      */
     private void checkTaskResults(List<Future<Integer>> serverFutures,
-                            List<CompletableFuture<CurationTaskResult>> s3Futures) throws CurationTasksFailedException {
+                                  List<CompletableFuture<CurationTaskResult>> s3Futures) {
         List<String> failedServerTasks = new ArrayList<>();
         // Check server task results - count successes and failures
         ServerTaskCounts counts = countServerTaskResults(serverFutures);
@@ -460,8 +463,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             try {
                 CurationTaskResult result = future.get();
                 if (!result.successful()) {
-                    String error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-                    failedServerlessTasks.add(result.curationTask() + " [" + result.curationTask() + "]: " + error);
+                    var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+                    var message = "Serverless task %s failed with error: %s , related to bitstreams:%s .";
+                    String bitstreamIds = result.bitsreams().stream()
+                                                            .map(Bitstream::getID)
+                                                            .map(UUID::toString)
+                                                            .reduce((a, b) -> a + ", " + b)
+                                                            .orElse("");
+                    failedServerlessTasks.add(String.format(message, result.curationTask(), error, bitstreamIds));
                 }
             } catch (ExecutionException e) {
                 handler.logError("Error executing serverless task", e.getCause());
@@ -471,11 +480,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 failedServerlessTasks.add("Serverless task (interrupted)");
             }
         }
-        // Throw exception if there are failures
-        if (!failedServerlessTasks.isEmpty() || !failedServerTasks.isEmpty()) {
-            throw new CurationTasksFailedException(failedServerlessTasks, failedServerTasks);
+        if (!failedServerlessTasks.isEmpty()) {
+            handler.logError("Serverless tasks failed:" + failedServerlessTasks.size());
+            failedServerlessTasks.forEach(handler::logError);
         }
-        log.info("All curation tasks completed successfully");
+
+        if (!failedServerTasks.isEmpty()) {
+            handler.logError("Server tasks failed:" + failedServerlessTasks.size());
+            failedServerlessTasks.forEach(handler::logError);
+        }
     }
 
     private record ServerTaskCounts(int total, int successful, int failed) { }
