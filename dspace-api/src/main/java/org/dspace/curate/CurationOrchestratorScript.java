@@ -190,6 +190,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private void launchFinalizationTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures, Item item) {
+        log.info("There are {} serverless tasks to finalize.", serverlessFutures.size());
         for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
             try {
                 CurationTaskResult result = future.get();
@@ -204,6 +205,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 handler.logError("Error during finalization of serverless task", e.getCause());
             }
         }
+        log.info("Finalization of serverless tasks completed.");
     }
 
     private List<Future<Integer>> launchServerCurationTasks(Item item) {
