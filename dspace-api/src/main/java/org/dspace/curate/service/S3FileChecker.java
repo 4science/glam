@@ -37,6 +37,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class S3FileChecker {
 
     private static final Logger log = LogManager.getLogger(S3FileChecker.class);
+    /**
+     * Pattern for generating status file names in the format: bitstreamId-taskType.json
+     */
     public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
     private int maxAttempts;
@@ -47,6 +50,19 @@ public class S3FileChecker {
     @Autowired
     private ConfigurationService configurationService;
 
+    /**
+     * Checks for output files in S3 bucket and launches serverless curation tasks when files are found.
+     * Uses a retry mechanism with configurable delays to wait for files to appear.
+     *
+     * @param context the DSpace context
+     * @param s3Client the Amazon S3 client for file operations
+     * @param executorService the executor service for running tasks asynchronously
+     * @param scheduledProcess the scheduled process containing task information
+     * @param allResolvedTasks list of all resolved tasks available for execution
+     * @return list of CompletableFuture objects representing the launched serverless tasks
+     * @throws InterruptedException if the thread is interrupted while waiting
+     * @throws FilesNotFoundAfterRetriesException if files are not found after maximum retry attempts
+     */
     public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(Context context,
             AmazonS3 s3Client, ExecutorService executorService, ScheduledProcess scheduledProcess,
             List<ResolvedTask> allResolvedTasks) throws InterruptedException, FilesNotFoundAfterRetriesException {
@@ -182,18 +198,39 @@ public class S3FileChecker {
         }
     }
 
+    /**
+     * Sets the delay between retry attempts when checking for files.
+     *
+     * @param delayBetweenAttempts the delay duration between attempts
+     */
     public void setDelayBetweenAttempts(long delayBetweenAttempts) {
         this.delayBetweenAttempts = delayBetweenAttempts;
     }
 
+    /**
+     * Sets the time unit for the delay between retry attempts.
+     *
+     * @param delayTimeUnit the time unit for delays (e.g., SECONDS, MINUTES)
+     */
     public void setDelayTimeUnit(TimeUnit delayTimeUnit) {
         this.delayTimeUnit = delayTimeUnit;
     }
 
+    /**
+     * Sets the maximum number of retry attempts when checking for files.
+     *
+     * @param maxAttempts the maximum number of attempts before giving up
+     */
     public void setMaxAttempts(int maxAttempts) {
         this.maxAttempts = maxAttempts;
     }
 
+    /**
+     * Configures whether to use exponential backoff for retry delays.
+     * When enabled, delays increase exponentially with each retry attempt.
+     *
+     * @param useExponentialBackoff true to enable exponential backoff, false for fixed delays
+     */
     public void setUseExponentialBackoff(boolean useExponentialBackoff) {
         this.useExponentialBackoff = useExponentialBackoff;
     }

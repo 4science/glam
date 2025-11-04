@@ -11,6 +11,8 @@ import org.apache.commons.cli.Options;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
 /**
+ * Configuration class for Curation Orchestrator Script
+ * @param <T> the DSpaceRunnable type
  *
  * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
  **/
@@ -31,7 +33,16 @@ public class CurationOrchestratorScriptConfiguration<T extends CurationOrchestra
 
     @Override
     public Options getOptions() {
-        return new Options().addOption("id", "identifier", true, "item identifier (handle or uuid)")
-                            .addOption("t", "task", true, "curation task to execute, allowed multiple values");
+        if (options == null) {
+            Options options = new Options();
+            options.addOption("id","identifier", true, "item identifier (handle or uuid)");
+            options.addOption("t", "task", true, "curation task to execute, allowed multiple values");
+
+            var maessage = "force execution of the curation task even if it was already executed";
+            options.addOption("f", "force", false, maessage);
+            super.options = options;
+        }
+        return options;
     }
+
 }

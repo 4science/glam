@@ -42,14 +42,6 @@
                   value="org.dspace.curate.CurationCli"/>
     </bean>
 
-    <bean id="curateOrchestrator"
-          class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
-        <property name="description"
-                  value="Orchestrator Curation tasks"/>
-        <property name="dspaceRunnableClass"
-                  value="org.dspace.curate.CurationOrchestratorScript"/>
-    </bean>
-
     <bean id="submission-forms-migrate" class="org.dspace.submit.migration.SubmissionFormsMigrationCliScriptConfiguration">
         <property name="description" value="Script for migrating submission forms to DSpace 7"/>
         <property name="dspaceRunnableClass" value="org.dspace.submit.migration.SubmissionFormsMigration"/>
@@ -192,5 +184,10 @@
     <bean id="itemDeletionStrategy" class="org.dspace.deletion.process.strategies.ItemDeletionStrategy" />
     <bean id="communityDeletionStrategy" class="org.dspace.deletion.process.strategies.CommunityDeletionStrategy" />
     <bean id="collectionDeletionStrategy" class="org.dspace.deletion.process.strategies.CollectionDeletionStrategy" />
+
+    <bean id="curateOrchestrator" class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
+        <property name="description" value="Orchestrator Curation tasks"/>
+        <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>
+    </bean>
 
 </beans>

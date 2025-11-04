@@ -11,7 +11,7 @@
     <context:annotation-config/>
     <!-- allows us to use spring annotations in beans -->
 
-    <bean id="s3FileChecker" class="org.dspace.curate.service.S3FileChecker">
+    <bean class="org.dspace.curate.service.S3FileChecker">
         <property name="maxAttempts" value="${curation.s3.maxAttempts}"/>
         <property name="delayTimeUnit" value="${curation.s3.delayTimeUnit}"/>
         <property name="delayBetweenAttempts" value="${curation.s3.delayBetweenAttempts}"/>

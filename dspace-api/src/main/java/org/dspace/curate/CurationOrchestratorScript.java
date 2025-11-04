@@ -8,6 +8,7 @@
 package org.dspace.curate;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,10 +34,14 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
+import org.dspace.content.Bundle;
+import org.dspace.content.DCDate;
 import org.dspace.content.Item;
+import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
-import org.dspace.content.service.BitstreamService;
+import org.dspace.content.service.BundleService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.core.Email;
@@ -83,25 +88,40 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
+    /**
+     * Email template name used for sending curation task reports to submitters.
+     */
     public static final String EMAIL_TEMPLATE = "curation_task_report_template";
+    /**
+     * Pattern for generating status file names in the format: customerId-processId.json
+     */
     public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
-    protected S3FileChecker s3FileChecker;
-    protected ItemService itemService = ContentServiceFactory.getInstance().getItemService();
-    protected HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
-    protected BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
-    protected ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-    protected BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
-                                                                                     .getBitstreamStorageService();
+    // Services
+    private AmazonS3 s3Client;
+    private S3FileChecker s3FileChecker;
+    private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
+    private HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
+    private BundleService bundleService = ContentServiceFactory.getInstance().getBundleService();
+    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+    private BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
+                                                                                   .getBitstreamStorageService();
 
+    // Parameters
+    private boolean force;
     private Context context;
     private Curator curator;
     private String identifier;
     private List<String> tasks;
+    private String processRundomId;
     private ExecutorService executorService;
     private TaskResolver resolver = new TaskResolver();
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<ResolvedTask> allResolvedTasks = new ArrayList<>();
+
+    // To collect failed tasks
+    private List<String> failedServerTasks = new ArrayList<>();
+    private List<String> failedServerlessTasks = new ArrayList<>();
 
     private static ClientConfiguration getProxyClientConfig(String proxyHost, String proxyPort, String ignoredHosts) {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -117,7 +137,13 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return clientConfiguration;
     }
 
-    public AmazonS3 s3Client(ConfigurationService configurationService) {
+    /**
+     * Creates and configures an Amazon S3 client with proxy settings if configured.
+     *
+     * @param configurationService the configuration service to retrieve proxy settings
+     * @return configured Amazon S3 client
+     */
+    public AmazonS3 getAmazonS3Client(ConfigurationService configurationService) {
         String proxyHost = configurationService.getProperty("http.proxy.host");
         String proxyPort = configurationService.getProperty("http.proxy.port");
         String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
@@ -126,10 +152,17 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                              .build();
     }
 
+    /**
+     * Sets up the curation orchestrator script by initializing services and parsing command line options.
+     * Validates required parameters (task and identifier) and initializes the executor service.
+     *
+     * @throws ParseException if command line parsing fails or required parameters are missing
+     */
     @Override
     public void setup() throws ParseException {
+        this.s3Client = getAmazonS3Client(this.configurationService);
         ServiceManager serviceManager = new DSpace().getServiceManager();
-        s3FileChecker = serviceManager.getServiceByName("s3FileChecker", S3FileChecker.class);
+        this.s3FileChecker = serviceManager.getServiceByName(S3FileChecker.class.getName(), S3FileChecker.class);
         if (hasInvalidParameters()) {
             return;
         }
@@ -138,41 +171,63 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             executorService = Executors.newFixedThreadPool(10);
         }
 
-        tasks = List.of(commandLine.getOptionValues("task"));
-        identifier = commandLine.getOptionValue("identifier");
+        this.force = commandLine.hasOption("force");
+        this.tasks = List.of(commandLine.getOptionValues("task"));
+        this.identifier = commandLine.getOptionValue("identifier");
+        this.processRundomId = "unknown-" + UUID.randomUUID();
     }
 
     private boolean hasInvalidParameters() {
         return !commandLine.hasOption("task") || !commandLine.hasOption("identifier");
     }
 
+    /**
+     * Main execution method that orchestrates the curation process.
+     * Performs the following phases:
+     * 1. Resolves the target item by UUID or handle
+     * 2. Uploads curation task JSON to S3 and sends notification email
+     * 3. Launches server and serverless curation tasks in parallel
+     * 4. Waits for completion and checks results
+     * 5. Finalizes serverless tasks and updates item metadata
+     *
+     * @throws Exception if any step in the curation process fails
+     */
     @Override
     public void internalRun() throws Exception {
         this.context = new Context();
         this.curator = initCurator();
         assignCurrentUserInContext();
+        handler.logInfo("*************************************************************");
         handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
+        handler.logInfo("*************************************************************");
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
         if (item$.isEmpty()) {
-            log.info("Cannot find any related item with identifier: {}", identifier);
-            return;
+            var errorMessage = String.format("Cannot find any related item with identifier:%s ", identifier);
+            handler.logInfo(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         }
 
         try {
-            AmazonS3 amazonS3 = s3Client(this.configurationService);
-            // PHASE 1: upload curation task JSON to S3
-            ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
+            Item item = item$.get();
+            if (this.force) {
+                remomoveCurationTaksRelatedBundle(item);
+                // Reload item after commit
+                item = this.context.reloadEntity(item);
+            }
+
+            // PHASE 1: upload curation task JSON to S3v
+            ScheduledProcess scheduledProcess = scheduleProcess(item);
 
             // Send email to submitter with process details
-            sendEmailToSubmitter(item$.get(), scheduledProcess);
+            sendEmailToSubmitter(item, scheduledProcess);
 
             // PHASE 2: Launch all tasks AND save futures for final result checking
-            List<Future<Integer>> serverFutures = launchServerCurationTasks(item$.get());
+            List<Future<Integer>> serverFutures = launchServerCurationTasks(item);
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
-                    s3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
-                                                                   executorService, scheduledProcess, allResolvedTasks);
+                                this.s3FileChecker.checkOutputFilesAndLaunchServerlessTask(this.context, this.s3Client,
+                                                         this.executorService, scheduledProcess, this.allResolvedTasks);
 
-            executorService.shutdown();
+            this.executorService.shutdown();
             boolean allCompleted = waitForTasksToComplete();
             if (allCompleted) {
                 // Check results and throw exception if there are failures
@@ -182,14 +237,44 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             }
             // PHASE 3: Finalization of serverless tasks
             log.info("Launching finalization tasks for serverless curation tasks.");
-            launchFinalizationTasks(serverlessFutures, item$.get());
+            launchFinalizationTasks(serverlessFutures, item);
+            setExecutionMetadata(item);
         } finally {
             cleanup();
         }
+
+        handler.logInfo("***************************************");
         handler.logInfo("**END** : All Curation Tasks completed!");
+        handler.logInfo("***************************************");
+        lauchExceptionForFailedTasks();
+    }
+
+    private void remomoveCurationTaksRelatedBundle(Item item) throws IOException, SQLException, AuthorizeException {
+        for (String task : tasks) {
+            ResolvedTask resolvedTask = getResolvedTasks(task);
+            String relatedBundleName = resolvedTask.getcTask().getRelatedBundle();
+            if (StringUtils.isBlank(relatedBundleName)) {
+                log.error("No related bundle defined for task:{} .", task);
+                continue;
+            }
+            List<Bundle> curationTaskBundles = item.getBundles(relatedBundleName);
+            for (Bundle bundle : curationTaskBundles) {
+                log.info("Removing existing bundle:{} for task:{} .", relatedBundleName, task);
+                bundleService.delete(context, bundle);
+            }
+        }
+        context.commit();
+        log.info("Removal of curation task related bundles completed for item:{} .", item.getID());
+    }
+
+    private void lauchExceptionForFailedTasks() {
+        if (!failedServerTasks.isEmpty() || !failedServerlessTasks.isEmpty()) {
+            throw new RuntimeException("Some curation tasks failed. Check logs for details.");
+        }
     }
 
     private void launchFinalizationTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures, Item item) {
+        log.info("There are {} serverless tasks to finalize.", serverlessFutures.size());
         for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
             try {
                 CurationTaskResult result = future.get();
@@ -204,6 +289,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 handler.logError("Error during finalization of serverless task", e.getCause());
             }
         }
+        log.info("Finalization of serverless tasks completed.");
     }
 
     private List<Future<Integer>> launchServerCurationTasks(Item item) {
@@ -215,6 +301,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             serverTasks.add(() -> resolvedTask.perform(item));
         }
         try {
+            log.info("Launching {} server curation tasks for item:{} .", serverTasks.size(), item.getID());
             return executorService.invokeAll(serverTasks);
         } catch (InterruptedException e) {
             handler.logError("Error executing server curation tasks for item: " + item.getID(), e);
@@ -228,13 +315,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess scheduleProcess(Item item, AmazonS3 amazonS3)
-                                                                throws SQLException, IOException, InterruptedException {
+    private ScheduledProcess scheduleProcess(Item item) throws SQLException, IOException, InterruptedException,
+                                                               AuthorizeException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
             if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
                 List<Bitstream> bitstreams = serverlessTask.getProcessableBitstreams(this.context, item);
+                handler.logInfo("Task:" + task + " will process:" + bitstreams.size() + " bitstreams.");
                 for (Bitstream currentBitstream : bitstreams) {
                     String path = getPathOfCurrentBitstream(currentBitstream);
                     String bucketName = getBucketNameOfCurrentBitstream(currentBitstream);
@@ -246,10 +334,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(), getBucketNameOutput(),
                                                                 scheduledCurationTasks);
         String uploadBucket = getUploadBucket();
-        checkBucket(amazonS3, uploadBucket);
+        checkBucket(uploadBucket);
         TransferManager transferManager = null;
         try {
-            transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
+            transferManager = TransferManagerBuilder.standard().withS3Client(this.s3Client).build();
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             if (transferManager != null) {
@@ -273,29 +361,20 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return ((S3BitStoreService) bitStoreService).getBucketName();
     }
 
-    private String getBucketNameOutput() {
-        return configurationService.getProperty("curation.s3.bucketName-output");
-    }
-
-    private String getCustomerId() {
-        return configurationService.getProperty("curation.s3.customer-id");
-    }
-
-    private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
-        if (!amazonS3.doesBucketExistV2(uploadBucket)) {
+    private void checkBucket(String uploadBucket) {
+        if (!this.s3Client.doesBucketExistV2(uploadBucket)) {
             log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
-            amazonS3.createBucket(uploadBucket);
+            this.s3Client.createBucket(uploadBucket);
         }
     }
 
     private void uploadFile(ScheduledProcess curationProcess, TransferManager transferManager, String uploadBucket)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException, SQLException, AuthorizeException {
         File tempFile = null;
         try {
             File tempDir = getTempDir(curationProcess);
             var prefixTempFile = curationProcess.id() + "-" + curationProcess.process() + "-";
             tempFile = File.createTempFile(prefixTempFile, ".json", tempDir);
-            tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
 
             var directoryOnS3 = curationProcess.id() + "/";
@@ -304,6 +383,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             multipleFileUpload.waitForCompletion();
             log.info("Curation process upload state: {}", multipleFileUpload.getState());
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
+            handler.writeFilestream(context, tempFile.getName(), new FileInputStream(tempFile), "application/json");
         } finally {
             if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
                 log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
@@ -332,7 +412,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         if (handler instanceof ProcessDSpaceRunnableHandler processDSpaceRunnableHandler) {
             return processDSpaceRunnableHandler.getProcessId().toString();
         }
-        return "unknown-" + UUID.randomUUID();
+        log.warn("Cannot retrieve process id from handler, using random id:{} .", this.processRundomId);
+        return this.processRundomId;
     }
 
     private ResolvedTask getResolvedTasks(String task) throws IOException {
@@ -403,10 +484,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
-    private boolean isSendingReportEnabled() {
-        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
-    }
-
     private void assignCurrentUserInContext() throws SQLException {
         UUID uuid = getEpersonIdentifier();
         if (uuid != null) {
@@ -448,8 +525,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      */
     private void checkTaskResults(List<Future<Integer>> serverFutures,
                                   List<CompletableFuture<CurationTaskResult>> s3Futures) {
-        List<String> failedServerTasks = new ArrayList<>();
+
         // Check server task results - count successes and failures
+        handler.logInfo("*************************************************************");
+        handler.logInfo("Checking results of " + serverFutures.size() + " server tasks");
         ServerTaskCounts counts = countServerTaskResults(serverFutures);
         if (counts.failed > 0) {
             var message = String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total);
@@ -458,19 +537,16 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
 
         // Check Serverless task results
-        List<String> failedServerlessTasks = new ArrayList<>();
+        handler.logInfo("*************************************************************");
+        handler.logInfo(String.format("Checking results of %d serverless tasks", s3Futures.size()));
         for (CompletableFuture<CurationTaskResult> future : s3Futures) {
             try {
                 CurationTaskResult result = future.get();
-                if (!result.successful()) {
-                    var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-                    var message = "Serverless task %s failed with error: %s , related to bitstreams:%s .";
-                    String bitstreamIds = result.bitsreams().stream()
-                                                            .map(Bitstream::getID)
-                                                            .map(UUID::toString)
-                                                            .reduce((a, b) -> a + ", " + b)
-                                                            .orElse("");
-                    failedServerlessTasks.add(String.format(message, result.curationTask(), error, bitstreamIds));
+                if (result.successful()) {
+                    logSuccessfulMessage(result);
+                } else {
+                    var message = logFailedMessage(result);
+                    failedServerlessTasks.add(message);
                 }
             } catch (ExecutionException e) {
                 handler.logError("Error executing serverless task", e.getCause());
@@ -480,15 +556,46 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 failedServerlessTasks.add("Serverless task (interrupted)");
             }
         }
+
         if (!failedServerlessTasks.isEmpty()) {
+            handler.logInfo("*************************************************************");
             handler.logError("Serverless tasks failed:" + failedServerlessTasks.size());
             failedServerlessTasks.forEach(handler::logError);
+            handler.logInfo("*************************************************************");
         }
 
         if (!failedServerTasks.isEmpty()) {
+            handler.logInfo("*************************************************************");
             handler.logError("Server tasks failed:" + failedServerlessTasks.size());
             failedServerlessTasks.forEach(handler::logError);
+            handler.logInfo("*************************************************************");
         }
+
+    }
+
+    private String logFailedMessage(CurationTaskResult result) {
+        var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+        var message = "FAILED: Serverless task:%s, with error:%s , for bitstreams: %s, and origin bitstream:%s .";
+        String bitstreamIds = result.bitsreams()
+                                    .stream()
+                                    .map(Bitstream::getID)
+                                    .map(UUID::toString)
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("");
+        var finalMessage = String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
+        handler.logInfo(finalMessage);
+        return finalMessage;
+    }
+
+    private void logSuccessfulMessage(CurationTaskResult result) {
+        String bitstreamsId = result.bitsreams()
+                                    .stream()
+                                    .map(Bitstream::getID)
+                                    .map(UUID::toString)
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("");
+        var  message = "SUCCESS: Serverless task %s for bitstreams:%s , and origin bitstream:%s .";
+        handler.logInfo(String.format(message, result.curationTask(), bitstreamsId, result.originBitstream()));
     }
 
     private record ServerTaskCounts(int total, int successful, int failed) { }
@@ -511,7 +618,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 }
             } catch (ExecutionException | InterruptedException e) {
                 handler.logError("Error executing server task", e);
-                failed++; // Any exception = failed
+                failed++;
             }
         }
         return new ServerTaskCounts(total, successful, failed);
@@ -528,14 +635,82 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
+    private void setExecutionMetadata(Item item) throws SQLException {
+        addOrUpdateProcessMetadata(item);
+        appendHistoryMetadata(item);
+    }
+
+    private void addOrUpdateProcessMetadata(Item item) throws SQLException {
+        List<MetadataValue> existingProcesses = itemService.getMetadata(item, "cris", "curation", "process", Item.ANY);
+        for (String task : tasks) {
+            // Check if processName already exists
+            boolean alreadyExists = existingProcesses.stream()
+                                                     .anyMatch(md -> md.getValue().equalsIgnoreCase(task));
+            if (!alreadyExists) {
+                itemService.addMetadata(context, item, "cris", "curation", "process", null, task);
+            }
+        }
+    }
+
+    private void appendHistoryMetadata(Item item) throws SQLException {
+        String now = DCDate.getCurrent().toString();
+        String templateString = "Executed %s on %s \n";
+        StringBuilder newHistoryEntry = new StringBuilder();
+
+        for (String task : tasks) {
+            newHistoryEntry.append(String.format(templateString, task, now));
+        }
+
+        List<MetadataValue> existing = itemService.getMetadata(item, "cris", "curation", "history", Item.ANY);
+
+        String combinedValue;
+        if (existing.isEmpty()) {
+            combinedValue = newHistoryEntry.toString();
+        } else {
+            // Assume only one value exists and we want to append to it
+            String currentValue = existing.get(0).getValue();
+            combinedValue = currentValue + "\n" + newHistoryEntry;
+        }
+
+        // Remove old metadata
+        itemService.clearMetadata(context, item, "cris", "curation", "history", Item.ANY);
+
+        // Add the new combined value
+        itemService.addMetadata(context, item, "cris", "curation", "history", null, combinedValue);
+    }
+
     private int getTotalTimeout() {
         return configurationService.getIntProperty("curation.total.timeout.minutes", 20);
     }
 
+    private boolean isSendingReportEnabled() {
+        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
+    }
+
+    private String getBucketNameOutput() {
+        return configurationService.getProperty("curation.s3.bucketName-output");
+    }
+
+    private String getCustomerId() {
+        return configurationService.getProperty("curation.s3.customer-id");
+    }
+
+    public AmazonS3 getS3Client() {
+        return s3Client;
+    }
+
+    public void setS3Client(AmazonS3 s3Client) {
+        this.s3Client = s3Client;
+    }
+
+    public String getProcessRundomId() {
+        return processRundomId;
+    }
+
     @Override
     public CurationOrchestratorScriptConfiguration getScriptConfiguration() {
-        return new DSpace().getServiceManager().getServiceByName("curateOrchestrator",
-                CurationOrchestratorScriptConfiguration.class);
+        ServiceManager sm = new DSpace().getServiceManager();
+        return sm.getServiceByName("curateOrchestrator", CurationOrchestratorScriptConfiguration.class);
     }
 
 }

@@ -4222,5 +4222,18 @@ it, please enter the types and the actual numbers or codes.</hint>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
         <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="curation_tasks">
+      <pair>
+          <displayed-value>ALL</displayed-value>
+          <stored-value>all</stored-value>
+      </pair>
+      <pair>
+          <displayed-value>PDF/A</displayed-value>
+          <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
   </form-value-pairs>
 </input-forms>
