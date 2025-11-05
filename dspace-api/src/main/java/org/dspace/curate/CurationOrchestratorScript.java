@@ -8,6 +8,7 @@
 package org.dspace.curate;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
 import org.dspace.content.DCDate;
 import org.dspace.content.Item;
@@ -249,7 +251,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private ScheduledProcess scheduleProcess(Item item, AmazonS3 amazonS3)
-                                                                throws SQLException, IOException, InterruptedException {
+                                            throws SQLException, IOException, InterruptedException, AuthorizeException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
@@ -310,7 +312,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private void uploadFile(ScheduledProcess curationProcess, TransferManager transferManager, String uploadBucket)
-            throws IOException, InterruptedException {
+            throws IOException, InterruptedException, SQLException, AuthorizeException {
         File tempFile = null;
         try {
             File tempDir = getTempDir(curationProcess);
@@ -324,8 +326,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             multipleFileUpload.waitForCompletion();
             log.info("Curation process upload state: {}", multipleFileUpload.getState());
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
-            // TODO
-            //handler.writeFilestream(context, tempFile.getName(), tempFile, "application/json");
+            handler.writeFilestream(context, tempFile.getName(), new FileInputStream(tempFile), "application/json");
         } finally {
             if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
                 log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
