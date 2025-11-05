@@ -135,7 +135,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     @Override
     public List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException {
         List<Bitstream> processableBitstreams = new ArrayList<>();
-        Iterator<Bitstream> bitstreams = this.bitstreamService.getItemBitstreams(context, item);
+        Iterator<Bitstream> bitstreams = this.bitstreamService.getBitstreamByBundleName(item, "ORIGINAL").iterator();
         while (bitstreams.hasNext()) {
             Bitstream currentBitstream = bitstreams.next();
             BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores()
