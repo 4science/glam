@@ -34,7 +34,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.content.Bitstream;
+import org.dspace.content.DCDate;
 import org.dspace.content.Item;
+import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
@@ -188,6 +190,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             // PHASE 3: Finalization of serverless tasks
             log.info("Launching finalization tasks for serverless curation tasks.");
             launchFinalizationTasks(serverlessFutures, item$.get());
+            setExecutionMetadata(item$.get());
         } finally {
             cleanup();
         }
@@ -313,7 +316,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             File tempDir = getTempDir(curationProcess);
             var prefixTempFile = curationProcess.id() + "-" + curationProcess.process() + "-";
             tempFile = File.createTempFile(prefixTempFile, ".json", tempDir);
-            tempFile.deleteOnExit();
             objectMapper.writeValue(tempFile, curationProcess);
 
             var directoryOnS3 = curationProcess.id() + "/";
@@ -322,6 +324,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             multipleFileUpload.waitForCompletion();
             log.info("Curation process upload state: {}", multipleFileUpload.getState());
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
+            // TODO
+            //handler.writeFilestream(context, tempFile.getName(), tempFile, "application/json");
         } finally {
             if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
                 log.warn("Failed to delete temporary file: {}", tempFile.getAbsolutePath());
@@ -479,21 +483,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
         // Check Serverless task results
         handler.logInfo("*************************************************************");
-        handler.logInfo("Checking results of " + s3Futures.size() + " serverless tasks");
+        handler.logInfo(String.format("Checking results of %d serverless tasks", s3Futures.size()));
         for (CompletableFuture<CurationTaskResult> future : s3Futures) {
             try {
                 CurationTaskResult result = future.get();
-                if (!result.successful()) {
-                    var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-                    var message = "Serverless task %s failed with error: %s , for bitstreams:%s , " +
-                                  "and origin bitstream:%s .";
-                    String bitstreamIds = result.bitsreams().stream()
-                                                            .map(Bitstream::getID)
-                                                            .map(UUID::toString)
-                                                            .reduce((a, b) -> a + ", " + b)
-                                                            .orElse("");
-                    failedServerlessTasks.add(String.format(message, result.curationTask(), error, bitstreamIds,
-                                                            result.originBitstream()));
+                if (result.successful()) {
+                    logSuccessfulMessage(result);
+                } else {
+                    var message = logFailedMessage(result);
+                    failedServerlessTasks.add(message);
                 }
             } catch (ExecutionException e) {
                 handler.logError("Error executing serverless task", e.getCause());
@@ -518,6 +516,31 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             handler.logInfo("*************************************************************");
         }
 
+    }
+
+    private String logFailedMessage(CurationTaskResult result) {
+        var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+        var message = "FAILED: Serverless task:%s, with error:%s , for bitstreams: %s, and origin bitstream:%s .";
+        String bitstreamIds = result.bitsreams()
+                                    .stream()
+                                    .map(Bitstream::getID)
+                                    .map(UUID::toString)
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("");
+        var finalMessage = String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
+        handler.logInfo(finalMessage);
+        return message;
+    }
+
+    private void logSuccessfulMessage(CurationTaskResult result) {
+        String bitstreamsId = result.bitsreams()
+                                    .stream()
+                                    .map(Bitstream::getID)
+                                    .map(UUID::toString)
+                                    .reduce((a, b) -> a + ", " + b)
+                                    .orElse("");
+        var  message = "SUCCESS: Serverless task %s for bitstreams:%s , and origin bitstream:%s .";
+        handler.logInfo(String.format(message, result.curationTask(), bitstreamsId, result.originBitstream()));
     }
 
     private record ServerTaskCounts(int total, int successful, int failed) { }
@@ -559,6 +582,50 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     private int getTotalTimeout() {
         return configurationService.getIntProperty("curation.total.timeout.minutes", 20);
+    }
+
+    private void setExecutionMetadata(Item item) throws SQLException {
+        addOrUpdateProcessMetadata(item);
+        appendHistoryMetadata(item);
+    }
+
+    private void addOrUpdateProcessMetadata(Item item) throws SQLException {
+        List<MetadataValue> existingProcesses = itemService.getMetadata(item, "cris", "curation", "process", Item.ANY);
+        for (String task : tasks) {
+            // Check if processName already exists
+            boolean alreadyExists = existingProcesses.stream()
+                                                     .anyMatch(md -> md.getValue().equalsIgnoreCase(task));
+            if (!alreadyExists) {
+                itemService.addMetadata(context, item, "cris", "curation", "process", null, task);
+            }
+        }
+    }
+
+    private void appendHistoryMetadata(Item item) throws SQLException {
+        String now = DCDate.getCurrent().toString();
+        String templateString = "Executed %s on %s \n";
+        StringBuilder newHistoryEntry = new StringBuilder();
+
+        for (String task : tasks) {
+            newHistoryEntry.append(String.format(templateString, task, now));
+        }
+
+        List<MetadataValue> existing = itemService.getMetadata(item, "cris", "curation", "history", Item.ANY);
+
+        String combinedValue;
+        if (existing.isEmpty()) {
+            combinedValue = newHistoryEntry.toString();
+        } else {
+            // Assume only one value exists and we want to append to it
+            String currentValue = existing.get(0).getValue();
+            combinedValue = currentValue + "\n" + newHistoryEntry;
+        }
+
+        // Remove old metadata
+        itemService.clearMetadata(context, item, "cris", "curation", "history", Item.ANY);
+
+        // Add the new combined value
+        itemService.addMetadata(context, item, "cris", "curation", "history", null, combinedValue);
     }
 
     @Override
