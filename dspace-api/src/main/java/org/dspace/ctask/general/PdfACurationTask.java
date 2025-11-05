@@ -70,13 +70,14 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         StatusJsonDTO statusJsonDTO = convertToJsonNode(json);
         if (statusJsonDTO == null) {
             var errorMessage = "Unable to parse output status JSON for bitstream:" + scheduledTask.uuid();
-            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), errorMessage);
+            return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid() ,List.of(), errorMessage);
         }
 
         if (!StringUtils.equals(JSON_SUCCESS_STATUS, statusJsonDTO.getStatus())) {
             var message = "PdfACurationTask: PDF/A CurationTask failed for bitstream:{} with error:{} ";
             log.error(message, scheduledTask.uuid(), statusJsonDTO.getError());
-            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), statusJsonDTO.getError());
+            return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(),
+                                              List.of(), statusJsonDTO.getError());
         }
 
         TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
@@ -85,20 +86,21 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                 if (pdfaInputStream == null) {
                     var errorMessage = "PDF/A file could not be downloaded from S3 for bitstream:";
                     log.error(errorMessage + scheduledTask.uuid());
-                    return CurationTaskResult.failure(scheduledTask.jobType(), List.of(),
+                    return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(), List.of(),
                                            errorMessage + scheduledTask.uuid());
                 }
                 log.info("PdfACurationTask: Creating PDF/A bitstream");
                 Bitstream pdfaBitstream = createBitstream(context, pdfaInputStream, scheduledTask, statusJsonDTO);
-                return CurationTaskResult.success(scheduledTask.jobType(), List.of(pdfaBitstream));
+                return CurationTaskResult.success(scheduledTask.jobType(), scheduledTask.uuid(),List.of(pdfaBitstream));
             } catch (IOException e) {
                 log.error("PdfACurationTask: ERROR while creating bitstream PDF/A due to:{} ", e.getMessage());
-                return CurationTaskResult.failure(scheduledTask.jobType(), List.of(), e.getMessage());
+                return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(), List.of(),
+                                                  e.getMessage());
             }
         } catch (SQLException e) {
             var message = "PdfACurationTask: ERROR while creating bitstream PDF/A for origin Bitstream:{} due to:{} ";
             log.error(message, scheduledTask.uuid(), e.getMessage());
-            return CurationTaskResult.failure(scheduledTask.jobType(), List.of(),
+            return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(), List.of(),
                     "ERROR while creating bitstream PDF/A for origin Bitstream:" + scheduledTask.uuid());
         } finally {
             transferManager.shutdownNow(false);
@@ -239,6 +241,10 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
         log.info("PdfACurationTask: PDF/A bitstream created with id:{} .", pdfaBitstream.getID());
         Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
+        int originSequenceID = originalBitstream.getSequenceID();
+        var message = "PdfACurationTask: Setting bitstream:{} sequenceID:{} to bitstream:{} .";
+        log.info(message, originalBitstream.getID(), originSequenceID, pdfaBitstream.getID());
+        pdfaBitstream.setSequenceID(originSequenceID);
         addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
         String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
 

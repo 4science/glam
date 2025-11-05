@@ -8,6 +8,7 @@
 package org.dspace.curate.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.dspace.content.Bitstream;
 
@@ -18,6 +19,7 @@ import org.dspace.content.Bitstream;
  */
 public record CurationTaskResult(
     String curationTask,
+    UUID originBitstream,
     List<Bitstream> bitsreams,
     boolean successful,
     String errorMessage
@@ -26,15 +28,16 @@ public record CurationTaskResult(
     /**
      * Creates a successful result.
      */
-    public static CurationTaskResult success(String curationTask, List<Bitstream> bitsreams) {
-        return new CurationTaskResult(curationTask, bitsreams, true, null);
+    public static CurationTaskResult success(String curationTask, UUID originBitstream, List<Bitstream> bitsreams) {
+        return new CurationTaskResult(curationTask, originBitstream, bitsreams, true, null);
     }
 
     /**
      * Creates a failed result.
      */
-    public static CurationTaskResult failure(String curationTask, List<Bitstream> bitsreams, String errorMessage) {
-        return new CurationTaskResult(curationTask, bitsreams, false, errorMessage);
+    public static CurationTaskResult failure(String curationTask, UUID originBitstream, List<Bitstream> bitsreams,
+                                             String errorMessage) {
+        return new CurationTaskResult(curationTask, originBitstream, bitsreams, false, errorMessage);
     }
 
 }
