@@ -9,7 +9,6 @@ package org.dspace.servicemanager.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -700,23 +700,30 @@ public class DSpaceConfigurationServiceTest {
 
         // create temp file
         File tempFile = File.createTempFile("temp", "properties");
-        FileUtils.copyFile(customerFilePath.toFile(), tempFile);
+        File customerFile = customerFilePath.toFile();
+        FileUtils.copyFile(customerFile, tempFile);
 
         try {
             // delete file!
-            FileUtils.delete(customerFilePath.toFile());
+            FileUtils.delete(customerFile);
 
-            FileUtils.copyFile(Path.of(propertyFilePath).toFile(), customerFilePath.toFile());
+            FileUtils.writeStringToFile(
+                customerFile,
+                """
+                dspace.name = TEST
+                """,
+                Charset.defaultCharset()
+            );
 
             Thread.sleep(3_000);
 
             // Assert old value still in Configuration
-            assertNotEquals("Custom DSpace Config!", dscs.getProperty("dspace.name"));
-            assertNotEquals("My custom title!", dscs.getProperty("dspace.title"));
+            assertEquals("TEST", dscs.getProperty("dspace.name"));
+            assertNull("Dspace title must be null!", dscs.getProperty("dspace.title"));
 
         } finally {
             // copy temp file back
-            FileUtils.copyFile(tempFile, customerFilePath.toFile());
+            FileUtils.copyFile(tempFile, customerFile);
 
             // delete temp file!
             FileUtils.delete(tempFile);
