@@ -64,8 +64,8 @@
           <dc-element>curation</dc-element>
           <dc-qualifier>exclude</dc-qualifier>
           <label>Escludere dall'elaborazione del curation tasl</label>
-          <input-type value-pairs-name="truefalse">dropdown</input-type>
-          <repeatable>false</repeatable>
+          <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
+          <repeatable>true</repeatable>
           <required />
           <hint>Selezione si per escludere bitstream dall'elaborazione del curation task, altrimenti no</hint>
         </field>
@@ -9812,6 +9812,16 @@
       <pair>
         <displayed-value>PDF/A</displayed-value>
         <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="curation_tasks">
+      <pair>
+          <displayed-value>ALL</displayed-value>
+          <stored-value>all</stored-value>
+      </pair>
+      <pair>
+          <displayed-value>PDF/A</displayed-value>
+          <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>
