@@ -41,7 +41,6 @@ import org.dspace.content.DCDate;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
-import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.BundleService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
@@ -99,11 +98,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
     // Services
+    private AmazonS3 s3Client;
     private S3FileChecker s3FileChecker;
     private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
     private HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
     private BundleService bundleService = ContentServiceFactory.getInstance().getBundleService();
-    private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
                                                                                    .getBitstreamStorageService();
@@ -143,7 +142,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      * @param configurationService the configuration service to retrieve proxy settings
      * @return configured Amazon S3 client
      */
-    public AmazonS3 s3Client(ConfigurationService configurationService) {
+    public AmazonS3 getAmazonS3Client(ConfigurationService configurationService) {
         String proxyHost = configurationService.getProperty("http.proxy.host");
         String proxyPort = configurationService.getProperty("http.proxy.port");
         String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
@@ -160,8 +159,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      */
     @Override
     public void setup() throws ParseException {
+        this.s3Client = getAmazonS3Client(this.configurationService);
         ServiceManager serviceManager = new DSpace().getServiceManager();
-        s3FileChecker = serviceManager.getServiceByName("s3FileChecker", S3FileChecker.class);
+        this.s3FileChecker = serviceManager.getServiceByName(S3FileChecker.class.getName(), S3FileChecker.class);
         if (hasInvalidParameters()) {
             return;
         }
@@ -170,9 +170,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             executorService = Executors.newFixedThreadPool(10);
         }
 
-        force = commandLine.hasOption("force");
-        tasks = List.of(commandLine.getOptionValues("task"));
-        identifier = commandLine.getOptionValue("identifier");
+        this.force = commandLine.hasOption("force");
+        this.tasks = List.of(commandLine.getOptionValues("task"));
+        this.identifier = commandLine.getOptionValue("identifier");
     }
 
     private boolean hasInvalidParameters() {
@@ -200,22 +200,21 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         handler.logInfo("*************************************************************");
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
         if (item$.isEmpty()) {
-            log.info("Cannot find any related item with identifier: {}", identifier);
-            return;
+            var errorMessage = String.format("Cannot find any related item with identifier:%s ", identifier);
+            handler.logInfo(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         }
 
         try {
-            AmazonS3 amazonS3 = s3Client(this.configurationService);
-
             Item item = item$.get();
             if (this.force) {
                 remomoveCurationTaksRelatedBundle(item);
                 // Reload item after commit
-                item = context.reloadEntity(item);
+                item = this.context.reloadEntity(item);
             }
 
             // PHASE 1: upload curation task JSON to S3v
-            ScheduledProcess scheduledProcess = scheduleProcess(item, amazonS3);
+            ScheduledProcess scheduledProcess = scheduleProcess(item);
 
             // Send email to submitter with process details
             sendEmailToSubmitter(item, scheduledProcess);
@@ -223,10 +222,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             // PHASE 2: Launch all tasks AND save futures for final result checking
             List<Future<Integer>> serverFutures = launchServerCurationTasks(item);
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
-                    s3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
-                                                                   executorService, scheduledProcess, allResolvedTasks);
+                                this.s3FileChecker.checkOutputFilesAndLaunchServerlessTask(this.context, this.s3Client,
+                                                         this.executorService, scheduledProcess, this.allResolvedTasks);
 
-            executorService.shutdown();
+            this.executorService.shutdown();
             boolean allCompleted = waitForTasksToComplete();
             if (allCompleted) {
                 // Check results and throw exception if there are failures
@@ -314,8 +313,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess scheduleProcess(Item item, AmazonS3 amazonS3)
-                                            throws SQLException, IOException, InterruptedException, AuthorizeException {
+    private ScheduledProcess scheduleProcess(Item item) throws SQLException, IOException, InterruptedException,
+                                                               AuthorizeException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
@@ -333,10 +332,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         ScheduledProcess curationProcess = new ScheduledProcess(getCustomerId(), getProcessId(), getBucketNameOutput(),
                                                                 scheduledCurationTasks);
         String uploadBucket = getUploadBucket();
-        checkBucket(amazonS3, uploadBucket);
+        checkBucket(uploadBucket);
         TransferManager transferManager = null;
         try {
-            transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
+            transferManager = TransferManagerBuilder.standard().withS3Client(this.s3Client).build();
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             if (transferManager != null) {
@@ -368,10 +367,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return configurationService.getProperty("curation.s3.customer-id");
     }
 
-    private void checkBucket(AmazonS3 amazonS3, String uploadBucket) {
-        if (!amazonS3.doesBucketExistV2(uploadBucket)) {
+    private void checkBucket(String uploadBucket) {
+        if (!this.s3Client.doesBucketExistV2(uploadBucket)) {
             log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
-            amazonS3.createBucket(uploadBucket);
+            this.s3Client.createBucket(uploadBucket);
         }
     }
 
@@ -693,10 +692,18 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         itemService.addMetadata(context, item, "cris", "curation", "history", null, combinedValue);
     }
 
+    public AmazonS3 getS3Client() {
+        return s3Client;
+    }
+
+    public void setS3Client(AmazonS3 s3Client) {
+        this.s3Client = s3Client;
+    }
+
     @Override
     public CurationOrchestratorScriptConfiguration getScriptConfiguration() {
-        return new DSpace().getServiceManager().getServiceByName("curateOrchestrator",
-                CurationOrchestratorScriptConfiguration.class);
+        ServiceManager sm = new DSpace().getServiceManager();
+        return sm.getServiceByName("curateOrchestrator", CurationOrchestratorScriptConfiguration.class);
     }
 
 }
