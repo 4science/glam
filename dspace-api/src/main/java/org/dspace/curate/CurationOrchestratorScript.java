@@ -178,18 +178,21 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         try {
             AmazonS3 amazonS3 = s3Client(this.configurationService);
 
+            Item item = item$.get();
             if (this.force) {
-                remomoveCurationTaksRelatedBundle(item$.get());
+                remomoveCurationTaksRelatedBundle(item);
+                // Reload item after commit to reattach it to the session
+                item = context.reloadEntity(item);
             }
 
             // PHASE 1: upload curation task JSON to S3v
-            ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
+            ScheduledProcess scheduledProcess = scheduleProcess(item, amazonS3);
 
             // Send email to submitter with process details
-            sendEmailToSubmitter(item$.get(), scheduledProcess);
+            sendEmailToSubmitter(item, scheduledProcess);
 
             // PHASE 2: Launch all tasks AND save futures for final result checking
-            List<Future<Integer>> serverFutures = launchServerCurationTasks(item$.get());
+            List<Future<Integer>> serverFutures = launchServerCurationTasks(item);
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
                     s3FileChecker.checkOutputFilesAndLaunchServerlessTask(context, amazonS3,
                                                                    executorService, scheduledProcess, allResolvedTasks);
@@ -204,8 +207,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             }
             // PHASE 3: Finalization of serverless tasks
             log.info("Launching finalization tasks for serverless curation tasks.");
-            launchFinalizationTasks(serverlessFutures, item$.get());
-            setExecutionMetadata(item$.get());
+            launchFinalizationTasks(serverlessFutures, item);
+            setExecutionMetadata(item);
         } finally {
             cleanup();
         }
@@ -562,7 +565,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                     .orElse("");
         var finalMessage = String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
         handler.logInfo(finalMessage);
-        return message;
+        return finalMessage;
     }
 
     private void logSuccessfulMessage(CurationTaskResult result) {
