@@ -65,7 +65,10 @@ public class CSVCollector<T> {
         if (row == null) {
             return List.of();
         }
-        return header.stream().map(entry -> lineMappers.get(entry).apply(row)).collect(Collectors.toList());
+        return header.stream()
+                     .map(entry ->
+                        quoteIfNeeded(lineMappers.get(entry).apply(row))
+                     ).collect(Collectors.toList());
     }
 
     private String joinRowElements(Collection<String> rowElements) {
@@ -74,6 +77,20 @@ public class CSVCollector<T> {
 
     private Collection<String> getHeaderElements() {
         return lineMappers.keySet();
+    }
+
+    protected String quoteIfNeeded(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        // Check if already quoted (starts and ends with double quotes)
+        if (input.startsWith("\"") && input.endsWith("\"")) {
+            return input;
+        }
+
+        // Add quotes if not already quoted
+        return "\"" + input + "\"";
     }
 
 }

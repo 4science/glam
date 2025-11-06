@@ -66,8 +66,13 @@ public class CSVChecksumResultMailCollector implements ChecksumResultsCollector 
         (item) -> item.map(Item::getID).map(String::valueOf).orElse("");
     private final Function<Optional<Item>, String> getItemTitle = (item) -> item.map(Item::getName).orElse("");
     private final Function<Optional<Item>, String> getItemCollection =
-        (item) -> item.map(Item::getOwningCollection).or(() -> item.map(Item::getCollections).map(c -> c.get(0)))
-                      .map(Collection::getID).map(String::valueOf).orElse("");
+        (item) -> item.map(Item::getOwningCollection)
+                      .or(() -> item.map(Item::getCollections)
+                                    .filter(collections -> !collections.isEmpty())
+                                    .map(c -> c.get(0)))
+                      .map(Collection::getID)
+                      .map(String::valueOf)
+                      .orElse("");
 
     private final List<ChecksumResultCode> invalidResultCodes =
         List.of(ChecksumResultCode.BITSTREAM_NOT_FOUND, ChecksumResultCode.BITSTREAM_INFO_NOT_FOUND,

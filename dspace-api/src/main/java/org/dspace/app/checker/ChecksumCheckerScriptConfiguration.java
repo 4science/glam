@@ -79,14 +79,14 @@ public class ChecksumCheckerScriptConfiguration<T extends ChecksumCheckerScript>
         options.addOption(
             Option.builder("m")
                   .longOpt("mail-report")
-                  .optionalArg(true)
+                  .hasArg(false)
                   .desc("Sends mail report after the checksum verification to configured users")
                   .build()
         );
         options.addOption(
             Option.builder("D")
                   .longOpt("droid")
-                  .optionalArg(true)
+                  .hasArg(false)
                   .desc("Execute verification with DROID (i.e. digital preservation)")
                   .build()
         );

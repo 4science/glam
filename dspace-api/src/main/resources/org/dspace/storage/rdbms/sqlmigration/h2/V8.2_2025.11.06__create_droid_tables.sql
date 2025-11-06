@@ -38,14 +38,15 @@ CREATE TABLE IF NOT EXISTS droid_check_result
     path VARCHAR(256),
     filename VARCHAR(256),
     file_size NUMERIC,
-    type VARCHAR(100),
+    method VARCHAR(100),
     file_extension VARCHAR(10),
     last_modified_date TIMESTAMP,
     extension_mismatch BOOLEAN NOT NULL,
     puid VARCHAR(100),
     mime_type VARCHAR(30),
     file_format VARCHAR(100),
-    format_version VARCHAR(100)
+    format_version VARCHAR(100),
+    process_date TIMESTAMP NOT NULL
 );
 
 
@@ -61,7 +62,7 @@ CREATE TABLE IF NOT EXISTS droid_check_history
     path VARCHAR(256),
     filename VARCHAR(256),
     file_size NUMERIC,
-    type VARCHAR(100),
+    method VARCHAR(100),
     file_extension VARCHAR(10),
     last_modified_date TIMESTAMP,
     extension_mismatch BOOLEAN NOT NULL,
@@ -125,3 +126,5 @@ CREATE INDEX IF NOT EXISTS dcr_status_fk_idx ON droid_check_result( status );
 CREATE INDEX IF NOT EXISTS dch_status_fk_idx ON droid_check_history( status );
 CREATE INDEX IF NOT EXISTS mrc_droid_status_fk_idx ON most_recent_checksum( droid_status );
 CREATE INDEX IF NOT EXISTS ch_droid_status_fk_idx ON checksum_history( droid_status );
+-- Creates index for the new queue query
+CREATE INDEX IF NOT EXISTS dcr_bits_queue on droid_check_result(bitstream_id, process_date);

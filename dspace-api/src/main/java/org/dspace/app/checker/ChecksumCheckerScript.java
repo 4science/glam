@@ -11,13 +11,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -117,23 +115,23 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
 
     protected void writeOutputFile(DSpaceRunnableHandler handler, Context context, File file)
         throws SQLException {
-        if (file == null || !file.exists() || !file.isFile()) {
+        if ( file == null) {
+            LOG.warn("The output file was not provided");
+            handler.logWarning("The output file was not provided");
             return;
         }
-        String tempDir = getTempDir();
 
-        File tempDirFile = new File(tempDir);
-        if (!tempDirFile.exists()) {
-            if (!tempDirFile.mkdirs()) {
-                LOG.error("Unable to create the tempDir folder: {}", tempDir);
-                handler.logError("Unable to create the tempDir folder: " + tempDir);
-            }
+        if (!file.exists() || !file.isFile()) {
+            LOG.info("The output file doesn't exist: {}", file.getAbsolutePath());
+            handler.logInfo("The output file doesn't exist:" + file.getAbsolutePath());
+            return;
         }
+
         try (FileInputStream fis = new FileInputStream(file)) {
             context.turnOffAuthorisationSystem();
             handler.writeFilestream(
                 context,
-                Paths.get(tempDir, file.getName()).toAbsolutePath().toString(),
+                file.getName(),
                 fis,
                 FilenameUtils.getExtension(file.getName())
             );
@@ -143,13 +141,6 @@ public class ChecksumCheckerScript<T extends ChecksumCheckerScriptConfiguration<
         } finally {
             context.restoreAuthSystemState();
         }
-    }
-
-    private String getTempDir() {
-        return Optional.ofNullable(
-                           configurationService.getProperty("checksum-checker.collect.files.output.dir")
-                       ).or(() -> Optional.ofNullable(configurationService.getProperty("upload.temp.dir")))
-                       .orElseGet(() -> System.getProperty("java.io.tmpdir"));
     }
 
     @Override
