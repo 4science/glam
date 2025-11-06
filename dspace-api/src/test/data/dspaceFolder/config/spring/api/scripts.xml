@@ -200,4 +200,9 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.marcxml2item.XmlToItemImportScriptCli"/>
     </bean>
 
+    <bean id="curateOrchestrator" class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
+        <property name="description" value="Orchestrator Curation tasks"/>
+        <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>
+    </bean>
+
 </beans>
