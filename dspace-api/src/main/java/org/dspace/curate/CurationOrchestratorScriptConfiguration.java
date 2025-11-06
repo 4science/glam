@@ -31,7 +31,16 @@ public class CurationOrchestratorScriptConfiguration<T extends CurationOrchestra
 
     @Override
     public Options getOptions() {
-        return new Options().addOption("id", "identifier", true, "item identifier (handle or uuid)")
-                            .addOption("t", "task", true, "curation task to execute, allowed multiple values");
+        if (options == null) {
+            Options options = new Options();
+            options.addOption("id","identifier", true, "item identifier (handle or uuid)");
+            options.addOption("t", "task", true, "curation task to execute, allowed multiple values");
+
+            var maessage = "force execution of the curation task even if it was already executed";
+            options.addOption("f", "force", false, maessage);
+            super.options = options;
+        }
+        return options;
     }
+
 }

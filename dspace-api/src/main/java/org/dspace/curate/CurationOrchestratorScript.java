@@ -36,11 +36,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
+import org.dspace.content.Bundle;
 import org.dspace.content.DCDate;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
+import org.dspace.content.service.BundleService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.core.Email;
@@ -90,14 +92,18 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     public static final String EMAIL_TEMPLATE = "curation_task_report_template";
     public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
-    protected S3FileChecker s3FileChecker;
-    protected ItemService itemService = ContentServiceFactory.getInstance().getItemService();
-    protected HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
-    protected BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
-    protected ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-    protected BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
-                                                                                     .getBitstreamStorageService();
+    // Services
+    private S3FileChecker s3FileChecker;
+    private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
+    private HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
+    private BundleService bundleService = ContentServiceFactory.getInstance().getBundleService();
+    private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+    private BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
+                                                                                   .getBitstreamStorageService();
 
+    // Parameters
+    private boolean force;
     private Context context;
     private Curator curator;
     private String identifier;
@@ -107,8 +113,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<ResolvedTask> allResolvedTasks = new ArrayList<>();
 
-    List<String> failedServerTasks = new ArrayList<>();
-    List<String> failedServerlessTasks = new ArrayList<>();
+    // To collect failed tasks
+    private List<String> failedServerTasks = new ArrayList<>();
+    private List<String> failedServerlessTasks = new ArrayList<>();
 
     private static ClientConfiguration getProxyClientConfig(String proxyHost, String proxyPort, String ignoredHosts) {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -145,6 +152,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             executorService = Executors.newFixedThreadPool(10);
         }
 
+        force = commandLine.hasOption("force");
         tasks = List.of(commandLine.getOptionValues("task"));
         identifier = commandLine.getOptionValue("identifier");
     }
@@ -169,7 +177,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
         try {
             AmazonS3 amazonS3 = s3Client(this.configurationService);
-            // PHASE 1: upload curation task JSON to S3
+
+            if (this.force) {
+                remomoveCurationTaksRelatedBundle(item$.get());
+            }
+
+            // PHASE 1: upload curation task JSON to S3v
             ScheduledProcess scheduledProcess = scheduleProcess(item$.get(), amazonS3);
 
             // Send email to submitter with process details
@@ -201,6 +214,24 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         handler.logInfo("**END** : All Curation Tasks completed!");
         handler.logInfo("***************************************");
         lauchExceptionForFailedTasks();
+    }
+
+    private void remomoveCurationTaksRelatedBundle(Item item) throws IOException, SQLException, AuthorizeException {
+        for (String task : tasks) {
+            ResolvedTask resolvedTask = getResolvedTasks(task);
+            String relatedBundleName = resolvedTask.getcTask().getRelatedBundle();
+            if (StringUtils.isBlank(relatedBundleName)) {
+                log.error("No related bundle defined for task:{} .", task);
+                continue;
+            }
+            List<Bundle> curationTaskBundles = item.getBundles(relatedBundleName);
+            for (Bundle bundle : curationTaskBundles) {
+                log.info("Removing existing bundle:{} for task:{} .", relatedBundleName, task);
+                bundleService.delete(context, bundle);
+            }
+        }
+        context.commit();
+        log.info("Removal of curation task related bundles completed for item:{} .", item.getID());
     }
 
     private void lauchExceptionForFailedTasks() {
@@ -237,6 +268,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             serverTasks.add(() -> resolvedTask.perform(item));
         }
         try {
+            log.info("Launching {} server curation tasks for item:{} .", serverTasks.size(), item.getID());
             return executorService.invokeAll(serverTasks);
         } catch (InterruptedException e) {
             handler.logError("Error executing server curation tasks for item: " + item.getID(), e);

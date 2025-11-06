@@ -160,6 +160,11 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return processableBitstreams;
     }
 
+    @Override
+    public String getRelatedBundle() {
+        return PDFA_BUNDLE_NAME;
+    }
+
     private boolean isPDF(Context context, Bitstream currentBitstream) {
         try {
             BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, currentBitstream);
