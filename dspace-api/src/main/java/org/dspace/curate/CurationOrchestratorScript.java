@@ -89,7 +89,13 @@ import org.dspace.utils.DSpace;
 public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestratorScriptConfiguration> {
 
     private static final Logger log = LogManager.getLogger(CurationOrchestratorScript.class);
+    /**
+     * Email template name used for sending curation task reports to submitters.
+     */
     public static final String EMAIL_TEMPLATE = "curation_task_report_template";
+    /**
+     * Pattern for generating status file names in the format: customerId-processId.json
+     */
     public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
     // Services
@@ -131,6 +137,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return clientConfiguration;
     }
 
+    /**
+     * Creates and configures an Amazon S3 client with proxy settings if configured.
+     *
+     * @param configurationService the configuration service to retrieve proxy settings
+     * @return configured Amazon S3 client
+     */
     public AmazonS3 s3Client(ConfigurationService configurationService) {
         String proxyHost = configurationService.getProperty("http.proxy.host");
         String proxyPort = configurationService.getProperty("http.proxy.port");
@@ -140,6 +152,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                              .build();
     }
 
+    /**
+     * Sets up the curation orchestrator script by initializing services and parsing command line options.
+     * Validates required parameters (task and identifier) and initializes the executor service.
+     *
+     * @throws ParseException if command line parsing fails or required parameters are missing
+     */
     @Override
     public void setup() throws ParseException {
         ServiceManager serviceManager = new DSpace().getServiceManager();
@@ -161,6 +179,17 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return !commandLine.hasOption("task") || !commandLine.hasOption("identifier");
     }
 
+    /**
+     * Main execution method that orchestrates the curation process.
+     * Performs the following phases:
+     * 1. Resolves the target item by UUID or handle
+     * 2. Uploads curation task JSON to S3 and sends notification email
+     * 3. Launches server and serverless curation tasks in parallel
+     * 4. Waits for completion and checks results
+     * 5. Finalizes serverless tasks and updates item metadata
+     *
+     * @throws Exception if any step in the curation process fails
+     */
     @Override
     public void internalRun() throws Exception {
         this.context = new Context();
@@ -181,7 +210,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             Item item = item$.get();
             if (this.force) {
                 remomoveCurationTaksRelatedBundle(item);
-                // Reload item after commit to reattach it to the session
+                // Reload item after commit
                 item = context.reloadEntity(item);
             }
 
