@@ -63,7 +63,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.findify.s3mock.S3Mock;
-import jakarta.inject.Named;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -88,7 +87,6 @@ import org.dspace.content.Community;
 import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamFormatService;
 import org.dspace.content.service.BitstreamService;
-import org.dspace.content.service.CollectionService;
 import org.dspace.core.Constants;
 import org.dspace.disseminate.CitationDocumentServiceImpl;
 import org.dspace.eperson.EPerson;
@@ -106,7 +104,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
@@ -141,17 +138,7 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
     private AuthorizeService authorizeService;
 
     @Autowired
-    private CollectionService collectionService;
-
-    @Autowired
     private BitstreamStorageService bitstreamStorageService;
-
-    @Autowired
-    @Named("s3Store")
-    private S3BitStoreService s3BitStoreService;
-
-    @Autowired
-    private ApplicationContext applicationContext;
 
     // S3Mock related fields for integration testing
     private S3Mock s3Mock;
