@@ -3361,6 +3361,8 @@
           <required />
           <hint>Inserire l’ISSN del periodico</hint>
         </field>
+      </row>
+      <row>
         <field>
           <dc-schema>glamfonds</dc-schema>
           <dc-element>history</dc-element>
