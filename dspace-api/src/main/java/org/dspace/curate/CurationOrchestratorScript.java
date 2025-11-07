@@ -700,6 +700,14 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.s3Client = s3Client;
     }
 
+    public BitstreamStorageService getBitstreamStorageService() {
+        return bitstreamStorageService;
+    }
+
+    public void setBitstreamStorageService(BitstreamStorageService bitstreamStorageService) {
+        this.bitstreamStorageService = bitstreamStorageService;
+    }
+
     @Override
     public CurationOrchestratorScriptConfiguration getScriptConfiguration() {
         ServiceManager sm = new DSpace().getServiceManager();

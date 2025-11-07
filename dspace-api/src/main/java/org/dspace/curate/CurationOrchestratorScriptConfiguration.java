@@ -11,6 +11,8 @@ import org.apache.commons.cli.Options;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
 /**
+ * Configuration class for Curation Orchestrator Script
+ * @param <T> the DSpaceRunnable type
  *
  * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
  **/
