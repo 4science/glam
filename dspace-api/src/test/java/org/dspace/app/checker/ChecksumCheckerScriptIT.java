@@ -67,10 +67,8 @@ import org.mockito.Mockito;
  */
 public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String TEST_FILE = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore/droid" +
-        "/empty" +
-        ".pdf";
-    private static final String TEST_OUTPUT = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore";
+    private static final String TEST_FILE = "./target/testing/dspace/assetstore/droid/empty.pdf";
+    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
 
     private MostRecentChecksumService mostRecentChecksumService;
     private ChecksumHistoryService checksumHistoryService;
