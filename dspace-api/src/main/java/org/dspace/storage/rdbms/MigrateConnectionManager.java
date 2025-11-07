@@ -19,7 +19,6 @@ import java.sql.Statement;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import org.dspace.app.migration.MigrateScript;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 
@@ -31,11 +30,12 @@ public class MigrateConnectionManager {
 
     }
 
-    public static void getAllProperties() throws SQLException {
-        getProperties("rp_prop.sql", MigrateScript.RP_CSV);
-        getProperties("pj_prop.sql", MigrateScript.PJ_CSV);
-        getProperties("ou_prop.sql", MigrateScript.OU_CSV);
-        getProperties("do_prop.sql", MigrateScript.DO_CSV);
+    public static void getAllProperties(String rpPath, String pjPath, String ouPath, String doPath)
+        throws SQLException {
+        getProperties("rp_prop.sql", rpPath);
+        getProperties("pj_prop.sql", pjPath);
+        getProperties("ou_prop.sql", ouPath);
+        getProperties("do_prop.sql", doPath);
         System.out.println("Loaded CRIS prop");
     }
 
@@ -101,8 +101,7 @@ public class MigrateConnectionManager {
         // RP
         ResultSet rs = stmt.executeQuery(sqlReader(sqlFile));
         try (CSVPrinter printer = new CSVPrinter(
-            new FileWriter(
-                configurationService.getProperty("dspace.dir") + outputFile),
+            new FileWriter(outputFile),
             CSVFormat.EXCEL)) {
             printer.printRecord("crisid", "shortname", "parent_id", "positiondef",
                 "nested_object_id", "visibility", "textvalue", "datevalue",
