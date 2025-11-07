@@ -63,6 +63,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.findify.s3mock.S3Mock;
+import jakarta.inject.Named;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -146,6 +147,7 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
     private BitstreamStorageService bitstreamStorageService;
 
     @Autowired
+    @Named("s3Store")
     private S3BitStoreService s3BitStoreService;
 
     @Autowired
