@@ -15,13 +15,6 @@
         </step>
     </command>
     <command>
-        <name>checker</name>
-        <description>Run the checksum checker</description>
-        <step>
-            <class>org.dspace.app.checker.ChecksumChecker</class>
-        </step>
-    </command>
-    <command>
         <name>checker-emailer</name>
         <description>Send emails related to the checksum checker</description>
         <step>
