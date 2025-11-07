@@ -67,7 +67,7 @@ public class CSVCollector<T> {
         }
         return header.stream()
                      .map(entry ->
-                        quoteIfNeeded(lineMappers.get(entry).apply(row))
+                        addBoundingQuotes(lineMappers.get(entry).apply(row))
                      ).collect(Collectors.toList());
     }
 
@@ -79,7 +79,40 @@ public class CSVCollector<T> {
         return lineMappers.keySet();
     }
 
-    protected String quoteIfNeeded(String input) {
+
+    /**
+     * Removes bounding double quotes from a string if present.
+     * Only removes quotes that are at the very beginning and end of the string.
+     * Quotes within the string content are preserved.
+     *
+     * Examples:
+     * - "\"hello\"" -> "hello"
+     * - "\"hello \"world\"\"" -> "hello \"world\""
+     * - "hello" -> "hello"
+     * - "\"\"hello\"\"" -> "\"hello\""
+     *
+     * @param input the input string
+     * @return the string with bounding quotes removed, or the original string if no bounding quotes
+     */
+    public static String removeBoundingQuotes(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        if (input.length() >= 2 && input.startsWith("\"") && input.endsWith("\"")) {
+            return input.substring(1, input.length() - 1);
+        }
+
+        return input;
+    }
+
+    /**
+     * Adds bounding quotes to the given String if are not already there.
+     *
+     * @param input the input String
+     * @return String with bounding quotes.
+     */
+    public static String addBoundingQuotes(String input) {
         if (input == null) {
             return null;
         }

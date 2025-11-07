@@ -25,10 +25,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.dspace.AbstractIntegrationTestWithDatabase;
 import org.dspace.app.launcher.ScriptLauncher;
@@ -38,6 +38,7 @@ import org.dspace.builder.CollectionBuilder;
 import org.dspace.builder.CommunityBuilder;
 import org.dspace.builder.ItemBuilder;
 import org.dspace.checker.CSVChecksumResultMailCollector;
+import org.dspace.checker.CSVCollector;
 import org.dspace.checker.CSVDroidChecksumCollector;
 import org.dspace.checker.ChecksumResultCode;
 import org.dspace.checker.DroidCheckResult;
@@ -66,8 +67,10 @@ import org.mockito.Mockito;
  */
 public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String TEST_FILE = "./target/testing/dspace/assetstore/droid/empty.pdf";
-    private static final String TEST_OUTPUT = "./target/testing/dspace/assetstore";
+    private static final String TEST_FILE = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore/droid" +
+        "/empty" +
+        ".pdf";
+    private static final String TEST_OUTPUT = "/home/vins/dev/projects/DSpace7/dspace-test/dspace/assetstore";
 
     private MostRecentChecksumService mostRecentChecksumService;
     private ChecksumHistoryService checksumHistoryService;
@@ -333,7 +336,11 @@ public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName))) {
             records =
                 reader.lines()
-                      .map(line -> Arrays.asList(line.split(CSVDroidChecksumCollector.getFieldsSeparator())))
+                      .map(line ->
+                               Stream.of(line.split(CSVChecksumResultMailCollector.getFieldsSeparator()))
+                                     .map(CSVCollector::removeBoundingQuotes)
+                                     .collect(Collectors.toList())
+                      )
                       .collect(Collectors.toList());
         }
 
@@ -390,7 +397,11 @@ public class ChecksumCheckerScriptIT extends AbstractIntegrationTestWithDatabase
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName))) {
             records =
                 reader.lines()
-                      .map(line -> Arrays.asList(line.split(CSVChecksumResultMailCollector.getFieldsSeparator())))
+                      .map(line ->
+                               Stream.of(line.split(CSVChecksumResultMailCollector.getFieldsSeparator()))
+                                   .map(CSVCollector::removeBoundingQuotes)
+                                   .collect(Collectors.toList())
+                      )
                       .collect(Collectors.toList());
         }
 
