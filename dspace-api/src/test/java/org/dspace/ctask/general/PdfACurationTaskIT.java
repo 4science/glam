@@ -28,6 +28,7 @@ import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.Item;
+import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.curate.service.CurationTaskResult;
@@ -35,7 +36,6 @@ import org.dspace.storage.bitstore.BitStoreService;
 import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
 import org.dspace.storage.bitstore.S3BitStoreService;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Rudimentary test of the PdfACurationTask curation task.
@@ -44,9 +44,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class PdfACurationTaskIT extends AbstractIntegrationTestWithDatabase {
 
-    @Autowired
-    protected ItemService itemService;
-    private BitstreamService bitstreamService;
+    private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
+    private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
 
     @Test
     public void testGetRelatedBundle() {
@@ -135,14 +134,18 @@ public class PdfACurationTaskIT extends AbstractIntegrationTestWithDatabase {
             task.finalizeTask(context, item, taskResult);
 
             pdfaBundles = itemService.getBundles(item, "PDFA");
+            // Verify that the PDFA bundle has been created and contains the test bitstream
             assertEquals(1, pdfaBundles.size());
-            assertEquals(testBitstream.getName(), pdfaBundles.get(0).getName());
-            context.restoreAuthSystemState();
+            // Verify that the PDFA bundle contains the test bitstream
+            assertEquals(1, pdfaBundles.get(0).getBitstreams().size());
+            // Verify that the bitstream in the PDFA bundle is the test bitstream
+            assertEquals(testBitstream.getName(), pdfaBundles.get(0).getBitstreams().get(0).getName());
         } finally {
             if (testBitstream != null ) {
                 bitstreamService.delete(context, testBitstream);
             }
         }
+        context.restoreAuthSystemState();
     }
 
     @Test

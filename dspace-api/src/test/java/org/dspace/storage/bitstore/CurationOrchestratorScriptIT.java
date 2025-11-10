@@ -163,7 +163,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
 
         String keyForPDFA = "results/Test.pdf";
-        InputStream pdfaInputStream = generatePDFA();
+        InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content");
         amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA, pdfaInputStream, new ObjectMetadata());
 
         // Verify that the output JSON objects have been uploaded
@@ -216,12 +216,8 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         return new ByteArrayInputStream(mapper.writeValueAsBytes(json));
     }
 
-    private InputStream generatePDFA() {
-        String pdfaContent = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj" +
-                "<</Type/Pages/Count 1/Kids[3 0 R]>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent" +
-                " 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000056" +
-                " 00000 n\n0000000115 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n212\n%%EOF";
-        return new ByteArrayInputStream(pdfaContent.getBytes(StandardCharsets.UTF_8));
+    private InputStream generatePDFA(String text) {
+        return new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
     }
 
     private AmazonS3 createAmazonS3Client(String endpoint) {
