@@ -263,6 +263,11 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
         return this;
     }
 
+    public BitstreamBuilder withChecksum(String checksum) {
+        bitstream.setChecksum(checksum);
+        return this;
+    }
+
     @Override
     public Bitstream build() {
         try {

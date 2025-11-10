@@ -195,6 +195,10 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.marcxml2item.XmlToItemImportScriptCli"/>
     </bean>
 
+    <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerCliScriptConfiguration" primary="true">
+        <property name="description" value="Verifies the checksum of every item within DSpace"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerCliScript"/>
+    </bean>
     <bean id="curateOrchestrator" class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
         <property name="description" value="Orchestrator Curation tasks"/>
         <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>

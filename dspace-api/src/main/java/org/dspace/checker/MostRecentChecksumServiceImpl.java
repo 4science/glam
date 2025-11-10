@@ -9,11 +9,13 @@ package org.dspace.checker;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.logging.log4j.Logger;
 import org.dspace.checker.dao.MostRecentChecksumDAO;
 import org.dspace.checker.service.ChecksumResultService;
+import org.dspace.checker.service.DroidCheckResultService;
 import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.service.BitstreamService;
@@ -36,6 +38,9 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
 
     @Autowired(required = true)
     protected ChecksumResultService checksumResultService;
+
+    @Autowired(required = true)
+    protected DroidCheckResultService droidCheckResultService;
 
     @Autowired(required = true)
     protected BitstreamService bitstreamService;
@@ -111,45 +116,64 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
 //                + "from bitstream where not exists( "
 //                + "select 'x' from most_recent_checksum "
 //                + "where most_recent_checksum.bitstream_id = bitstream.bitstream_id )";
+        int offset = 0;
+        int limit = 10;
+        boolean canFetch = true;
+        while (canFetch) {
+            log.info("Fetching next {} bitstreams", limit);
+            Iterator<Bitstream> unknownBitstreams =
+                bitstreamService.findBitstreamsWithNoRecentChecksum(context, offset, limit)
+                                .iterator();
+            Bitstream bitstream;
+            int fetched = 0;
+            while (unknownBitstreams.hasNext() && (bitstream = unknownBitstreams.next()) != null) {
+                fetched++;
+                log.info("Processing bitstream {} - {}", bitstream.getID().toString(), bitstream.getName());
+                MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
+                mostRecentChecksum.setBitstream(bitstream);
+                //Only process if our bitstream isn't deleted
+                mostRecentChecksum.setToBeProcessed(!bitstream.isDeleted());
+                if (bitstream.getChecksum() == null) {
+                    mostRecentChecksum.setCurrentChecksum("");
+                    mostRecentChecksum.setExpectedChecksum("");
+                } else {
+                    mostRecentChecksum.setCurrentChecksum(bitstream.getChecksum());
+                    mostRecentChecksum.setExpectedChecksum(bitstream.getChecksum());
+                }
+                mostRecentChecksum.setProcessStartDate(new Date());
+                mostRecentChecksum.setProcessEndDate(new Date());
+                if (bitstream.getChecksumAlgorithm() == null) {
+                    mostRecentChecksum.setChecksumAlgorithm("MD5");
+                } else {
+                    mostRecentChecksum.setChecksumAlgorithm(bitstream.getChecksumAlgorithm());
+                }
+                mostRecentChecksum.setMatchedPrevChecksum(true);
+                ChecksumResult checksumResult;
+                if (bitstream.isDeleted()) {
+                    checksumResult =
+                        checksumResultService.findByCode(context, ChecksumResultCode.BITSTREAM_MARKED_DELETED);
+                } else {
+                    checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.CHECKSUM_MATCH);
+                }
+                mostRecentChecksum.setChecksumResult(checksumResult);
+                mostRecentChecksumDAO.create(context, mostRecentChecksum);
+                mostRecentChecksumDAO.save(context, mostRecentChecksum);
 
-        List<Bitstream> unknownBitstreams = bitstreamService.findBitstreamsWithNoRecentChecksum(context);
-        for (Bitstream bitstream : unknownBitstreams) {
-            log.info(bitstream + " " + bitstream.getID().toString() + " " + bitstream.getName());
-
-            MostRecentChecksum mostRecentChecksum = new MostRecentChecksum();
-            mostRecentChecksum.setBitstream(bitstream);
-            //Only process if our bitstream isn't deleted
-            mostRecentChecksum.setToBeProcessed(!bitstream.isDeleted());
-            if (bitstream.getChecksum() == null) {
-                mostRecentChecksum.setCurrentChecksum("");
-                mostRecentChecksum.setExpectedChecksum("");
-            } else {
-                mostRecentChecksum.setCurrentChecksum(bitstream.getChecksum());
-                mostRecentChecksum.setExpectedChecksum(bitstream.getChecksum());
+                context.uncacheEntity(bitstream);
             }
-            mostRecentChecksum.setProcessStartDate(new Date());
-            mostRecentChecksum.setProcessEndDate(new Date());
-            if (bitstream.getChecksumAlgorithm() == null) {
-                mostRecentChecksum.setChecksumAlgorithm("MD5");
-            } else {
-                mostRecentChecksum.setChecksumAlgorithm(bitstream.getChecksumAlgorithm());
-            }
-            mostRecentChecksum.setMatchedPrevChecksum(true);
-            ChecksumResult checksumResult;
-            if (bitstream.isDeleted()) {
-                checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.BITSTREAM_MARKED_DELETED);
-            } else {
-                checksumResult = checksumResultService.findByCode(context, ChecksumResultCode.CHECKSUM_MATCH);
-            }
-            mostRecentChecksum.setChecksumResult(checksumResult);
-            mostRecentChecksumDAO.create(context, mostRecentChecksum);
-            mostRecentChecksumDAO.save(context, mostRecentChecksum);
+            context.commit();
+            offset += fetched;
+            canFetch = fetched > 0 && offset % limit == 0;
+            log.info("Processed {} bitstreams", offset);
         }
     }
 
     @Override
     public void deleteByBitstream(Context context, Bitstream bitstream) throws SQLException {
-        mostRecentChecksumDAO.deleteByBitstream(context, bitstream);
+        MostRecentChecksum found = mostRecentChecksumDAO.findByBitstream(context, bitstream);
+        if (found != null) {
+            mostRecentChecksumDAO.delete(context, found);
+        }
     }
 
     /**
@@ -179,6 +203,43 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
         return mostRecentChecksumDAO.getOldestRecord(context, lessThanDate);
     }
 
+    /**
+     * Get the oldest most recent checksum record that was processed using
+     * DROID. If more than one found the first one in the result set is returned.
+     *
+     * @param context
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public MostRecentChecksum findOldestByDroid(Context context) throws SQLException {
+        return mostRecentChecksumDAO.getOldestByDroid(context);
+    }
+
+    /**
+     * Get the oldest most recent checksum record starting from the provided Date that has been validated with DROID.
+     * If more than one found the first one in the result set is returned.
+     *
+     * @param context      context
+     * @param lessThanDate date
+     * @return id of olded bitstream or -1 if not bitstreams are found
+     * @throws SQLException if database error
+     */
+    @Override
+    public MostRecentChecksum findOldestByDroid(Context context, Date lessThanDate) throws SQLException {
+        return mostRecentChecksumDAO.getOldestByDroid(context, lessThanDate);
+    }
+
+    @Override
+    public Iterator<MostRecentChecksum> findAll(
+        Context context,
+        Date lessThanDate,
+        int offset,
+        int limit
+    ) throws SQLException {
+        return mostRecentChecksumDAO.findAll(context, lessThanDate, offset, limit);
+    }
+
     @Override
     public List<MostRecentChecksum> findNotInHistory(Context context) throws SQLException {
         return mostRecentChecksumDAO.findNotInHistory(context);
@@ -187,5 +248,15 @@ public class MostRecentChecksumServiceImpl implements MostRecentChecksumService 
     @Override
     public void update(Context context, MostRecentChecksum mostRecentChecksum) throws SQLException {
         mostRecentChecksumDAO.save(context, mostRecentChecksum);
+    }
+
+    @Override
+    public void setDroidResults(Context context, MostRecentChecksum checksum, List<DroidCheckResult> droidValidation)
+        throws SQLException {
+        // remove older droid validation file
+        checksum.getDroidCheckResults().clear();
+        if (droidValidation != null && !droidValidation.isEmpty()) {
+            checksum.getDroidCheckResults().addAll(droidValidation);
+        }
     }
 }
