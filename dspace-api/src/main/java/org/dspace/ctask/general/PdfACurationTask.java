@@ -48,6 +48,7 @@ import org.dspace.curate.service.CurationTaskResult;
 import org.dspace.storage.bitstore.BitStoreService;
 import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
 import org.dspace.storage.bitstore.S3BitStoreService;
+import org.dspace.storage.bitstore.service.BitstreamStorageService;
 
 /**
  * PDF/A Curation Task that processes PDF bitstreams and creates PDF/A compliant versions.
@@ -138,8 +139,9 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         Iterator<Bitstream> bitstreams = this.bitstreamService.getBitstreamByBundleName(item, "ORIGINAL").iterator();
         while (bitstreams.hasNext()) {
             Bitstream currentBitstream = bitstreams.next();
-            BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) this.bitstreamStorageService).getStores()
-                                                                                .get(currentBitstream.getStoreNumber());
+            var currentBitstreamStoreNumber = currentBitstream.getStoreNumber();
+            BitStoreService bitStoreService = ((BitstreamStorageServiceImpl) bitstreamStorageService).getStores()
+                                                                                      .get(currentBitstreamStoreNumber);
             if (!(bitStoreService instanceof S3BitStoreService)) {
                 var message = "PdfACurationTask: Skipping bitstream {} because is not stored on S3!";
                 log.info(message, currentBitstream.getID());
@@ -311,6 +313,10 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     @Override
     public int perform(Context ctx, String id) throws IOException {
         return 1;
+    }
+
+    public void setBitstreamStorageService(BitstreamStorageService bitstreamStorageService) {
+        this.bitstreamStorageService = bitstreamStorageService;
     }
 
 }

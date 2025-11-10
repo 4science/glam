@@ -359,14 +359,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return ((S3BitStoreService) bitStoreService).getBucketName();
     }
 
-    private String getBucketNameOutput() {
-        return configurationService.getProperty("curation.s3.bucketName-output");
-    }
-
-    private String getCustomerId() {
-        return configurationService.getProperty("curation.s3.customer-id");
-    }
-
     private void checkBucket(String uploadBucket) {
         if (!this.s3Client.doesBucketExistV2(uploadBucket)) {
             log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
@@ -487,10 +479,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         } catch (IOException | MessagingException e) {
             handler.logError("Error sending curation report email to: " + recipient, e);
         }
-    }
-
-    private boolean isSendingReportEnabled() {
-        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
     }
 
     private void assignCurrentUserInContext() throws SQLException {
@@ -644,10 +632,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
-    private int getTotalTimeout() {
-        return configurationService.getIntProperty("curation.total.timeout.minutes", 20);
-    }
-
     private void setExecutionMetadata(Item item) throws SQLException {
         addOrUpdateProcessMetadata(item);
         appendHistoryMetadata(item);
@@ -692,20 +676,28 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         itemService.addMetadata(context, item, "cris", "curation", "history", null, combinedValue);
     }
 
+    private int getTotalTimeout() {
+        return configurationService.getIntProperty("curation.total.timeout.minutes", 20);
+    }
+
+    private boolean isSendingReportEnabled() {
+        return configurationService.getBooleanProperty("curation.s3.send-report.enabled", true);
+    }
+
+    private String getBucketNameOutput() {
+        return configurationService.getProperty("curation.s3.bucketName-output");
+    }
+
+    private String getCustomerId() {
+        return configurationService.getProperty("curation.s3.customer-id");
+    }
+
     public AmazonS3 getS3Client() {
         return s3Client;
     }
 
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
-    }
-
-    public BitstreamStorageService getBitstreamStorageService() {
-        return bitstreamStorageService;
-    }
-
-    public void setBitstreamStorageService(BitstreamStorageService bitstreamStorageService) {
-        this.bitstreamStorageService = bitstreamStorageService;
     }
 
     @Override
