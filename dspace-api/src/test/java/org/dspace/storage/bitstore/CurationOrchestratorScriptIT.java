@@ -35,6 +35,7 @@ import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dspace.AbstractIntegrationTestWithDatabase;
+import org.dspace.app.scripts.handler.impl.TestDSpaceRunnableHandler;
 import org.dspace.builder.BitstreamBuilder;
 import org.dspace.builder.CollectionBuilder;
 import org.dspace.builder.CommunityBuilder;
@@ -44,6 +45,7 @@ import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Item;
 import org.dspace.curate.CurationOrchestratorScript;
+import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
@@ -301,12 +303,83 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Verify that the PDFA bundle contains one bitstream
         List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
         assertEquals(2, convertedPDF.size());
-        // Verify that the new bitstream has been created with the expected SequenceID
+        // Verify that the new bitstreams has been created with the expected SequenceID
         assertEquals(bitstream1.getSequenceID(), convertedPDF.get(0).getSequenceID());
         assertEquals(bitstream2.getSequenceID(), convertedPDF.get(1).getSequenceID());
-        // Verify that the new bitstream has been created with the expected name
+        // Verify that the new bitstreams has been created with the expected name
         assertEquals(bitstream1.getName(), convertedPDF.get(0).getName());
         assertEquals(bitstream2.getName(), convertedPDF.get(1).getName());
+    }
+
+    @Test
+    public void launchCurationOrchestratorScriptForItemWithNoPDFaGeneratedTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+        Item publication = ItemBuilder.createItem(context, collection)
+                                      .withTitle("Publication Item test")
+                                      .withAuthor("Andrea, Boldrin")
+                                      .withCurationTask("pdfATransformer")
+                                      .withType("content")
+                                      .build();
+
+        String pdfContent = "PDF 1 test-content";
+        Bitstream bitstream1;
+        try (InputStream is1 = IOUtils.toInputStream(pdfContent, "UTF-8")) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, publication, is1)
+                                         .withName("my-test.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withStoreNumber(4)
+                                         .build();
+        }
+        context.commit();
+
+        // Mock S3BitStoreService methods
+        when(s3BitStoreServiceMock.getBucketName()).thenReturn("test-bucket-input");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream1.getInternalId())).thenReturn("relative-path/my-test.pdf");
+
+        context.restoreAuthSystemState();
+
+        // Ensure no PDFA bundle exists before running the script
+        List<Bundle> pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(0, pdfaBudles.size());
+
+        // Run the Curation Orchestrator Script
+        String scriptName = "curateOrchestrator";
+        String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
+
+        List<DSpaceCommandLineParameter> params = List.of(
+            new DSpaceCommandLineParameter("-t", "pdfATransformer"),
+            new DSpaceCommandLineParameter("-id", publication.getID().toString())
+        );
+
+        TestDSpaceRunnableHandler testDSpaceRunnableHandler = new TestDSpaceRunnableHandler();
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
+        curationOrchestratorScript.initialize(args, testDSpaceRunnableHandler, admin);
+
+        InputStream jsonInputStream = generateFailedOutputJSON(bitstream1);
+        String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRundomId(),
+                                                                        bitstream1.getID());
+        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+        // Verify that the output JSON objects have been uploaded
+        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
+
+        curationOrchestratorScript.setS3Client(amazonS3Client);
+        curationOrchestratorScript.run();
+
+        publication = context.reloadEntity(publication);
+
+        // Verify that the PDFA bundle has not been created
+        pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(0, pdfaBudles.size());
+
+        // Verify error messages
+        List<String> errors = testDSpaceRunnableHandler.getErrorMessages();
+        assertEquals(3, errors.size());
+        assertEquals("Serverless tasks failed:1", errors.get(0));
+        var expectedError = String.format("FAILED: Serverless task:pdfATransformer, with error:Validation error:" +
+                                          " file is not PDF/A compliant , for bitstreams: , and origin bitstream:%s .",
+                                          bitstream1.getID());
+        assertEquals(expectedError, errors.get(1));
+        assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(2));
     }
 
     private InputStream generateOutputJSON(Bitstream bitstream, String name) throws JsonProcessingException {
@@ -316,6 +389,16 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         json.put("error", "");
         json.put("uuid", bitstream.getID().toString());
         json.put("status", "success");
+        return new ByteArrayInputStream(mapper.writeValueAsBytes(json));
+    }
+
+    private InputStream generateFailedOutputJSON(Bitstream bitstream) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode json = mapper.createObjectNode();
+        json.put("output_path", "");
+        json.put("error", "Validation error: file is not PDF/A compliant");
+        json.put("uuid", bitstream.getID().toString());
+        json.put("status", "failed");
         return new ByteArrayInputStream(mapper.writeValueAsBytes(json));
     }
 
