@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.scripts;
+package org.dspace.app.rest.scripts.handler.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
@@ -38,19 +37,27 @@ import org.dspace.eperson.Group;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
 import org.dspace.eperson.service.GroupService;
+import org.dspace.scripts.DSpaceCommandLineParameter;
+import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.scripts.Process;
+import org.dspace.scripts.ProcessDSpaceRunnableHandler;
+import org.dspace.scripts.ProcessLogLevel;
 import org.dspace.scripts.factory.ScriptServiceFactory;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
 import org.dspace.scripts.service.ProcessService;
+import org.dspace.services.ConfigurationService;
+import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.utils.DSpace;
 import org.springframework.core.task.TaskExecutor;
 
 /**
  * The {@link DSpaceRunnableHandler} dealing with Scripts started from the REST api
  */
-public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
+public class RestDSpaceRunnableHandler extends ProcessDSpaceRunnableHandler {
+    private static final Logger log = org.apache.logging.log4j.LogManager
+        .getLogger(RestDSpaceRunnableHandler.class);
 
-    private static final Logger log = LogManager.getLogger(ProcessDSpaceRunnableHandler.class);
-
+    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
     private ProcessService processService = ScriptServiceFactory.getInstance().getProcessService();
     private EPersonService ePersonService = EPersonServiceFactory.getInstance().getEPersonService();
@@ -61,8 +68,6 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
     private UUID ePersonId;
     private Locale locale;
 
-    public ProcessDSpaceRunnableHandler() {}
-
     /**
      * This constructor will initialise the handler with the process created from the parameters
      * @param ePerson       The eperson that creates the process
@@ -71,8 +76,8 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
      * @param specialGroups The list of special groups related to eperson creating process at process creation time
      * @param currentLocale The context current locale to use inside the runnable handler
      */
-    public ProcessDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
-                                        final List<Group> specialGroups, final Locale currentLocale) {
+    public RestDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
+            final List<Group> specialGroups, final Locale currentLocale) {
         Context context = new Context();
         this.locale = Optional.ofNullable(currentLocale).orElse(context.getCurrentLocale());
         context.setCurrentLocale(this.locale);
@@ -139,7 +144,7 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
 
     @Override
     public void handleException(Exception e) {
-        handleException(e.getMessage(), e);
+        handleException(null, e);
     }
 
     @Override
@@ -297,8 +302,10 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
      * @param script    The script to be ran
      */
     public void schedule(DSpaceRunnable script) {
+        String taskExecutorBeanName = configurationService.getProperty("dspace.task.executor",
+                                                                  "dspaceRunnableThreadExecutor");
         TaskExecutor taskExecutor = new DSpace().getServiceManager()
-                                                .getServiceByName("dspaceRunnableThreadExecutor", TaskExecutor.class);
+                                                .getServiceByName(taskExecutorBeanName, TaskExecutor.class);
         Context context = new Context();
         try {
             Process process = processService.find(context, processId);
