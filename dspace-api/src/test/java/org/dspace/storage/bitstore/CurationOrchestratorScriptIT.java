@@ -45,7 +45,6 @@ import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Item;
 import org.dspace.curate.CurationOrchestratorScript;
-import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
