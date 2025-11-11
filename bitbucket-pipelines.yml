@@ -9,8 +9,7 @@ definitions:
     maven-java17: ~/.m2/repository
   mvnVars:
     # Please mind to start with a comma if you add one or more addon profiles
-    &setEnv export MAVEN_OPTS="-Xmx4096M" &&
-    export MAVEN_ARGS="-Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS" &&
+    &setEnv export MAVEN_ARGS="-Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS" &&
     export ADDON_PROFILES=",addon-iiif,addon-ocr,addon-video,addon-document-viewer,addon-analytics,addon-dataquality,addon-networklab,addon-orchestrator,addon-loginmiur,addon-importplus"
   steps:
     - step: &install
@@ -51,7 +50,7 @@ definitions:
         script:
           - *setEnv
           - cp -rf target/local-repo/** ~/.m2/repository/
-          - mvn -T 1C test -B -pl dspace-api,dspace-server-webapp,dspace-services,dspace-oai -P-assembly -nsu -ntp -Dmaven.main.skip -DuseIncrementalCompilation=false -Dtest.argLine="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=60 -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError" -DskipUnitTests=false $MAVEN_ARGS
+          - mvn -T 1C test -B -pl dspace-api,dspace-server-webapp,dspace-services,dspace-oai -P-assembly -nsu -ntp -Dmaven.main.skip -DuseIncrementalCompilation=false -Dtest.argLine="-XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=60 -XX:+HeapDumpOnOutOfMemoryError" -DskipUnitTests=false $MAVEN_ARGS
         artifacts:
           - dspace-api/target/surefire-reports/*-output.txt
           - dspace-server-webapp/target/surefire-reports/*-output.txt

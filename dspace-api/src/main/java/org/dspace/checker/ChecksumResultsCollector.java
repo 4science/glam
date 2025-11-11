@@ -7,7 +7,9 @@
  */
 package org.dspace.checker;
 
+import java.io.File;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.dspace.core.Context;
 
@@ -27,4 +29,10 @@ public interface ChecksumResultsCollector {
      * @throws SQLException if database error
      */
     void collect(Context context, MostRecentChecksum info) throws SQLException;
+
+    default void complete(Context context) throws SQLException {}
+
+    default List<File> output(Context context) throws Exception {
+        return List.of();
+    }
 }
