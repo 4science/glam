@@ -133,7 +133,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
     }
 
     @Test
-    public void launchCurationOrchestratorScriptForItemIT() throws Exception {
+    public void launchCurationOrchestratorScriptForItemWithSinglePdfTest() throws Exception {
         context.turnOffAuthorisationSystem();
         Item publication = ItemBuilder.createItem(context, collection)
                                       .withTitle("Publication Item test")
@@ -162,7 +162,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         context.commit();
 
         // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
-        InputStream jsonInputStream = generateOutputJSON(bitstream);
+        InputStream jsonInputStream = generateOutputJSON(bitstream, "Test.pdf");
         String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream.getID());
         amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
 
@@ -207,13 +207,112 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         assertEquals(bitstream.getSequenceID(), convertedPDF.get(0).getSequenceID());
         // Verify that the new bitstream has been created with the expected name
         assertEquals(bitstream.getName(), convertedPDF.get(0).getName());
-
     }
 
-    private InputStream generateOutputJSON(Bitstream bitstream) throws JsonProcessingException {
+    @Test
+    public void launchCurationOrchestratorScriptForItemWithMultiplePdfTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+        Item publication = ItemBuilder.createItem(context, collection)
+                                      .withTitle("Publication Item test")
+                                      .withAuthor("Andrea, Boldrin")
+                                      .withCurationTask("pdfATransformer")
+                                      .withType("content")
+                                      .build();
+
+        String pdfContent = "PDF 1 test-content";
+        String txtContent = "This is a text file";
+        String pdfContent2 = "PDF 2 Test";
+
+        Bitstream bitstream1;
+        Bitstream bitstream2;
+        try (InputStream is1 = IOUtils.toInputStream(pdfContent, "UTF-8");
+             InputStream is2 = IOUtils.toInputStream(txtContent, "UTF-8");
+             InputStream is3 = IOUtils.toInputStream(pdfContent2, "UTF-8")) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, publication, is1)
+                                         .withName("my-test.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withStoreNumber(4)
+                                         .build();
+            BitstreamBuilder.createBitstream(context, publication, is2)
+                            .withName("test.txt")
+                            .withStoreNumber(4)
+                            .withMimeType("text/plain")
+                            .build();
+            bitstream2 = BitstreamBuilder.createBitstream(context, publication, is3)
+                                         .withName("mySecondTest.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withStoreNumber(4)
+                                         .build();
+        }
+        context.commit();
+
+        // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
+        InputStream jsonInputStream = generateOutputJSON(bitstream1, "my-output-test.pdf");
+        String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream1.getID());
+        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+
+        String keyForPDFA = "results/my-output-test.pdf";
+        InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content 4 bitstream 1");
+        amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA, pdfaInputStream, new ObjectMetadata());
+
+        InputStream jsonInputStream2 = generateOutputJSON(bitstream2, "mySecondTest-output.pdf");
+        String keyForJSON2 = String.format("1/%s-pdfATransformer.json", bitstream2.getID());
+        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON2, jsonInputStream2, new ObjectMetadata());
+
+        String keyForPDFA2 = "results/mySecondTest-output.pdf";
+        InputStream pdfaInputStream2 = generatePDFA("This is a PDF/A file content 4 bitstream 2");
+        amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA2, pdfaInputStream2, new ObjectMetadata());
+
+        // Verify that the output JSON objects have been uploaded
+        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
+        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON2));
+        // The PDF/A file is uploaded to the "results/" folder inside the bucket
+        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForPDFA));
+        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForPDFA2));
+
+        // Mock S3BitStoreService methods
+        when(s3BitStoreServiceMock.getBucketName()).thenReturn("test-bucket-input", "test-bucket-input");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream1.getInternalId())).thenReturn("relative-path/my-test.pdf");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream2.getInternalId()))
+        .thenReturn("relative-path/mySecondTest.pdf");
+
+        context.restoreAuthSystemState();
+
+        // Ensure no PDFA bundle exists before running the script
+        List<Bundle> pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(0, pdfaBudles.size());
+
+        // Run the Curation Orchestrator Script
+        String scriptName = "curateOrchestrator";
+        String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
+
+        ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
+        when(handlerMock.getProcessId()).thenReturn(1, 1);
+
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
+        curationOrchestratorScript.initialize(args, handlerMock, admin);
+        curationOrchestratorScript.setS3Client(amazonS3Client);
+        curationOrchestratorScript.run();
+
+        publication = context.reloadEntity(publication);
+        // Verify that the PDFA bundle has been created
+        pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(1, pdfaBudles.size());
+        // Verify that the PDFA bundle contains one bitstream
+        List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
+        assertEquals(2, convertedPDF.size());
+        // Verify that the new bitstream has been created with the expected SequenceID
+        assertEquals(bitstream1.getSequenceID(), convertedPDF.get(0).getSequenceID());
+        assertEquals(bitstream2.getSequenceID(), convertedPDF.get(1).getSequenceID());
+        // Verify that the new bitstream has been created with the expected name
+        assertEquals(bitstream1.getName(), convertedPDF.get(0).getName());
+        assertEquals(bitstream2.getName(), convertedPDF.get(1).getName());
+    }
+
+    private InputStream generateOutputJSON(Bitstream bitstream, String name) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode json = mapper.createObjectNode();
-        json.put("output_path", "results/Test.pdf");
+        json.put("output_path", "results/" + name);
         json.put("error", "");
         json.put("uuid", bitstream.getID().toString());
         json.put("status", "success");
