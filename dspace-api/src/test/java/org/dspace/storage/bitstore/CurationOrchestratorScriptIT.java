@@ -71,6 +71,8 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
     private File s3Directory;
     private AmazonS3 amazonS3Client;
     private S3BitStoreService s3BitStoreServiceMock;
+    private MockedStatic<StorageServiceFactory> storageServiceFactoryMockedStatic;
+
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
 
     private Collection collection;
@@ -89,8 +91,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         amazonS3Client.createBucket(BUCKET_INPUT);
         amazonS3Client.createBucket(BUCKET_OUTPUT);
 
-        MockedStatic<StorageServiceFactory> storageServiceFactoryMockedStatic =
-                                                                        Mockito.mockStatic(StorageServiceFactory.class);
+        storageServiceFactoryMockedStatic = Mockito.mockStatic(StorageServiceFactory.class);
         StorageServiceFactory storageServiceFactory = mock(StorageServiceFactory.class);
         storageServiceFactoryMockedStatic.when(StorageServiceFactory::getInstance).thenReturn(storageServiceFactory);
 
@@ -125,6 +126,9 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         }
         if (s3Directory != null && s3Directory.exists()) {
             FileUtils.deleteDirectory(s3Directory);
+        }
+        if (storageServiceFactoryMockedStatic != null) {
+            storageServiceFactoryMockedStatic.close();
         }
     }
 
