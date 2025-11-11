@@ -113,6 +113,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private Curator curator;
     private String identifier;
     private List<String> tasks;
+    private String processRundomId;
     private ExecutorService executorService;
     private TaskResolver resolver = new TaskResolver();
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -173,6 +174,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.force = commandLine.hasOption("force");
         this.tasks = List.of(commandLine.getOptionValues("task"));
         this.identifier = commandLine.getOptionValue("identifier");
+        this.processRundomId = "unknown-" + UUID.randomUUID();
     }
 
     private boolean hasInvalidParameters() {
@@ -410,7 +412,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         if (handler instanceof ProcessDSpaceRunnableHandler processDSpaceRunnableHandler) {
             return processDSpaceRunnableHandler.getProcessId().toString();
         }
-        return "unknown-" + UUID.randomUUID();
+        log.warn("Cannot retrieve process id from handler, using random id:{} .", this.processRundomId);
+        return this.processRundomId;
     }
 
     private ResolvedTask getResolvedTasks(String task) throws IOException {
@@ -698,6 +701,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
+    }
+
+    public String getProcessRundomId() {
+        return processRundomId;
     }
 
     @Override
