@@ -346,40 +346,36 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         String scriptName = "curateOrchestrator";
         String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
 
-        List<DSpaceCommandLineParameter> params = List.of(
-            new DSpaceCommandLineParameter("-t", "pdfATransformer"),
-            new DSpaceCommandLineParameter("-id", publication.getID().toString())
-        );
-
         TestDSpaceRunnableHandler testDSpaceRunnableHandler = new TestDSpaceRunnableHandler();
         CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
         curationOrchestratorScript.initialize(args, testDSpaceRunnableHandler, admin);
 
-        InputStream jsonInputStream = generateFailedOutputJSON(bitstream1);
         String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRundomId(),
                                                                         bitstream1.getID());
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
-        // Verify that the output JSON objects have been uploaded
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
+        try (InputStream jsonInputStream = generateFailedOutputJSON(bitstream1)) {
+            amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+            // Verify that the output JSON objects have been uploaded
+            assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
 
-        curationOrchestratorScript.setS3Client(amazonS3Client);
-        curationOrchestratorScript.run();
+            curationOrchestratorScript.setS3Client(amazonS3Client);
+            curationOrchestratorScript.run();
 
-        publication = context.reloadEntity(publication);
+            publication = context.reloadEntity(publication);
 
-        // Verify that the PDFA bundle has not been created
-        pdfaBudles = publication.getBundles("PDFA");
-        assertEquals(0, pdfaBudles.size());
+            // Verify that the PDFA bundle has not been created
+            pdfaBudles = publication.getBundles("PDFA");
+            assertEquals(0, pdfaBudles.size());
 
-        // Verify error messages
-        List<String> errors = testDSpaceRunnableHandler.getErrorMessages();
-        assertEquals(3, errors.size());
-        assertEquals("Serverless tasks failed:1", errors.get(0));
-        var expectedError = String.format("FAILED: Serverless task:pdfATransformer, with error:Validation error:" +
-                                          " file is not PDF/A compliant , for bitstreams: , and origin bitstream:%s .",
-                                          bitstream1.getID());
-        assertEquals(expectedError, errors.get(1));
-        assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(2));
+            // Verify error messages
+            List<String> errors = testDSpaceRunnableHandler.getErrorMessages();
+            assertEquals(3, errors.size());
+            assertEquals("Serverless tasks failed:1", errors.get(0));
+            var expectedError = String.format("FAILED: Serverless task:pdfATransformer, with error:Validation error:" +
+                            " file is not PDF/A compliant , for bitstreams: , and origin bitstream:%s .",
+                    bitstream1.getID());
+            assertEquals(expectedError, errors.get(1));
+            assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(2));
+        }
     }
 
     private InputStream generateOutputJSON(Bitstream bitstream, String name) throws JsonProcessingException {
