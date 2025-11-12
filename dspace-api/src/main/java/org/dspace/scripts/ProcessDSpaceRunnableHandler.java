@@ -41,8 +41,6 @@ import org.dspace.eperson.service.GroupService;
 import org.dspace.scripts.factory.ScriptServiceFactory;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
 import org.dspace.scripts.service.ProcessService;
-import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.utils.DSpace;
 import org.springframework.core.task.TaskExecutor;
 
@@ -53,7 +51,6 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
 
     private static final Logger log = LogManager.getLogger(ProcessDSpaceRunnableHandler.class);
 
-    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
     private ProcessService processService = ScriptServiceFactory.getInstance().getProcessService();
     private EPersonService ePersonService = EPersonServiceFactory.getInstance().getEPersonService();
@@ -298,10 +295,8 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
      * @param script    The script to be ran
      */
     public void schedule(DSpaceRunnable script) {
-        String taskExecutorBeanName = configurationService.getProperty("dspace.task.executor",
-                                                                  "dspaceRunnableThreadExecutor");
         TaskExecutor taskExecutor = new DSpace().getServiceManager()
-                                                .getServiceByName(taskExecutorBeanName, TaskExecutor.class);
+                                                .getServiceByName("dspaceRunnableThreadExecutor", TaskExecutor.class);
         Context context = new Context();
         try {
             Process process = processService.find(context, processId);
