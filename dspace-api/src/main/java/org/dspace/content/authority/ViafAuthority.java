@@ -86,7 +86,7 @@ public class ViafAuthority extends ItemAuthority {
 
     private Choice convertToChoice(ImportRecord record) {
         String value = getMetadataValue(record, "dc", "title", null);
-        String code = getMetadataValue(record, "dc", "identifier", null);
+        String code = getMetadataValue(record, "person", "identifier", null);
         String authority = getAuthorityPrefix() + code;
         String label = StringUtils.isNotBlank(code) ? value + " (" + code + ")" : value;
         return new Choice(authority, value, label, null, getSource());
