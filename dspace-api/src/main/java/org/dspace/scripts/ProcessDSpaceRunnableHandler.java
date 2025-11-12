@@ -64,8 +64,6 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
     private UUID ePersonId;
     private Locale locale;
 
-    public ProcessDSpaceRunnableHandler() {}
-
     /**
      * This constructor will initialise the handler with the process created from the parameters
      * @param ePerson       The eperson that creates the process

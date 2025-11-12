@@ -78,6 +78,7 @@ public class RestDSpaceRunnableHandler extends ProcessDSpaceRunnableHandler {
      */
     public RestDSpaceRunnableHandler(EPerson ePerson, String scriptName, List<DSpaceCommandLineParameter> parameters,
             final List<Group> specialGroups, final Locale currentLocale) {
+        super(ePerson, scriptName, parameters, specialGroups, currentLocale);
         Context context = new Context();
         this.locale = Optional.ofNullable(currentLocale).orElse(context.getCurrentLocale());
         context.setCurrentLocale(this.locale);
