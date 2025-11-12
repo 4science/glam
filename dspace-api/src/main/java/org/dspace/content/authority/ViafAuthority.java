@@ -19,6 +19,7 @@ import org.dspace.importer.external.datamodel.ImportRecord;
 import org.dspace.importer.external.exception.MetadataSourceException;
 import org.dspace.importer.external.metadatamapping.MetadatumDTO;
 import org.dspace.importer.external.viaf.ViafImportMetadataSourceServiceImpl;
+import org.dspace.importer.external.viaf.ViafServiceFactory;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,10 +106,8 @@ public class ViafAuthority extends ItemAuthority {
                                     .getProperty("viaf.authority.prefix", GENERATE + "VIAF-ID" + SPLIT);
     }
 
-    private ViafImportMetadataSourceServiceImpl getViafService() {
-        return this.dspace
-            .getServiceManager()
-            .getServiceByName("ViafImportService", ViafImportMetadataSourceServiceImpl.class);
+    protected ViafImportMetadataSourceServiceImpl getViafService() {
+        return ViafServiceFactory.getInstance().getRorImportMetadataSourceService();
     }
 
 }
