@@ -10,6 +10,8 @@ package org.dspace.app.rest;
 import static org.dspace.authority.service.AuthorityValueService.GENERATE;
 import static org.dspace.authority.service.AuthorityValueService.SPLIT;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.dspace.app.rest.matcher.ItemAuthorityMatcher;
@@ -278,9 +281,8 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
     private Matcher<? super Object> viafEntry(String title, String viafId) {
         String authority = GENERATE + "VIAF-ID" + SPLIT + viafId;
-        String value = title + (viafId != null ? " (" + viafId + ")" : "");
         return ItemAuthorityMatcher.matchItemAuthorityProperties(
-            authority, title, value, "vocabularyEntry");
+            authority, title, title, "vocabularyEntry");
     }
 
     private ImportRecord createImportRecord(String title, String identifier) {
@@ -291,12 +293,184 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
         titleMetadata.setValue(title);
 
         MetadatumDTO identifierMetadata = new MetadatumDTO();
-        identifierMetadata.setSchema("dc");
+        identifierMetadata.setSchema("person");
         identifierMetadata.setElement("identifier");
         identifierMetadata.setQualifier(null);
         identifierMetadata.setValue(identifier);
 
         return new ImportRecord(List.of(titleMetadata, identifierMetadata));
+    }
+
+    @Test
+    public void testViafAuthorityBuildExtrasWithDisabledFields() throws Exception {
+        // Override configuration to disable certain fields
+        configurationService.setProperty("cris.ViafAuthority.gender.display", false);
+        configurationService.setProperty("cris.ViafAuthority.birthDate.display", false);
+        configurationService.setProperty("cris.ViafAuthority.nationality.as-data", false);
+        configurationService.setProperty("cris.ViafAuthority.role.display", false);
+        configurationService.setProperty("cris.ViafAuthority.role.as-data", false);
+
+        // Create a comprehensive ImportRecord with all VIAF metadata fields
+        ImportRecord completeViafRecord = createCompleteViafImportRecord();
+
+        List<ImportRecord> viafRecords = List.of(completeViafRecord);
+
+        when(metadataSourceService.getRecords(eq("config-test"), anyInt(), anyInt()))
+            .thenReturn(viafRecords);
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
+            .param("filter", "config-test"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
+            .andExpect(jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
+
+            // Test fields that should still be displayed (not disabled)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']", is("1452")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']", is("1519-05-02")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject", is("Artists--Italy")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']", is("Artists--Italy")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink", is("http://viaf.org/viaf/12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']", is("http://viaf.org/viaf/12345678")))
+
+            // Test fields that should NOT be displayed (disabled display)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender").doesNotExist())
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate").doesNotExist())
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
+
+            // Test fields that should still have data attributes (unless as-data disabled)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']", is("1452-04-15")))
+
+            // Test field with both display and as-data disabled (should not exist at all)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']").doesNotExist())
+
+            // Test field with as-data disabled but display enabled by default (nationality)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_nationality']").doesNotExist());
+
+        // Clean up configuration changes to not affect other tests
+        configurationService.setProperty("cris.ViafAuthority.gender.display", true);
+        configurationService.setProperty("cris.ViafAuthority.birthDate.display", true);
+        configurationService.setProperty("cris.ViafAuthority.nationality.as-data", true);
+        configurationService.setProperty("cris.ViafAuthority.role.display", true);
+        configurationService.setProperty("cris.ViafAuthority.role.as-data", true);
+    }
+
+    @Test
+    public void testViafAuthorityBuildExtrasAllFields() throws Exception {
+        // Create a comprehensive ImportRecord with all 12 VIAF metadata fields
+        ImportRecord completeViafRecord = createCompleteViafImportRecord();
+
+        List<ImportRecord> viafRecords = List.of(completeViafRecord);
+
+        when(metadataSourceService.getRecords(eq("complete"), anyInt(), anyInt()))
+            .thenReturn(viafRecords);
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
+            .param("filter", "complete"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
+            .andExpect(jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
+            // Test all buildExtras fields
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender", is("male")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate", is("1452-04-15")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']", is("1452-04-15")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']", is("1452")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']", is("1519-05-02")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathYear", is("1519")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathYear']", is("1519")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_nationality']", is("Italian")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role", is("Artist")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']", is("Artist")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject", is("Artists--Italy")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']", is("Artists--Italy")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_variantNames']", is("Leonardo di ser Piero; Léonard de Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink", is("http://viaf.org/viaf/12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']", is("http://viaf.org/viaf/12345678")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_wikipediaLink", is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_wikipediaLink']", is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
+            // Verify variant names are not displayed (display=false in config)
+            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_variantNames").doesNotExist());
+    }
+
+    /**
+     * Creates a comprehensive ImportRecord with all 12 VIAF metadata fields for testing buildExtras
+     */
+    private ImportRecord createCompleteViafImportRecord() {
+        List<MetadatumDTO> metadata = new ArrayList<>();
+
+        // 1. dc.title
+        metadata.add(createMetadatum("dc", "title", null, "Leonardo da Vinci"));
+
+        // 2. person.identifier
+        metadata.add(createMetadatum("person", "identifier", null, "12345678"));
+
+        // 3. glamperson.gender
+        metadata.add(createMetadatum("glamperson", "gender", null, "male"));
+
+        // 4. person.birthDate
+        metadata.add(createMetadatum("person", "birthDate", null, "1452-04-15"));
+
+        // 5. glamperson.birthYear
+        metadata.add(createMetadatum("glamperson", "birthYear", null, "1452"));
+
+        // 6. glamperson.deathDate
+        metadata.add(createMetadatum("glamperson", "deathDate", null, "1519-05-02"));
+
+        // 7. glamperson.deathYear
+        metadata.add(createMetadatum("glamperson", "deathYear", null, "1519"));
+
+        // 8. person.nationality
+        metadata.add(createMetadatum("person", "nationality", null, "Italian"));
+
+        // 9. glamperson.role
+        metadata.add(createMetadatum("glamperson", "role", null, "Artist"));
+
+        // 10. dc.subject.lcsh
+        metadata.add(createMetadatum("dc", "subject", "lcsh", "Artists--Italy"));
+
+        // 11. crisrp.name.variant (multiple entries to test collection joining)
+        metadata.add(createMetadatum("crisrp", "name", "variant", "Leonardo di ser Piero"));
+        metadata.add(createMetadatum("crisrp", "name", "variant", "Léonard de Vinci"));
+
+        // 12. glam.link.viaf
+        metadata.add(createMetadatum("glam", "link", "viaf", "http://viaf.org/viaf/12345678"));
+
+        // 13. glam.link.wikipedia
+        metadata.add(createMetadatum("glam", "link", "wikipedia", "https://en.wikipedia.org/wiki/Leonardo_da_Vinci"));
+
+        return new ImportRecord(metadata);
+    }
+
+    /**
+     * Helper method to create MetadatumDTO objects
+     */
+    private MetadatumDTO createMetadatum(String schema, String element, String qualifier, String value) {
+        MetadatumDTO dto = new MetadatumDTO();
+        dto.setSchema(schema);
+        dto.setElement(element);
+        dto.setQualifier(qualifier);
+        dto.setValue(value);
+        return dto;
     }
 
     private String id(Item item) {
