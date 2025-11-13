@@ -59,11 +59,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
-    private static MockedStatic<ViafServiceFactory> mockViafServiceFactory;
-
     public static final String VIAF_PERSON_AUTHORITY =
         "org.dspace.content.authority.ViafAuthority = ViafAuthority";
-
+    private static MockedStatic<ViafServiceFactory> mockViafServiceFactory;
     @Autowired
     protected ChoiceAuthorityService choiceAuthorityService;
     @Autowired
@@ -146,17 +144,18 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "author"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
-                localEntry(author_1, "Author 1"),
-                localEntry(author_2, "Author 2"),
-                localEntry(author_3, "Author 3"),
-                localEntry(author_4, "Author 4"))))
-            .andExpect(jsonPath("$.page.size", Matchers.is(20)))
-            .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(4)));
+                                     .param("filter", "author"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
+                            localEntry(author_1, "Author 1"),
+                            localEntry(author_2, "Author 2"),
+                            localEntry(author_3, "Author 3"),
+                            localEntry(author_4, "Author 4"))))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(20)))
+                        .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(4)));
     }
+
     @Test
     public void testViafAuthorityWithPagination() throws Exception {
         context.turnOffAuthorisationSystem();
@@ -176,23 +175,23 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         // Test first page with size 2
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "Author")
-            .param("page", "0")
-            .param("size", "2"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(2)))
-            .andExpect(jsonPath("$.page.size", Matchers.is(2)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(5)));
+                                     .param("filter", "Author")
+                                     .param("page", "0")
+                                     .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(2)))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(2)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(5)));
 
         // Test second page
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "Author")
-            .param("page", "1")
-            .param("size", "2"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(2)))
-            .andExpect(jsonPath("$.page.size", Matchers.is(2)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(5)));
+                                     .param("filter", "Author")
+                                     .param("page", "1")
+                                     .param("size", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(2)))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(2)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(5)));
     }
 
     @Test
@@ -208,11 +207,11 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "NonExistentAuthor"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(0)))
-            .andExpect(jsonPath("$.page.size", Matchers.is(20)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(0)));
+                                     .param("filter", "NonExistentAuthor"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries.length()", Matchers.is(0)))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(20)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(0)));
     }
 
     @Test
@@ -228,14 +227,14 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "test"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
-                viafEntry("John Smith", "123456789"),
-                viafEntry("Jane Doe", "987654321"))))
-            .andExpect(jsonPath("$.page.size", Matchers.is(20)))
-            .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(2)));
+                                     .param("filter", "test"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
+                            viafEntry("John Smith", "123456789"),
+                            viafEntry("Jane Doe", "987654321"))))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(20)))
+                        .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(2)));
     }
 
     @Test
@@ -258,21 +257,21 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "author"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
-                localEntry(localAuthor, "Local Author"),
-                viafEntry("VIAF Author", "555666777"))))
-            .andExpect(jsonPath("$.page.size", Matchers.is(20)))
-            .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
-            .andExpect(jsonPath("$.page.totalElements", Matchers.is(2)));
+                                     .param("filter", "author"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", containsInAnyOrder(
+                            localEntry(localAuthor, "Local Author"),
+                            viafEntry("VIAF Author", "555666777"))))
+                        .andExpect(jsonPath("$.page.size", Matchers.is(20)))
+                        .andExpect(jsonPath("$.page.totalPages", Matchers.is(1)))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(2)));
     }
 
     private Item buildPerson(String title) {
         return ItemBuilder.createItem(context, collection)
-            .withTitle(title)
-            .withEntityType("Person")
-            .build();
+                          .withTitle(title)
+                          .withEntityType("Person")
+                          .build();
     }
 
     private Matcher<? super Object> localEntry(Item item, String title) {
@@ -320,42 +319,59 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "config-test"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
-            .andExpect(jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
+                                     .param("filter", "config-test"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
 
-            // Test fields that should still be displayed (not disabled)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']", is("1452")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']", is("1519-05-02")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject", is("Artists--Italy")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']", is("Artists--Italy")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink", is("http://viaf.org/viaf/12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']", is("http://viaf.org/viaf/12345678")))
+                        // Test fields that should still be displayed (not disabled)
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']",
+                                            is("1452")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']",
+                                            is("1519-05-02")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject",
+                                            is("Artists--Italy")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']",
+                                            is("Artists--Italy")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink",
+                                            is("http://viaf.org/viaf/12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']",
+                                            is("http://viaf.org/viaf/12345678")))
 
-            // Test fields that should NOT be displayed (disabled display)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender").doesNotExist())
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate").doesNotExist())
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
+                        // Test fields that should NOT be displayed (disabled display)
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender").doesNotExist())
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate").doesNotExist())
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
 
-            // Test fields that should still have data attributes (unless as-data disabled)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']", is("1452-04-15")))
+                        // Test fields that should still have data attributes (unless as-data disabled)
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']",
+                                            is("1452-04-15")))
 
-            // Test field with both display and as-data disabled (should not exist at all)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']").doesNotExist())
+                        // Test field with both display and as-data disabled (should not exist at all)
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role").doesNotExist())
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']").doesNotExist())
 
-            // Test field with as-data disabled but display enabled by default (nationality)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_nationality']").doesNotExist());
+                        // Test field with as-data disabled but display enabled by default (nationality)
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
+                        .andExpect(jsonPath(
+                            "$._embedded.entries[0].otherInformation['data-viaf_person_nationality']").doesNotExist());
 
         // Clean up configuration changes to not affect other tests
         configurationService.setProperty("cris.ViafAuthority.gender.display", true);
@@ -377,39 +393,61 @@ public class ViafAuthorityIT extends AbstractControllerIntegrationTest {
 
         String token = getAuthToken(eperson.getEmail(), password);
         getClient(token).perform(get("/api/submission/vocabularies/ViafAuthority/entries")
-            .param("filter", "complete"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
-            .andExpect(jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
-            // Test all buildExtras fields
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender", is("male")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate", is("1452-04-15")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']", is("1452-04-15")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']", is("1452")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']", is("1519-05-02")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathYear", is("1519")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathYear']", is("1519")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_nationality']", is("Italian")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role", is("Artist")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']", is("Artist")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject", is("Artists--Italy")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']", is("Artists--Italy")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_variantNames']", is("Leonardo di ser Piero; Léonard de Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink", is("http://viaf.org/viaf/12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']", is("http://viaf.org/viaf/12345678")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_wikipediaLink", is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_wikipediaLink']", is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
-            // Verify variant names are not displayed (display=false in config)
-            .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_variantNames").doesNotExist());
+                                     .param("filter", "complete"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", hasSize(1)))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].authority", is("will be generated::VIAF-ID::12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].display", is("Leonardo da Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].value", is("Leonardo da Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].type", is("vocabularyEntry")))
+                        // Test all buildExtras fields
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_id", is("12345678")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_id']", is("12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_gender", is("male")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_gender']", is("male")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthDate", is("1452-04-15")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthDate']",
+                                            is("1452-04-15")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_birthYear", is("1452")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_birthYear']",
+                                            is("1452")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathDate", is("1519-05-02")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathDate']",
+                                            is("1519-05-02")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_deathYear", is("1519")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_deathYear']",
+                                            is("1519")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation.viaf_person_nationality", is("Italian")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_nationality']",
+                                            is("Italian")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_role", is("Artist")))
+                        .andExpect(
+                            jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_role']", is("Artist")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_subject",
+                                            is("Artists--Italy")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_subject']",
+                                            is("Artists--Italy")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_variantNames']",
+                                            is("Leonardo di ser Piero; Léonard de Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_viafLink",
+                                            is("http://viaf.org/viaf/12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_viafLink']",
+                                            is("http://viaf.org/viaf/12345678")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation.viaf_person_wikipediaLink",
+                                            is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
+                        .andExpect(jsonPath("$._embedded.entries[0].otherInformation['data-viaf_person_wikipediaLink']",
+                                            is("https://en.wikipedia.org/wiki/Leonardo_da_Vinci")))
+                        // Verify variant names are not displayed (display=false in config)
+                        .andExpect(jsonPath(
+                            "$._embedded.entries[0].otherInformation.viaf_person_variantNames").doesNotExist());
     }
 
     /**
