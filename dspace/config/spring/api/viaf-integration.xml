@@ -77,7 +77,7 @@
     <bean name="mapConverterViafGenderType" class="org.dspace.util.SimpleMapConverter" init-method="init">
         <property name="converterNameFile" value="mapConverter-viaf-gender-type.properties" />
         <property name="configurationService" ref="org.dspace.services.ConfigurationService" />
-        <property name="defaultValue" value="undefined"/>
+        <property name="defaultValue" value="n/a"/>
     </bean>
     <bean id="viaf.glamperson.gender" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="glamperson.gender"/>

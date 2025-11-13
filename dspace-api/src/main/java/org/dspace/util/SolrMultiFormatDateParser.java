@@ -24,6 +24,7 @@ import java.time.format.SignStyle;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -86,7 +87,8 @@ public class SolrMultiFormatDateParser {
                         .appendLiteral(' ')
                         .appendValue(ChronoField.DAY_OF_MONTH)
                         .toFormatter()
-                        .withZone(UTC_ZONE);
+                        .withZone(UTC_ZONE)
+                        .withLocale(Locale.US);
                 } else {
                     formatter = DateTimeFormatter.ofPattern(patternStr).withZone(UTC_ZONE);
                 }
@@ -155,7 +157,8 @@ public class SolrMultiFormatDateParser {
                             break;
                         case MONTH:
                             result = YearMonth.parse(toParse, candidate.format)
-                                              .atDay(1).atStartOfDay(UTC_ZONE);
+                                              .atDay(1)
+                                              .atStartOfDay(UTC_ZONE);
                             break;
                         case YEAR:
                             result = Year.parse(toParse, candidate.format)
