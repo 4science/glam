@@ -112,16 +112,16 @@ public class AnnotationRestDeserializer extends StdDeserializer<AnnotationRest> 
         }
         JsonNode onNode = json.get("on");
         if (onNode == null || !(onNode.isArray() || onNode.isObject())) {
-            log.error("Cannot parse the field on! Its value is incompatible {}", resourceNode);
+            log.error("Cannot parse the field on! Its value is incompatible {}", onNode);
             throw new IllegalArgumentException("Cannot parse the field on! Its value is incompatible");
         }
         List<AnnotationTargetRest> on = null;
-        try (JsonParser resourceParser = onNode.traverse()) {
-            resourceParser.setCodec(codec);
-            if (resourceNode.isArray()) {
-                on = resourceParser.readValueAs(new TypeReference<List<AnnotationTargetRest>>() { });
-            } else if (resourceNode.isObject()) {
-                on = List.of(resourceParser.readValueAs(AnnotationTargetRest.class));
+        try (JsonParser onParser = onNode.traverse()) {
+            onParser.setCodec(codec);
+            if (onNode.isArray()) {
+                on = onParser.readValueAs(new TypeReference<List<AnnotationTargetRest>>() { });
+            } else if (onNode.isObject()) {
+                on = List.of(onParser.readValueAs(AnnotationTargetRest.class));
             }
         } catch (Exception e) {
             log.error("Cannot deserialize annotation", e);

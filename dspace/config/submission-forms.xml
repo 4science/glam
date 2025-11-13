@@ -3073,6 +3073,18 @@
           <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>haspartofpath</dc-qualifier>
+          <label>Contiene</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Indicare gli elementi del percorso</hint>
+        </field>
+      </row>
     </form>
     <form name="journal_file">
       <row>
@@ -3373,6 +3385,8 @@
           <required />
           <hint>Inserire l’ISSN del periodico</hint>
         </field>
+      </row>
+      <row>
         <field>
           <dc-schema>glamfonds</dc-schema>
           <dc-element>history</dc-element>
