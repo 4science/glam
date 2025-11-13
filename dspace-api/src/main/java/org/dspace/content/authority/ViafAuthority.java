@@ -88,8 +88,7 @@ public class ViafAuthority extends ItemAuthority {
         String value = getMetadataValue(record, "dc", "title", null);
         String code = getMetadataValue(record, "person", "identifier", null);
         String authority = getAuthorityPrefix() + code;
-        String label = StringUtils.isNotBlank(code) ? value + " (" + code + ")" : value;
-        return new Choice(authority, value, label, null, getSource());
+        return new Choice(authority, value, value, null, getSource());
     }
 
     private String getMetadataValue(ImportRecord record, String schema, String element, String qualifier) {

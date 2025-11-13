@@ -18,6 +18,7 @@
                 <entry key="ISSN" value-ref="sherpaImportFiller" />
                 <entry key="OPENAIRE-PROJECT-ID" value-ref="openaireProjectImportFiller" />
                 <entry key="ROR-ID" value-ref="rorOrgUnitImportFiller" />
+                <entry key="VIAF-ID" value-ref="viafPersonImportFiller" />
 			</map>
 		</property>
 	</bean>
@@ -122,6 +123,11 @@
     <bean class="org.dspace.authority.filler.ExternalDataProviderImportFiller" id="rorOrgUnitImportFiller" >
        <constructor-arg name="externalDataProvider" ref="rorDataProvider"/>
        <constructor-arg name="authorityIdentifier" value="ROR-ID"/>
+    </bean>
+
+    <bean class="org.dspace.authority.filler.ExternalDataProviderImportFiller" id="viafPersonImportFiller" >
+       <constructor-arg name="externalDataProvider" ref="viafLiveImportDataProvider"/>
+       <constructor-arg name="authorityIdentifier" value="VIAF-ID"/>
     </bean>
 
 	<bean class="org.dspace.authority.service.ItemSearcherMapper" name="org.dspace.authority.service.ItemSearcherMapper">
