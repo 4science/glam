@@ -231,7 +231,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             boolean allCompleted = waitForTasksToComplete();
             if (allCompleted) {
                 // Check results and throw exception if there are failures
-                checkTaskResults(serverFutures, serverlessFutures);
+                logServerCurationTaskResults(serverFutures);
+                logServerlessCurationTaskResults(serverlessFutures);
             } else {
                 throw new RuntimeException("Tasks did not complete after maximum retries");
             }
@@ -520,37 +521,42 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
-    /**
-     * Check results of all tasks and throw exception if there are failures.
-     */
-    private void checkTaskResults(
-        List<Future<Integer>> serverFutures,
-        List<CompletableFuture<CurationTaskResult>> s3Futures
-    ) {
-
+    private void logServerCurationTaskResults(List<Future<Integer>> serverFutures) {
         if (!serverFutures.isEmpty()) {
             // Check server task results - count successes and failures
-            handler.logInfo("*************************************************************");
-            handler.logInfo("*                 SUCCESSFUL CURATION TASKS                 *");
-            handler.logInfo("*************************************************************");
             ServerTaskCounts counts = countServerTaskResults(serverFutures);
-            if (counts.failed > 0) {
-                var message = String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total);
+            if (counts.successful > 0) {
+                handler.logInfo("*************************************************************");
+                handler.logInfo("*                 SUCCESSFUL CURATION TASKS                 *");
+                handler.logInfo("*************************************************************");
+                var message =
+                    String.format("Successful curation tasks: %d out of %d total", counts.successful, counts.total);
                 handler.logInfo(message);
-                failedServerTasks.add(message);
+            }
+            if (counts.failed > 0) {
+                failedServerTasks.add(
+                    String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total)
+                );
             }
         }
 
+        if (!failedServerTasks.isEmpty()) {
+            handler.logInfo("*************************************************************");
+            handler.logInfo("*               FAILED CURATION TASKS DETAILS               *");
+            handler.logInfo("*************************************************************");
+            failedServerTasks.forEach(handler::logError);
+        }
+    }
+
+    private void logServerlessCurationTaskResults(List<CompletableFuture<CurationTaskResult>> s3Futures) {
         if (!s3Futures.isEmpty()) {
             // Check Serverless task results
-            handler.logInfo("*************************************************************");
-            handler.logInfo("*             SUCCESSFUL REMOTE CURATION TASKS              *");
-            handler.logInfo("*************************************************************");
+            List<String> successfulCurationTasks = new ArrayList<>();
             for (CompletableFuture<CurationTaskResult> future : s3Futures) {
                 try {
                     CurationTaskResult result = future.get();
                     if (result.successful()) {
-                        handler.logInfo(successMessage(result));
+                        successfulCurationTasks.add(successMessage(result));
                     } else {
                         failedServerlessTasks.add(failedMessage(result));
                     }
@@ -562,6 +568,12 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                     failedServerlessTasks.add("Serverless task (interrupted)");
                 }
             }
+            if (!successfulCurationTasks.isEmpty()) {
+                handler.logInfo("*************************************************************");
+                handler.logInfo("*             SUCCESSFUL REMOTE CURATION TASKS              *");
+                handler.logInfo("*************************************************************");
+                successfulCurationTasks.forEach(handler::logInfo);
+            }
         }
 
         if (!failedServerlessTasks.isEmpty()) {
@@ -569,17 +581,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             handler.logInfo("*                FAILED REMOTE CURATION TASKS               *");
             handler.logInfo("*************************************************************");
             failedServerlessTasks.forEach(handler::logError);
-            handler.logInfo("*************************************************************");
         }
-
-        if (!failedServerTasks.isEmpty()) {
-            handler.logInfo("*************************************************************");
-            handler.logInfo("*                   FAILED CURATION TASKS                   *");
-            handler.logInfo("*************************************************************");
-            failedServerTasks.forEach(handler::logError);
-            handler.logInfo("*************************************************************");
-        }
-
     }
 
     private String failedMessage(CurationTaskResult result) {

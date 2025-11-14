@@ -87,7 +87,7 @@ public class S3FileChecker {
         var bucketName = getOutPutBucketName();
 
         // Scroll through the list and remove the files found.
-        while (!remainingFiles.isEmpty() || (System.currentTimeMillis() - startTime) < timeoutMillis) {
+        while (!remainingFiles.isEmpty() && (System.currentTimeMillis() - startTime) < timeoutMillis) {
             ScheduledCurationTask scheduledCurationTask = remainingFiles.poll();
 
             String outputFileName =
