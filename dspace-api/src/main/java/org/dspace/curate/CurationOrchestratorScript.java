@@ -231,7 +231,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             boolean allCompleted = waitForTasksToComplete();
             if (allCompleted) {
                 // Check results and throw exception if there are failures
-                checkTaskResults(serverFutures, serverlessFutures);
+                logServerCurationTaskResults(serverFutures);
+                logServerlessCurationTaskResults(serverlessFutures);
             } else {
                 throw new RuntimeException("Tasks did not complete after maximum retries");
             }
@@ -520,82 +521,94 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
-    /**
-     * Check results of all tasks and throw exception if there are failures.
-     */
-    private void checkTaskResults(List<Future<Integer>> serverFutures,
-                                  List<CompletableFuture<CurationTaskResult>> s3Futures) {
-
-        // Check server task results - count successes and failures
-        handler.logInfo("*************************************************************");
-        handler.logInfo("Checking results of " + serverFutures.size() + " server tasks");
-        ServerTaskCounts counts = countServerTaskResults(serverFutures);
-        if (counts.failed > 0) {
-            var message = String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total);
-            handler.logInfo(message);
-            failedServerTasks.add(message);
+    private void logServerCurationTaskResults(List<Future<Integer>> serverFutures) {
+        if (!serverFutures.isEmpty()) {
+            // Check server task results - count successes and failures
+            ServerTaskCounts counts = countServerTaskResults(serverFutures);
+            if (counts.successful > 0) {
+                handler.logInfo("*************************************************************");
+                handler.logInfo("*                 SUCCESSFUL CURATION TASKS                 *");
+                handler.logInfo("*************************************************************");
+                var message =
+                    String.format("Successful curation tasks: %d out of %d total", counts.successful, counts.total);
+                handler.logInfo(message);
+            }
+            if (counts.failed > 0) {
+                failedServerTasks.add(
+                    String.format("Server tasks failed: %d out of %d total", counts.failed, counts.total)
+                );
+            }
         }
 
-        // Check Serverless task results
-        handler.logInfo("*************************************************************");
-        handler.logInfo(String.format("Checking results of %d serverless tasks", s3Futures.size()));
-        for (CompletableFuture<CurationTaskResult> future : s3Futures) {
-            try {
-                CurationTaskResult result = future.get();
-                if (result.successful()) {
-                    logSuccessfulMessage(result);
-                } else {
-                    var message = logFailedMessage(result);
-                    failedServerlessTasks.add(message);
+        if (!failedServerTasks.isEmpty()) {
+            handler.logInfo("*************************************************************");
+            handler.logInfo("*               FAILED CURATION TASKS DETAILS               *");
+            handler.logInfo("*************************************************************");
+            failedServerTasks.forEach(handler::logError);
+        }
+    }
+
+    private void logServerlessCurationTaskResults(List<CompletableFuture<CurationTaskResult>> s3Futures) {
+        if (!s3Futures.isEmpty()) {
+            // Check Serverless task results
+            List<String> successfulCurationTasks = new ArrayList<>();
+            for (CompletableFuture<CurationTaskResult> future : s3Futures) {
+                try {
+                    CurationTaskResult result = future.get();
+                    if (result.successful()) {
+                        successfulCurationTasks.add(successMessage(result));
+                    } else {
+                        failedServerlessTasks.add(failedMessage(result));
+                    }
+                } catch (ExecutionException e) {
+                    handler.logError("Error executing serverless task", e.getCause());
+                    failedServerlessTasks.add("Serverless task (exception: " + e.getCause().getMessage() + ")");
+                } catch (InterruptedException e) {
+                    handler.logError("Serverless task interrupted", e);
+                    failedServerlessTasks.add("Serverless task (interrupted)");
                 }
-            } catch (ExecutionException e) {
-                handler.logError("Error executing serverless task", e.getCause());
-                failedServerlessTasks.add("Serverless task (exception: " + e.getCause().getMessage() + ")");
-            } catch (InterruptedException e) {
-                handler.logError("Serverless task interrupted", e);
-                failedServerlessTasks.add("Serverless task (interrupted)");
+            }
+            if (!successfulCurationTasks.isEmpty()) {
+                handler.logInfo("*************************************************************");
+                handler.logInfo("*             SUCCESSFUL REMOTE CURATION TASKS              *");
+                handler.logInfo("*************************************************************");
+                successfulCurationTasks.forEach(handler::logInfo);
             }
         }
 
         if (!failedServerlessTasks.isEmpty()) {
             handler.logInfo("*************************************************************");
-            handler.logError("Serverless tasks failed:" + failedServerlessTasks.size());
+            handler.logInfo("*                FAILED REMOTE CURATION TASKS               *");
+            handler.logInfo("*************************************************************");
             failedServerlessTasks.forEach(handler::logError);
-            handler.logInfo("*************************************************************");
         }
-
-        if (!failedServerTasks.isEmpty()) {
-            handler.logInfo("*************************************************************");
-            handler.logError("Server tasks failed:" + failedServerlessTasks.size());
-            failedServerlessTasks.forEach(handler::logError);
-            handler.logInfo("*************************************************************");
-        }
-
     }
 
-    private String logFailedMessage(CurationTaskResult result) {
-        var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-        var message = "FAILED: Serverless task:%s, with error:%s , for bitstreams: %s, and origin bitstream:%s .";
+    private String failedMessage(CurationTaskResult result) {
         String bitstreamIds = result.bitsreams()
                                     .stream()
                                     .map(Bitstream::getID)
                                     .map(UUID::toString)
+                                    .filter(StringUtils::isNotEmpty)
                                     .reduce((a, b) -> a + ", " + b)
                                     .orElse("");
-        var finalMessage = String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
-        handler.logInfo(finalMessage);
-        return finalMessage;
+        var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+        var message =
+            "FAILED Execution of curation-task :%s, with error: %s for bitstream:%s .";
+        return String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
     }
 
-    private void logSuccessfulMessage(CurationTaskResult result) {
+    private String successMessage(CurationTaskResult result) {
         String bitstreamsId = result.bitsreams()
                                     .stream()
                                     .map(Bitstream::getID)
                                     .map(UUID::toString)
+                                    .filter(StringUtils::isNotEmpty)
                                     .reduce((a, b) -> a + ", " + b)
                                     .orElse("");
-        var  message = "SUCCESS: Serverless task %s for bitstreams:%s , and origin bitstream:%s .";
-        handler.logInfo(String.format(message, result.curationTask(), bitstreamsId, result.originBitstream()));
+        var  message =
+            "SUCCESSFULLY Executed curation-task %s for bitstream: %s. Generated the following bitstreams: %s";
+        return String.format(message, result.curationTask(), result.originBitstream(), bitstreamsId);
     }
 
     private record ServerTaskCounts(int total, int successful, int failed) { }
