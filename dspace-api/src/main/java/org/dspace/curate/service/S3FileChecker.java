@@ -9,16 +9,16 @@ package org.dspace.curate.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +78,7 @@ public class S3FileChecker {
             return List.of();
         }
 
-        CircularFifoQueue<ScheduledCurationTask> remainingFiles = new CircularFifoQueue<>(scheduledProcess.files());
+        Queue<ScheduledCurationTask> remainingFiles = new LinkedList<>(scheduledProcess.files());
         Map<ScheduledCurationTask, Integer> attempts = new HashMap<>(remainingFiles.size());
         List<CompletableFuture<CurationTaskResult>> futures = new ArrayList<>(remainingFiles.size());
 
@@ -87,9 +87,8 @@ public class S3FileChecker {
         var bucketName = getOutPutBucketName();
 
         // Scroll through the list and remove the files found.
-        Iterator<ScheduledCurationTask> iterator = remainingFiles.iterator();
-        while (iterator.hasNext() && (System.currentTimeMillis() - startTime) < timeoutMillis) {
-            ScheduledCurationTask scheduledCurationTask = iterator.next();
+        while (!remainingFiles.isEmpty() || (System.currentTimeMillis() - startTime) < timeoutMillis) {
+            ScheduledCurationTask scheduledCurationTask = remainingFiles.poll();
 
             String outputFileName =
                 String.format(
@@ -110,8 +109,6 @@ public class S3FileChecker {
                 if (s3Client.doesObjectExist(bucketName, fileKey)) {
                     log.info("S3FileChecker: FILE:{} found!", fileKey);
 
-                    iterator.remove();
-
                     // Launch ExecutorService to process the file just found
                     futures.add(
                         supplyAsyncCurationTask(
@@ -121,6 +118,8 @@ public class S3FileChecker {
                         )
                     );
                 } else {
+
+                    remainingFiles.add(scheduledCurationTask);
 
                     if (attempts.containsKey(scheduledCurationTask)) {
                         sleep(attempts.get(scheduledCurationTask));
