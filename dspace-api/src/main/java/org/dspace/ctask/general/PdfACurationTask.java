@@ -81,8 +81,9 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                                               List.of(), statusJsonDTO.getError());
         }
 
-        TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
+        TransferManager transferManager = null;
         try {
+            transferManager = TransferManagerBuilder.standard().withS3Client(amazonS3).build();
             try (InputStream pdfaInputStream = downloadPdfA(transferManager, statusJsonDTO.getOutputPath())) {
                 if (pdfaInputStream == null) {
                     var errorMessage = "PDF/A file could not be downloaded from S3 for bitstream:";
@@ -104,7 +105,9 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             return CurationTaskResult.failure(scheduledTask.jobType(), scheduledTask.uuid(), List.of(),
                     "ERROR while creating bitstream PDF/A for origin Bitstream:" + scheduledTask.uuid());
         } finally {
-            transferManager.shutdownNow(false);
+            if (transferManager != null) {
+                transferManager.shutdownNow(false);
+            }
         }
     }
 
@@ -113,8 +116,8 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             throws SQLException, AuthorizeException {
         Bundle pdfaBundle;
         List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
-        if (pdfaBundles.size() < 1) {
-            log.info("PdfACurationTask: Creating new PDFA bundle for item: " + item.getID());
+        if (pdfaBundles.isEmpty()) {
+            log.info("PdfACurationTask: Creating new PDFA bundle for item: {} ", item.getID());
             pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
         } else {
             pdfaBundle = pdfaBundles.get(0);
@@ -288,8 +291,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     }
 
     private String getGeneratedName(String outputPath) {
-        String generatedName = outputPath.substring(outputPath.lastIndexOf('/') + 1);
-        return generatedName;
+        return outputPath.substring(outputPath.lastIndexOf('/') + 1);
     }
 
     private Bitstream getOriginalBitstream(Context context, UUID bitstreamUUID) throws SQLException {

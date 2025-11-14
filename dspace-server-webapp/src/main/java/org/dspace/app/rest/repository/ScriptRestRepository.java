@@ -31,7 +31,6 @@ import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.DSpaceRunnable;
-import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 import org.dspace.scripts.service.ScriptService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,11 +170,11 @@ public class ScriptRestRepository extends DSpaceRestRepository<ScriptRest, Strin
         }
     }
 
-    private void processFiles(Context context, ProcessDSpaceRunnableHandler processDSpaceRunnableHandler,
+    private void processFiles(Context context, RestDSpaceRunnableHandler restDSpaceRunnableHandler,
                               List<MultipartFile> files)
         throws IOException, SQLException, AuthorizeException {
         for (MultipartFile file : files) {
-            processDSpaceRunnableHandler
+            restDSpaceRunnableHandler
                 .writeFilestream(context, file.getOriginalFilename(), file.getInputStream(), "inputfile");
         }
     }

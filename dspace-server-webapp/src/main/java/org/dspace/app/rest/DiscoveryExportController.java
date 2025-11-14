@@ -26,6 +26,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.rest.model.SearchResultsRest;
 import org.dspace.app.rest.parameter.SearchFilter;
+import org.dspace.app.rest.scripts.handler.impl.RestDSpaceRunnableHandler;
 import org.dspace.app.rest.utils.ContextUtil;
 import org.dspace.app.rest.utils.HttpHeadersInitializer;
 import org.dspace.content.Bitstream;
@@ -36,7 +37,6 @@ import org.dspace.eperson.EPerson;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.DSpaceRunnable;
 import org.dspace.scripts.Process;
-import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 import org.dspace.scripts.service.ScriptService;
 import org.dspace.services.ConfigurationService;
@@ -105,7 +105,7 @@ public class DiscoveryExportController {
             limit);
 
         try {
-            ProcessDSpaceRunnableHandler processDSpaceRunnableHandler = new ProcessDSpaceRunnableHandler(
+            RestDSpaceRunnableHandler restDspaceRunnableHandler = new RestDSpaceRunnableHandler(
                 user,
                 scriptToExecute.getName(),
                 dSpaceCommandLineParameters,
@@ -113,7 +113,7 @@ public class DiscoveryExportController {
                 context.getCurrentLocale()
             );
             List<String> args = constructArgs(dSpaceCommandLineParameters);
-            Process process = runProcess(scriptToExecute, context, user, processDSpaceRunnableHandler, args);
+            Process process = runProcess(scriptToExecute, context, user, restDspaceRunnableHandler, args);
             if (ProcessStatus.FAILED.equals(process.getProcessStatus())) {
                 throw new RuntimeException("An error occurred during export");
             }
@@ -217,14 +217,14 @@ public class DiscoveryExportController {
     }
 
     private Process runProcess(ScriptConfiguration scriptToExecute, Context context, EPerson user,
-                               ProcessDSpaceRunnableHandler processDSpaceRunnableHandler, List<String> args)
+                               RestDSpaceRunnableHandler restDSpaceRunnableHandler, List<String> args)
         throws InterruptedException, InstantiationException, IllegalAccessException {
-        runDSpaceScript(user, scriptToExecute, processDSpaceRunnableHandler, args);
-        Process process = processDSpaceRunnableHandler.getProcess(context);
+        runDSpaceScript(user, scriptToExecute, restDSpaceRunnableHandler, args);
+        Process process = restDSpaceRunnableHandler.getProcess(context);
         int attempts = 1;
         while (notFinished(process) && attempts++ <= 50) {
             Thread.sleep(1000L);
-            process = processDSpaceRunnableHandler.getProcess(context);
+            process = restDSpaceRunnableHandler.getProcess(context);
         }
 
         return process;
@@ -237,18 +237,18 @@ public class DiscoveryExportController {
 
     private void runDSpaceScript(EPerson user,
                                  ScriptConfiguration scriptToExecute,
-                                 ProcessDSpaceRunnableHandler processDSpaceRunnableHandler,
+                                 RestDSpaceRunnableHandler restDSpaceRunnableHandler,
                                  List<String> args)
         throws InstantiationException, IllegalAccessException {
         DSpaceRunnable dSpaceRunnable = scriptService.createDSpaceRunnableForScriptConfiguration(scriptToExecute);
         try {
-            dSpaceRunnable.initialize(args.toArray(new String[0]), processDSpaceRunnableHandler, user);
+            dSpaceRunnable.initialize(args.toArray(new String[0]), restDSpaceRunnableHandler, user);
 //            restDSpaceRunnableHandler.schedule(dSpaceRunnable);
             dSpaceRunnable.run();
         } catch (ParseException e) {
             dSpaceRunnable.printHelp();
             try {
-                processDSpaceRunnableHandler.handleException(
+                restDSpaceRunnableHandler.handleException(
                     "Failed to parse the arguments given to the script with name: "
                         + scriptToExecute.getName() + " and args: " + args, e
                 );

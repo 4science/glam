@@ -51,15 +51,15 @@ public class ProcessDSpaceRunnableHandler implements DSpaceRunnableHandler {
 
     private static final Logger log = LogManager.getLogger(ProcessDSpaceRunnableHandler.class);
 
-    private BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
-    private ProcessService processService = ScriptServiceFactory.getInstance().getProcessService();
-    private EPersonService ePersonService = EPersonServiceFactory.getInstance().getEPersonService();
-    private GroupService groupService = EPersonServiceFactory.getInstance().getGroupService();
+    protected BitstreamService bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+    protected ProcessService processService = ScriptServiceFactory.getInstance().getProcessService();
+    protected EPersonService ePersonService = EPersonServiceFactory.getInstance().getEPersonService();
+    protected GroupService groupService = EPersonServiceFactory.getInstance().getGroupService();
 
-    private Integer processId;
-    private String scriptName;
-    private UUID ePersonId;
-    private Locale locale;
+    protected Integer processId;
+    protected String scriptName;
+    protected UUID ePersonId;
+    protected Locale locale;
 
     public ProcessDSpaceRunnableHandler() {}
 

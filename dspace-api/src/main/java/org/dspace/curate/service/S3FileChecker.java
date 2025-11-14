@@ -8,20 +8,21 @@
 package org.dspace.curate.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.core.Context;
-import org.dspace.curate.FilesNotFoundAfterRetriesException;
 import org.dspace.curate.ResolvedTask;
 import org.dspace.curate.ScheduledCurationTask;
 import org.dspace.curate.ScheduledProcess;
@@ -42,17 +43,20 @@ public class S3FileChecker {
      */
     public static final String STATUS_FILE_PATTER_NAME = "%s-%s.json";
 
-    private int maxAttempts;
-    private TimeUnit delayTimeUnit;
-    private long delayBetweenAttempts;
-    private boolean useExponentialBackoff;
-
     @Autowired
     private ConfigurationService configurationService;
 
+    private TimeUnit delayTimeUnit = TimeUnit.SECONDS;
+    private long delayBetweenAttempts = 60;
+
+    private TimeUnit globalTimeoutUnit = TimeUnit.MINUTES;
+    private long globalTimeoutDuration = 15;
+
+    private boolean useExponentialBackoff = false;
+
     /**
      * Checks for output files in S3 bucket and launches serverless curation tasks when files are found.
-     * Uses a retry mechanism with configurable delays to wait for files to appear.
+     * Uses a circular queue approach with time-based timeout to wait for files to appear.
      *
      * @param context the DSpace context
      * @param s3Client the Amazon S3 client for file operations
@@ -61,82 +65,133 @@ public class S3FileChecker {
      * @param allResolvedTasks list of all resolved tasks available for execution
      * @return list of CompletableFuture objects representing the launched serverless tasks
      * @throws InterruptedException if the thread is interrupted while waiting
-     * @throws FilesNotFoundAfterRetriesException if files are not found after maximum retry attempts
      */
-    public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(Context context,
-            AmazonS3 s3Client, ExecutorService executorService, ScheduledProcess scheduledProcess,
-            List<ResolvedTask> allResolvedTasks) throws InterruptedException, FilesNotFoundAfterRetriesException {
+    public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(
+        Context context,
+        AmazonS3 s3Client,
+        ExecutorService executorService,
+        ScheduledProcess scheduledProcess,
+        List<ResolvedTask> allResolvedTasks
+    ) throws InterruptedException {
 
-        List<ScheduledCurationTask> remainingFiles = new ArrayList<>(scheduledProcess.files());
-        List<CompletableFuture<CurationTaskResult>> futures = new ArrayList<>();
-
-        if (CollectionUtils.isEmpty(remainingFiles)) {
-            return futures;
+        if (scheduledProcess == null || scheduledProcess.files() == null || scheduledProcess.files().isEmpty()) {
+            return List.of();
         }
 
-        int attempt = 0;
-        sleep(attempt);
+        CircularFifoQueue<ScheduledCurationTask> remainingFiles = new CircularFifoQueue<>(scheduledProcess.files());
+        Map<ScheduledCurationTask, Integer> attempts = new HashMap<>(remainingFiles.size());
+        List<CompletableFuture<CurationTaskResult>> futures = new ArrayList<>(remainingFiles.size());
+
+        long startTime = System.currentTimeMillis();
+        long timeoutMillis = globalTimeoutUnit.toMillis(globalTimeoutDuration);
         var bucketName = getOutPutBucketName();
-        while (!remainingFiles.isEmpty() && attempt < this.maxAttempts) {
-            attempt++;
-            var message = "S3FileChecker: Attempt {}/{} - Files remaining to be checked: {} ";
-            log.info(message, attempt, maxAttempts, remainingFiles.size());
 
-            // Scroll through the list and remove the files found.
-            Iterator<ScheduledCurationTask> iterator = remainingFiles.iterator();
-            int filesFoundInThisAttempt = 0;
+        // Scroll through the list and remove the files found.
+        Iterator<ScheduledCurationTask> iterator = remainingFiles.iterator();
+        while (iterator.hasNext() && (System.currentTimeMillis() - startTime) < timeoutMillis) {
+            ScheduledCurationTask scheduledCurationTask = iterator.next();
 
-            while (iterator.hasNext()) {
-                ScheduledCurationTask scheduledCurationTask = iterator.next();
-                String outputFileName = String.format(STATUS_FILE_PATTER_NAME, scheduledCurationTask.uuid(),
-                                                                               scheduledCurationTask.jobType());
-                try {
-                    String fileKey = scheduledProcess.process() + "/" + outputFileName;
-                    log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
+            String outputFileName =
+                String.format(
+                    STATUS_FILE_PATTER_NAME,
+                    scheduledCurationTask.uuid(),
+                    scheduledCurationTask.jobType()
+                );
 
-                    if (s3Client.doesObjectExist(bucketName, fileKey)) {
-                        log.info("S3FileChecker: FILE:{} found!", fileKey);
-                        iterator.remove();
-                        filesFoundInThisAttempt++;
+            log.info(
+                "S3FileChecker: Checking file: {} - Files remaining to be checked: {} ",
+                outputFileName,
+                remainingFiles.size()
+            );
+            try {
+                String fileKey = scheduledProcess.process() + "/" + outputFileName;
+                log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
 
-                        ServerlessCurationTask serverlessTask = getResolvedTask(allResolvedTasks,
-                                                                                scheduledCurationTask);
-                        // Launch ExecutorService to process the file just found
-                        CompletableFuture<CurationTaskResult> future = CompletableFuture.supplyAsync(() -> {
-                            // Create a new Context for this thread to avoid Hibernate session conflicts
-                            Context threadContext = createThreadContext(context);
-                            try {
-                                logStartInitPerform(scheduledCurationTask);
-                                return serverlessTask.initPerform(threadContext, s3Client, scheduledCurationTask,
-                                                                  scheduledProcess.process());
-                            } finally {
-                                cleanUpContext(threadContext);
-                            }
-                        }, executorService);
-                        futures.add(future);
+                if (s3Client.doesObjectExist(bucketName, fileKey)) {
+                    log.info("S3FileChecker: FILE:{} found!", fileKey);
+
+                    iterator.remove();
+
+                    // Launch ExecutorService to process the file just found
+                    futures.add(
+                        supplyAsyncCurationTask(
+                            context, s3Client, scheduledProcess, scheduledCurationTask,
+                            getResolvedTask(allResolvedTasks, scheduledCurationTask),
+                            executorService
+                        )
+                    );
+                } else {
+
+                    if (attempts.containsKey(scheduledCurationTask)) {
+                        sleep(attempts.get(scheduledCurationTask));
                     }
-                } catch (SdkClientException e) {
-                    var errorMessage = "S3FileChecker: Error while checking file:{} , due to:{} .";
-                    log.error(errorMessage, outputFileName, e.getMessage());
+
+                    attempts.compute(
+                        scheduledCurationTask,
+                        (key, value) -> value == null ? 0 : value + 1
+                    );
+
                 }
-            }
-            log.info("S3FileChecker: Files found in this attempt:{} .", filesFoundInThisAttempt);
-
-            if (remainingFiles.isEmpty()) {
-                log.info("S3FileChecker: All files have been found!");
-                break;
-            }
-
-            // If this is not your last attempt, wait until the next cycle.
-            if (attempt < this.maxAttempts) {
-                sleep(attempt);
+            } catch (SdkClientException e) {
+                var errorMessage = "S3FileChecker: Error while checking file:{} , due to:{} .";
+                log.error(errorMessage, outputFileName, e.getMessage());
             }
         }
 
-        if (!remainingFiles.isEmpty()) {
-            throw new FilesNotFoundAfterRetriesException(remainingFiles, attempt);
+        if (remainingFiles.isEmpty()) {
+            log.info("S3FileChecker: All files have been found!");
         }
+
+        // Mark remaining files as failed
+        for (ScheduledCurationTask failedTask : remainingFiles) {
+            log.error(
+                "S3FileChecker: File not found within timeout for task: {} bitstream: {}",
+                failedTask.jobType(),
+                failedTask.uuid()
+            );
+            futures.add(CompletableFuture.completedFuture(failedCurationTask(failedTask)));
+        }
+
         return futures;
+    }
+
+    protected CurationTaskResult failedCurationTask(ScheduledCurationTask failedTask) {
+        return CurationTaskResult.failure(
+            failedTask.jobType(), failedTask.uuid(), List.of(), "File not found within timeout"
+        );
+    }
+
+    protected CompletableFuture<CurationTaskResult> supplyAsyncCurationTask(
+        Context context, AmazonS3 s3Client,
+        ScheduledProcess scheduledProcess,
+        ScheduledCurationTask scheduledCurationTask,
+        ServerlessCurationTask serverlessTask,
+        ExecutorService executorService
+    ) {
+        return CompletableFuture.supplyAsync(
+            () -> asyncCurationTask(
+                context, s3Client, scheduledProcess, scheduledCurationTask, serverlessTask
+            ),
+            executorService
+        );
+    }
+
+    protected CurationTaskResult asyncCurationTask(
+        Context context,
+        AmazonS3 s3Client,
+        ScheduledProcess scheduledProcess,
+        ScheduledCurationTask scheduledCurationTask,
+        ServerlessCurationTask serverlessTask
+    ) {
+        // Create a new Context for this thread to avoid Hibernate session conflicts
+        Context threadContext = createThreadContext(context);
+        try {
+            logStartInitPerform(scheduledCurationTask);
+            return serverlessTask.initPerform(threadContext, s3Client, scheduledCurationTask,
+                                              scheduledProcess.process());
+        } finally {
+            cleanUpContext(threadContext);
+        }
     }
 
     private static void cleanUpContext(Context threadContext) {
@@ -217,15 +272,6 @@ public class S3FileChecker {
     }
 
     /**
-     * Sets the maximum number of retry attempts when checking for files.
-     *
-     * @param maxAttempts the maximum number of attempts before giving up
-     */
-    public void setMaxAttempts(int maxAttempts) {
-        this.maxAttempts = maxAttempts;
-    }
-
-    /**
      * Configures whether to use exponential backoff for retry delays.
      * When enabled, delays increase exponentially with each retry attempt.
      *
@@ -235,4 +281,22 @@ public class S3FileChecker {
         this.useExponentialBackoff = useExponentialBackoff;
     }
 
+    /**
+     * Sets the time unit for the timeout.
+     *
+     * @param timeoutUnit the time unit for timeout (e.g., SECONDS, MINUTES)
+     */
+    public void setTimeoutUnit(TimeUnit timeoutUnit) {
+        this.globalTimeoutUnit = timeoutUnit;
+    }
+
+    public S3FileChecker setGlobalTimeoutUnit(TimeUnit globalTimeoutUnit) {
+        this.globalTimeoutUnit = globalTimeoutUnit;
+        return this;
+    }
+
+    public S3FileChecker setGlobalTimeoutDuration(long globalTimeoutDuration) {
+        this.globalTimeoutDuration = globalTimeoutDuration;
+        return this;
+    }
 }
