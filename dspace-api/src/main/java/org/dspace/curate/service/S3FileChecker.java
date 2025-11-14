@@ -100,7 +100,7 @@ public class S3FileChecker {
             log.info(
                 "S3FileChecker: Checking file: {} - Files remaining to be checked: {} ",
                 outputFileName,
-                remainingFiles.size()
+                remainingFiles.size() + 1
             );
             try {
                 String fileKey = scheduledProcess.process() + "/" + outputFileName;
@@ -132,8 +132,7 @@ public class S3FileChecker {
 
                 }
             } catch (SdkClientException e) {
-                var errorMessage = "S3FileChecker: Error while checking file:{} , due to:{} .";
-                log.error(errorMessage, outputFileName, e.getMessage());
+                log.error("S3FileChecker: Error while checking file:{} , due to:{} .", outputFileName, e.getMessage());
             }
         }
 
