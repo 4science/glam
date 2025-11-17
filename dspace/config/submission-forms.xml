@@ -63,11 +63,11 @@
           <dc-schema>bitstream</dc-schema>
           <dc-element>curation</dc-element>
           <dc-qualifier>exclude</dc-qualifier>
-          <label>Escludere dall'elaborazione del curation tasl</label>
+          <label>Escludi i curation task</label>
           <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Selezione si per escludere bitstream dall'elaborazione del curation task, altrimenti no</hint>
+          <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
         </field>
       </row>
     </form>
