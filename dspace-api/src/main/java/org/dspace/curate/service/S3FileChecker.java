@@ -82,6 +82,8 @@ public class S3FileChecker {
         Map<ScheduledCurationTask, Integer> attempts = new HashMap<>(remainingFiles.size());
         List<CompletableFuture<CurationTaskResult>> futures = new ArrayList<>(remainingFiles.size());
 
+        remainingFiles.forEach(task -> attempts.put(task, 0));
+
         long startTime = System.currentTimeMillis();
         long timeoutMillis = globalTimeoutUnit.toMillis(globalTimeoutDuration);
         var bucketName = getOutPutBucketName();
@@ -108,6 +110,7 @@ public class S3FileChecker {
 
                 if (s3Client.doesObjectExist(bucketName, fileKey)) {
                     log.info("S3FileChecker: FILE:{} found!", fileKey);
+                    attempts.remove(scheduledCurationTask);
 
                     // Launch ExecutorService to process the file just found
                     futures.add(
@@ -121,14 +124,17 @@ public class S3FileChecker {
 
                     remainingFiles.add(scheduledCurationTask);
 
-                    if (attempts.containsKey(scheduledCurationTask)) {
-                        sleep(attempts.get(scheduledCurationTask));
-                    }
-
-                    attempts.compute(
+                    Integer retryCount = attempts.compute(
                         scheduledCurationTask,
                         (key, value) -> value == null ? 0 : value + 1
                     );
+
+                    if (retryCount > 0) {
+                        Integer minAttempt = attempts.values().stream().min(Integer::compareTo).orElse(retryCount);
+                        if (retryCount.equals(minAttempt)) {
+                            sleep(attempts.get(scheduledCurationTask));
+                        }
+                    }
 
                 }
             } catch (SdkClientException e) {
@@ -244,8 +250,7 @@ public class S3FileChecker {
             double exponentialDelay = this.delayBetweenAttempts * Math.pow(2, attempt - 1);
             // Limit the maximum delay to 120 seconds.
             long maxDelay = delayTimeUnit.convert(120, TimeUnit.SECONDS);
-            long delay = (long) Math.min(exponentialDelay, maxDelay);
-            return delay;
+            return (long) Math.min(exponentialDelay, maxDelay);
         } else {
             return this.delayBetweenAttempts;
         }
