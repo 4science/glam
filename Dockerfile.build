@@ -5,9 +5,6 @@ ARG DOCKER_REGISTRY=docker.io
 # Stage 1 - Copy artifacts
 FROM ${DOCKER_REGISTRY}/eclipse-temurin:${JDK_VERSION}-jre AS install
 EXPOSE 8080
-COPY --from=jre /opt/java/openjdk /usr/local/java
-ENV JAVA_HOME=/usr/local/java
-ENV PATH="$JAVA_HOME/bin:$PATH"
 ENV DATA_FOLDER=/data \
     DSPACE_INSTALL=/dspace \
     ASSETSTORE=/dspace/assetstore \
