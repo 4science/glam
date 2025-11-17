@@ -241,7 +241,7 @@
       <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
       <type>submission-form</type>
     </step-definition>
-    <step-definition id="curation" mandatory="true">
+    <step-definition id="curation" mandatory="false">
       <heading>submit.progressbar.describe.curation</heading>
       <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
       <type>submission-form</type>
@@ -261,7 +261,6 @@
       <step id="archival_material" />
       <step id="archival_material_indexing" />
       <step id="archival_material_references" />
-      <step id="curation" />
       <step id="upload" />
     </submission-process>
     <submission-process name="publication">
@@ -386,6 +385,7 @@
       <step id="journal_file" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="journal_file-edit">
       <step id="journal_file" />
@@ -406,6 +406,7 @@
       <step id="picture" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="picture-edit">
       <step id="picture" />
@@ -417,6 +418,7 @@
       <step id="audiovideo-file" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="audiovideo-edit">
       <step id="audiovideo" />
@@ -438,6 +440,7 @@
       <step id="coin" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="coin-edit">
       <step id="coin" />
@@ -448,6 +451,7 @@
       <step id="musical_librettos" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="musical_librettos-edit">
       <step id="musical_librettos" />
@@ -458,6 +462,7 @@
       <step id="scientific_materials" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="scientific_materials-edit">
       <step id="scientific_materials" />
@@ -468,6 +473,7 @@
       <step id="artworks" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="artworks-edit">
       <step id="artworks" />
