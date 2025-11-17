@@ -7367,7 +7367,7 @@
           <label>Tipo di curation task da eseguire in fase di deposito</label>
           <input-type value-pairs-name="curation_tasks">dropdown</input-type>
           <repeatable>true</repeatable>
-          <required>Seleziona curation task</required>
+          <required />
           <hint>Seleziona curation task</hint>
         </field>
       </row>
