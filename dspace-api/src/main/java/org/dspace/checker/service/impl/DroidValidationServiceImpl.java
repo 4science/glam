@@ -61,7 +61,11 @@ public class DroidValidationServiceImpl extends AbstractDroidValidationService {
         try {
             inputStream = this.storageService.retrieve(context, bitstream);
         } catch (IOException | SQLException e) {
-            log.error("Cannot load the file to validate with DROID!", e);
+            log.error(
+                "Cannot load the file for the bitstream: {} that needs to be validates with DROID!",
+                bitstream.getID(),
+                e
+            );
             throw new RuntimeException(e);
         }
 
