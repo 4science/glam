@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.storage.bitstore;
+package org.dspace.curate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,10 +44,12 @@ import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Item;
-import org.dspace.curate.CurationOrchestratorScript;
 import org.dspace.scripts.ProcessDSpaceRunnableHandler;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.storage.bitstore.BitStoreService;
+import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
+import org.dspace.storage.bitstore.S3BitStoreService;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -192,7 +194,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
         ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
         when(handlerMock.getProcessId()).thenReturn(1);
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
         curationOrchestratorScript.setS3Client(amazonS3Client);
         curationOrchestratorScript.run();
@@ -290,7 +292,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
         when(handlerMock.getProcessId()).thenReturn(1, 1);
 
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
         curationOrchestratorScript.setS3Client(amazonS3Client);
         curationOrchestratorScript.run();
@@ -346,7 +348,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
 
         TestDSpaceRunnableHandler testDSpaceRunnableHandler = new TestDSpaceRunnableHandler();
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript();
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
         curationOrchestratorScript.initialize(args, testDSpaceRunnableHandler, admin);
 
         String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRundomId(),
@@ -367,13 +369,15 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
             // Verify error messages
             List<String> errors = testDSpaceRunnableHandler.getErrorMessages();
-            assertEquals(3, errors.size());
-            assertEquals("Serverless tasks failed:1", errors.get(0));
-            var expectedError = String.format("FAILED: Serverless task:pdfATransformer, with error:Validation error:" +
-                            " file is not PDF/A compliant , for bitstreams: , and origin bitstream:%s .",
-                    bitstream1.getID());
-            assertEquals(expectedError, errors.get(1));
-            assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(2));
+            assertEquals(2, errors.size());
+            var expectedError =
+                String.format(
+                    "FAILED Execution of curation-task: pdfATransformer, with error: Validation error: file is not " +
+                        "PDF/A compliant for bitstream: %s",
+                    bitstream1.getID()
+                );
+            assertEquals(expectedError, errors.get(0));
+            assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(1));
         }
     }
 

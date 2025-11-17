@@ -137,20 +137,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return clientConfiguration;
     }
 
-    /**
-     * Creates and configures an Amazon S3 client with proxy settings if configured.
-     *
-     * @param configurationService the configuration service to retrieve proxy settings
-     * @return configured Amazon S3 client
-     */
-    public AmazonS3 getAmazonS3Client(ConfigurationService configurationService) {
-        String proxyHost = configurationService.getProperty("http.proxy.host");
-        String proxyPort = configurationService.getProperty("http.proxy.port");
-        String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
-        return AmazonS3Client.builder()
-                             .withClientConfiguration(getProxyClientConfig(proxyHost, proxyPort, ignoredHosts))
-                             .build();
+    protected CurationOrchestratorScript(AmazonS3 s3Client) {
+        this.s3Client = s3Client;
     }
+
+    public CurationOrchestratorScript() { }
 
     /**
      * Sets up the curation orchestrator script by initializing services and parsing command line options.
@@ -160,7 +151,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      */
     @Override
     public void setup() throws ParseException {
-        this.s3Client = getAmazonS3Client(this.configurationService);
         ServiceManager serviceManager = new DSpace().getServiceManager();
         this.s3FileChecker = serviceManager.getServiceByName(S3FileChecker.class.getName(), S3FileChecker.class);
         if (hasInvalidParameters()) {
@@ -224,8 +214,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             // PHASE 2: Launch all tasks AND save futures for final result checking
             List<Future<Integer>> serverFutures = launchServerCurationTasks(item);
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
-                                this.s3FileChecker.checkOutputFilesAndLaunchServerlessTask(this.context, this.s3Client,
-                                                         this.executorService, scheduledProcess, this.allResolvedTasks);
+                                this.s3FileChecker.checkOutputFilesAndLaunchServerlessTask(
+                                    this.context, this.getS3Client(), this.executorService, scheduledProcess,
+                                    this.allResolvedTasks
+                                );
 
             this.executorService.shutdown();
             boolean allCompleted = waitForTasksToComplete();
@@ -338,7 +330,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         checkBucket(uploadBucket);
         TransferManager transferManager = null;
         try {
-            transferManager = TransferManagerBuilder.standard().withS3Client(this.s3Client).build();
+            transferManager = TransferManagerBuilder.standard().withS3Client(this.getS3Client()).build();
             uploadFile(curationProcess, transferManager, uploadBucket);
         } finally {
             if (transferManager != null) {
@@ -363,9 +355,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private void checkBucket(String uploadBucket) {
-        if (!this.s3Client.doesBucketExistV2(uploadBucket)) {
+        if (!getS3Client().doesBucketExistV2(uploadBucket)) {
             log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
-            this.s3Client.createBucket(uploadBucket);
+            getS3Client().createBucket(uploadBucket);
         }
     }
 
@@ -585,17 +577,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String failedMessage(CurationTaskResult result) {
-        String bitstreamIds = result.bitsreams()
-                                    .stream()
-                                    .map(Bitstream::getID)
-                                    .map(UUID::toString)
-                                    .filter(StringUtils::isNotEmpty)
-                                    .reduce((a, b) -> a + ", " + b)
-                                    .orElse("");
+        String bitstreamId = result.originBitstream().toString();
         var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
         var message =
-            "FAILED Execution of curation-task :%s, with error: %s for bitstream:%s .";
-        return String.format(message, result.curationTask(), error, bitstreamIds, result.originBitstream());
+            "FAILED Execution of curation-task: %s, with error: %s for bitstream: %s";
+        return String.format(message, result.curationTask(), error, bitstreamId, result.originBitstream());
     }
 
     private String successMessage(CurationTaskResult result) {
@@ -709,7 +695,16 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     public AmazonS3 getS3Client() {
-        return s3Client;
+        if (this.s3Client == null) {
+            String proxyHost = configurationService.getProperty("http.proxy.host");
+            String proxyPort = configurationService.getProperty("http.proxy.port");
+            String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
+            this.s3Client =
+                AmazonS3Client.builder()
+                              .withClientConfiguration(getProxyClientConfig(proxyHost, proxyPort, ignoredHosts))
+                              .build();
+        }
+        return this.s3Client;
     }
 
     public void setS3Client(AmazonS3 s3Client) {
