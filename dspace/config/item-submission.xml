@@ -270,8 +270,8 @@
       <step id="publication_indexing" />
       <step id="publication_references" />
       <step id="upload" />
-      <step id="license" />
       <step id="curation" />
+      <step id="license" />
     </submission-process>
     <submission-process name="publication-edit">
       <step id="extractionstep" />
@@ -333,6 +333,7 @@
       <step id="collection" />
       <step id="place" />
       <step id="upload" />
+      <step id="curation" />
     </submission-process>
     <submission-process name="place-edit">
       <step id="place" />
@@ -384,8 +385,8 @@
       <step id="collection" />
       <step id="journal_file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="journal_file-edit">
       <step id="journal_file" />
@@ -405,8 +406,8 @@
       <step id="collection" />
       <step id="picture" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="picture-edit">
       <step id="picture" />
@@ -417,8 +418,8 @@
       <step id="audiovideo" />
       <step id="audiovideo-file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="audiovideo-edit">
       <step id="audiovideo" />
@@ -439,8 +440,8 @@
       <step id="collection" />
       <step id="coin" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="coin-edit">
       <step id="coin" />
@@ -450,8 +451,8 @@
       <step id="collection" />
       <step id="musical_librettos" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="musical_librettos-edit">
       <step id="musical_librettos" />
@@ -461,8 +462,8 @@
       <step id="collection" />
       <step id="scientific_materials" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="scientific_materials-edit">
       <step id="scientific_materials" />
@@ -472,8 +473,8 @@
       <step id="collection" />
       <step id="artworks" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
-      <step id="curation"/>
     </submission-process>
     <submission-process name="artworks-edit">
       <step id="artworks" />

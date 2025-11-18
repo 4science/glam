@@ -65,7 +65,7 @@
           <dc-qualifier>exclude</dc-qualifier>
           <label>Escludi i curation task</label>
           <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
-          <repeatable>true</repeatable>
+          <repeatable>false</repeatable>
           <required />
           <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
         </field>
@@ -9824,18 +9824,18 @@
     </value-pairs>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
-        <displayed-value>PDF/A</displayed-value>
+        <displayed-value>Crea PDF/A</displayed-value>
         <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
-    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="curation_tasks">
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="bitstream_curation_tasks">
       <pair>
-          <displayed-value>ALL</displayed-value>
-          <stored-value>all</stored-value>
+        <displayed-value>ALL</displayed-value>
+        <stored-value>all</stored-value>
       </pair>
       <pair>
-          <displayed-value>PDF/A</displayed-value>
-          <stored-value>pdfATransformer</stored-value>
+        <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>
