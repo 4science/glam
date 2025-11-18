@@ -143,6 +143,7 @@ definitions:
           - pip3 install awscli
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
+          - cp ./dspace/modules/server-boot/target/server-boot-*.jar server-boot.jar
           - docker build -f Dockerfile.build -t dspace-cris:${BRANCH_NAME}-${HASH_COMMIT} -t dspace-cris:${BRANCH_NAME}-latest .
           - pipe: atlassian/aws-ecr-push-image:2.5.0
             variables:
@@ -168,6 +169,7 @@ definitions:
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
           - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 891377365430.dkr.ecr.eu-west-1.amazonaws.com
+          - cp ./dspace/modules/server-boot/target/server-boot-*.jar server-boot.jar
           - docker build -f Dockerfile-orc.build -t dspace-cris:${BRANCH_NAME}-${HASH_COMMIT}-orc -t dspace-cris:${BRANCH_NAME}-orc-latest .
           - pipe: atlassian/aws-ecr-push-image:2.5.0
             variables:
