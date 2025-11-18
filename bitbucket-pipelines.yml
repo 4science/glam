@@ -323,24 +323,22 @@ pipelines:
     'dspace-cris-2024_02_x':
       - step: *install
       - parallel: *parallel-pipeline
-      - step: *build-and-push
-      - step: *build-and-push-orc
+      - parallel: &parallel-build-and-push
+        - step: *build-and-push
+        - step: *build-and-push-orc
+        - step: *build-and-push-solr8
       - step: *deploy-on-dev
       - step: *deploy-on-staging
     'prod/**':
       - step: *install
       - parallel: *parallel-pipeline
-      - step: *build-and-push
-      - step: *build-and-push-orc
-      - step: *build-and-push-solr8
+      - parallel: *parallel-build-and-push
       - step: *deploy-on-dev
       - step: *deploy-on-staging
     'test/**':
       - step: *install
       - parallel: *parallel-pipeline
-      - step: *build-and-push
-      - step: *build-and-push-orc
-      - step: *build-and-push-solr8
+      - parallel: *parallel-build-and-push
       - step: *deploy-on-test
 
   pull-requests:
@@ -369,9 +367,7 @@ pipelines:
       - step: *deploy-on-dev
     e2e-test:
       - step: *install
-      - step: *build-and-push
-      - step: *build-and-push-orc
-      - step: *build-and-push-solr8
+      - parallel: *parallel-build-and-push
     turn-on-dev:
       - step: *turn-on-dev
     turn-on-staging:
