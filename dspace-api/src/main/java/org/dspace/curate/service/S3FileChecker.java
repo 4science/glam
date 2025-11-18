@@ -160,9 +160,8 @@ public class S3FileChecker {
     }
 
     protected CurationTaskResult failedCurationTask(ScheduledCurationTask failedTask) {
-        return CurationTaskResult.failure(
-            failedTask.jobType(), failedTask.uuid(), List.of(), "File not found within timeout"
-        );
+        var errorMessage = "Failed to complete the process before the timeout expired";
+        return CurationTaskResult.failure(failedTask.jobType(), failedTask.uuid(), List.of(), errorMessage);
     }
 
     protected CompletableFuture<CurationTaskResult> supplyAsyncCurationTask(
