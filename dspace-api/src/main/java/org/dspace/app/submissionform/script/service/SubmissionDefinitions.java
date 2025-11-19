@@ -12,23 +12,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.dspace.app.submissionform.script.dto.InputFormExcel;
-import org.jdom2.Element;
-
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
+import org.dspace.app.submissionform.script.dto.InputFormExcel;
+import org.jdom2.Element;
 
 public class SubmissionDefinitions extends InputFormExcel {
 
     public void create(Element submissionDefinitions, File fileExcel) throws BiffException, IOException {
-    	List<Element> processEls = createSubmissionProcessElement(fileExcel);
+        List<Element> processEls = createSubmissionProcessElement(fileExcel);
         for (Element processEl : processEls) {
-        	submissionDefinitions.addContent(processEl);
+            submissionDefinitions.addContent(processEl);
         }
     }
-    
+
     private List<Element> createSubmissionProcessElement(File fileExcel) throws BiffException, IOException {
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
@@ -45,7 +44,7 @@ public class SubmissionDefinitions extends InputFormExcel {
 
         // First input form information row (row=1)
         this.sheetRow = sheet.getRow(indexSheetRow);
-        
+
         // For each row on sheet
         while (indexSheetRow < sheetRows) {
             Element processEl = new Element("submission-process");
@@ -55,7 +54,7 @@ public class SubmissionDefinitions extends InputFormExcel {
             // for each cell on submission (base on cell[0] value)
             while (processName.equals(get(posSubmissionId)) && indexSheetRow < sheetRows) {
                 // New step for current sheet
-            	String stepId = get(posSubmissionStepId);
+                String stepId = get(posSubmissionStepId);
                 Element stepEl = new Element("step");
                 stepEl.setAttribute("id", stepId);
                 processEl.addContent(stepEl);

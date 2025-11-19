@@ -40,7 +40,6 @@ public abstract class InputSubmissionMap {
             if (col.getSubmitters() == null) {
                 continue;
             }
-            
             String collectionDefinition = buildMapping(col);
 
             if (collectionDefinition != null) {
@@ -48,12 +47,14 @@ public abstract class InputSubmissionMap {
                 handle = handle.replace(" ", "");
                 boolean definitionExisting = false;
 
-                for (InputFormMapDefinition currentDefinition : collectionDefinitionList)
+                for (InputFormMapDefinition currentDefinition : collectionDefinitionList) {
                     if (currentDefinition.getCollectionName().equals(collectionDefinition)) {
                         currentDefinition.getCollectionList().add(handle);
                         definitionExisting = true;
                         break;
                     }
+                }
+
                 if (!definitionExisting) {
                     List<String> collezioneList = new ArrayList<String>();
                     collezioneList.add(handle);

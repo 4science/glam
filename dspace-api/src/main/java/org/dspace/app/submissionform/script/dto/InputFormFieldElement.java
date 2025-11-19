@@ -9,40 +9,43 @@ package org.dspace.app.submissionform.script.dto;
 
 public class InputFormFieldElement {
 
-	private String formName, dcSchema, dcElement, dcQualifier;
+    private String formName;
+    private String dcSchema;
+    private String dcElement;
+    private String dcQualifier;
 
-	public InputFormFieldElement(String formName, String dcSchema, String dcElement, String dcQualifier) {
-		super();
-		this.formName = formName;
-		this.dcSchema = dcSchema;
-		this.dcElement = dcElement;
-		this.dcQualifier = dcQualifier;
-	}
+    public InputFormFieldElement(String formName, String dcSchema, String dcElement, String dcQualifier) {
+        super();
+        this.formName = formName;
+        this.dcSchema = dcSchema;
+        this.dcElement = dcElement;
+        this.dcQualifier = dcQualifier;
+    }
 
-	public String toString() {
-		return getFormName() + ":" + getDcSchema() + "." + getDcElement() + "." + getDcQualifier();
-	}
+    public String toString() {
+        return getFormName() + ":" + getDcSchema() + "." + getDcElement() + "." + getDcQualifier();
+    }
 
-	public String getElementName() {
-		String name = getDcSchema() + "." + getDcElement();
-		if (!getDcQualifier().isEmpty()) {
-			name += "." + getDcQualifier();
-		}
-		return name;		
-	}
+    public String getElementName() {
+        String name = getDcSchema() + "." + getDcElement();
+        if (!getDcQualifier().isEmpty()) {
+            name += "." + getDcQualifier();
+        }
+        return name;
+    }
 
-	public boolean equals(Object obj) {
-		InputFormFieldElement elemento = (InputFormFieldElement) obj;
-		return elemento.getDcSchema().equals(dcSchema) &&
+    public boolean equals(Object obj) {
+        InputFormFieldElement elemento = (InputFormFieldElement) obj;
+        return elemento.getDcSchema().equals(dcSchema) &&
                elemento.getDcElement().equals(dcElement) &&
                elemento.getDcQualifier().equals(dcQualifier) &&
                elemento.getFormName().equals(formName);
-	}
+    }
 
-	@Override
-	public int hashCode() {
+    @Override
+    public int hashCode() {
         return (getElementName() + formName).hashCode();
-	}
+    }
 
     public String getDcElement() {
         return dcElement;
@@ -68,8 +71,7 @@ public class InputFormFieldElement {
         this.formName = formName;
     }
 
-    public String getDcSchema()
-    {
+    public String getDcSchema() {
         return dcSchema;
     }
 

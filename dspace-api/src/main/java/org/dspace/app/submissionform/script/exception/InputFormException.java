@@ -9,20 +9,20 @@ package org.dspace.app.submissionform.script.exception;
 
 public class InputFormException extends Exception {
 
-	public InputFormException() {
-		super();
-	}
+    public InputFormException() {
+        super();
+    }
 
-	public InputFormException(String message) {
-		super(message);
-	}
+    public InputFormException(String message) {
+        super(message);
+    }
 
-	public InputFormException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public InputFormException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-	public InputFormException(Throwable cause) {
-		super(cause);
-	}
+    public InputFormException(Throwable cause) {
+        super(cause);
+    }
 
 }

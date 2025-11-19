@@ -9,37 +9,42 @@ package org.dspace.app.submissionform.script.builder;
 
 import java.util.List;
 
+/**
+ * InputFormErrorBuilder class to manage errors and warnings
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
+ */
 public class InputFormErrorBuilder {
 
-	public enum Level { ERROR, WARN, INFO }
+    public enum Level { ERROR, WARN, INFO }
 
     private Level level;
-	private StringBuilder errorMsg;
+    private StringBuilder errorMsg;
     private IInputFormFixBuilder fixWarn;
 
-	public InputFormErrorBuilder(StringBuilder errorMsg, Level severity) {
-		super();
-		this.errorMsg = errorMsg;
-		this.level = severity;
-	}
+    public InputFormErrorBuilder(StringBuilder errorMsg, Level severity) {
+        super();
+        this.errorMsg = errorMsg;
+        this.level = severity;
+    }
 
-	public InputFormErrorBuilder(StringBuilder errorMsg, Level severity, IInputFormFixBuilder fixWarn) {
-		super();
-		this.errorMsg = errorMsg;
-		this.level = severity;
-		this.fixWarn = fixWarn;
-	}
+    public InputFormErrorBuilder(StringBuilder errorMsg, Level severity, IInputFormFixBuilder fixWarn) {
+        super();
+        this.errorMsg = errorMsg;
+        this.level = severity;
+        this.fixWarn = fixWarn;
+    }
 
-	public static void manageError(List<InputFormErrorBuilder> errors, StringBuilder errorMessage) {
-		InputFormErrorBuilder errorInputForm = new InputFormErrorBuilder(errorMessage, Level.ERROR);
-		errors.add(errorInputForm);
-	}
+    public static void manageError(List<InputFormErrorBuilder> errors, StringBuilder errorMessage) {
+        InputFormErrorBuilder errorInputForm = new InputFormErrorBuilder(errorMessage, Level.ERROR);
+        errors.add(errorInputForm);
+    }
 
-	public static void manageWarning(List<InputFormErrorBuilder> errors, StringBuilder errorMessage,
+    public static void manageWarning(List<InputFormErrorBuilder> errors, StringBuilder errorMessage,
                                      IInputFormFixBuilder fixWarningInputForm) {
-		InputFormErrorBuilder errorInputForm = new InputFormErrorBuilder(errorMessage, Level.WARN, fixWarningInputForm);
-		errors.add(errorInputForm);
-	}
+        InputFormErrorBuilder errorInputForm = new InputFormErrorBuilder(errorMessage, Level.WARN, fixWarningInputForm);
+        errors.add(errorInputForm);
+    }
 
     public Level getLevel() {
         return level;

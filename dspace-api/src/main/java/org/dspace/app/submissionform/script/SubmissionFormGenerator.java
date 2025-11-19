@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import com.ibm.icu.text.SimpleDateFormat;
 import com.ibm.icu.util.GregorianCalendar;
-
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
@@ -25,12 +24,12 @@ import jxl.read.biff.BiffException;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.collections4.ListUtils;
 import org.dspace.app.submissionform.script.builder.IInputFormFixBuilder;
+import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.checker.InputFormMetadataFieldChecker;
 import org.dspace.app.submissionform.script.checker.InputFormRulesChecker;
 import org.dspace.app.submissionform.script.checker.SubmissionDefinitionRulesChecker;
 import org.dspace.app.submissionform.script.checker.SubmissionStepRulesChecker;
 import org.dspace.app.submissionform.script.dto.InputFormDTO;
-import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.exception.InputFormException;
 import org.dspace.app.submissionform.script.service.InputFormDefinitions;
@@ -44,9 +43,9 @@ import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.kernel.ServiceManager;
 import org.dspace.scripts.DSpaceRunnable;
 import org.dspace.utils.DSpace;
-import org.jdom2.Element;
 import org.jdom2.DocType;
 import org.jdom2.Document;
+import org.jdom2.Element;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
@@ -158,11 +157,12 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
             if ("".equals(defaultDefinition)) {
                 this.defaultDefinition = getDefaultSubmissiondefinitionName(xlsFile);
             }
-            if (itemSubmissionFile != null)
+            if (itemSubmissionFile != null) {
                 createItemSubmissionXml(xlsFile, itemSubmissionFile);
-            if (submissionFormFile != null)
+            }
+            if (submissionFormFile != null) {
                 createSubmissionFormXml(xlsFile, submissionFormFile, locale);
-
+            }
         }
         return new InputFormDTO(errors);
     }
@@ -172,19 +172,19 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         List<InputFormErrorBuilder> errors = new ArrayList<>();
 
         SubmissionDefinitionRulesChecker submissionCheck = new SubmissionDefinitionRulesChecker();
-        List<InputFormErrorBuilder> errorSubmissionCheckExcel = submissionCheck.check(xlsFile, context, defaultDefinition);
+        List<InputFormErrorBuilder> errorSubmissionCheckExcel = submissionCheck.check(xlsFile, defaultDefinition);
 
         SubmissionStepRulesChecker stepCheck = new SubmissionStepRulesChecker();
-        List<InputFormErrorBuilder> errorStepCheckExcel = stepCheck.check(xlsFile, context);
-
+        List<InputFormErrorBuilder> errorStepCheckExcel = stepCheck.check(xlsFile);
 
         InputFormRulesChecker check = new InputFormRulesChecker();
-        List<InputFormErrorBuilder> errorCheckExcel = check.check(xlsFile, context);
+        List<InputFormErrorBuilder> errorCheckExcel = check.check(xlsFile);
 
         InputFormMetadataFieldChecker dspaceCheck = new InputFormMetadataFieldChecker();
         List<InputFormErrorBuilder> errorCheckDspace = dspaceCheck.check(xlsFile, context);
 
-        if (errorSubmissionCheckExcel.isEmpty() && errorStepCheckExcel.isEmpty() && errorCheckExcel.isEmpty() && errorCheckDspace.isEmpty()) {
+        if (errorSubmissionCheckExcel.isEmpty() && errorStepCheckExcel.isEmpty()
+            && errorCheckExcel.isEmpty() && errorCheckDspace.isEmpty()) {
             System.out.println("Validation Success!!!");
         } else {
             errors = ListUtils.union(errorSubmissionCheckExcel, errorStepCheckExcel);
@@ -207,9 +207,11 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         return sheet.getRow(1)[0].getContents().trim();
     }
 
-    private void createItemSubmissionXml(File xlsFile, File itemSubmissionFile) throws SQLException, BiffException, IOException {
+    private void createItemSubmissionXml(File xlsFile, File itemSubmissionFile)
+            throws SQLException, BiffException, IOException {
         DSpace dspace = new DSpace();
-        InputSubmissionMap submissionMap = dspace.getServiceManager().getServiceByName("inputFormMapping", InputSubmissionMap.class);
+        InputSubmissionMap submissionMap = dspace.getServiceManager()
+                                                 .getServiceByName("inputFormMapping", InputSubmissionMap.class);
         StepDefinitions stepDefinitions = new StepDefinitions();
         SubmissionDefinitions submissionDefinitions = new SubmissionDefinitions();
 
@@ -245,8 +247,8 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         System.out.println("XML created:" + itemSubmissionFile);
     }
 
-    private void createSubmissionFormXml(File xlsFile, File submissionFormFile, String locale) throws SQLException, BiffException, IOException {
-
+    private void createSubmissionFormXml(File xlsFile, File submissionFormFile, String locale)
+            throws BiffException, IOException {
         InputFormDefinitions formDefinitions = new InputFormDefinitions();
         InputFormValuePairs formValuePairs = new InputFormValuePairs();
 
@@ -276,7 +278,6 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
 
         out.flush();
         out.close();
-
         System.out.println("XML created:" + submissionFormFile);
     }
 

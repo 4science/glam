@@ -7,9 +7,9 @@
  */
 package org.dspace.app.submissionform.script.dto;
 
-import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
-
 import java.util.List;
+
+import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 
 public class InputFormDTO {
 

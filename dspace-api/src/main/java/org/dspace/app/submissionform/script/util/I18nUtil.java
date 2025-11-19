@@ -12,11 +12,16 @@ import java.util.ResourceBundle;
 
 public class I18nUtil {
 
+    /**
+     * Default constructor
+     */
+    private I18nUtil() { }
+
     private static ResourceBundle messageSource = ResourceBundle.getBundle("inputform-validation-labels");
 
-	public static String getMessage(String i18nMetadataCheckError, Object[] objects) {
-		String message = messageSource.getString(i18nMetadataCheckError);
-		return MessageFormat.format(message, objects);
-	}
+    public static String getMessage(String i18nMetadataCheckError, Object[] objects) {
+        String message = messageSource.getString(i18nMetadataCheckError);
+        return MessageFormat.format(message, objects);
+    }
 
 }

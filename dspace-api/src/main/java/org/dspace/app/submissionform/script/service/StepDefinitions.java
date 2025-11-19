@@ -10,23 +10,26 @@ package org.dspace.app.submissionform.script.service;
 import java.io.File;
 import java.io.IOException;
 
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.WorkbookSettings;
+import jxl.read.biff.BiffException;
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.util.DCInput;
 import org.jdom2.Element;
 
-import jxl.Sheet;
-import jxl.Workbook;
-import jxl.WorkbookSettings;
-import jxl.read.biff.BiffException;
-
 public class StepDefinitions extends InputFormExcel {
 
     public void create(Element stepDefinitions, File fileExcel) throws BiffException, IOException {
-        String formName, rowNumber;
+        String formName;
+        String rowNumber;
 
         // DOM element for form, page, field and input type
-        Element stepEl, page, field, inputType;
+        Element stepEl;
+        Element page;
+        Element field;
+        Element inputType;
 
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
@@ -47,14 +50,13 @@ public class StepDefinitions extends InputFormExcel {
         // For each row on sheet
         while (indexSheetRow < sheetRows) {
             // New step for current sheet
-        	String stepId = get(posStepId);
-        	String stepType = get(posStepType);
-        	String restrictions = get(posStepVisibility);
-        	boolean required = Boolean.parseBoolean(get(posStepRequired));
-        	Boolean opened = get(posStepOpened).isEmpty() ? null : Boolean.parseBoolean(get(posStepOpened));
+            String stepId = get(posStepId);
+            String stepType = get(posStepType);
+            String restrictions = get(posStepVisibility);
+            boolean required = Boolean.parseBoolean(get(posStepRequired));
+            Boolean opened = get(posStepOpened).isEmpty() ? null : Boolean.parseBoolean(get(posStepOpened));
 
             stepEl = createStepDefinitionElement(stepId, stepType, required, restrictions, opened);
-            
             stepDefinitions.addContent(stepEl);
 
             indexSheetRow++;
@@ -67,23 +69,24 @@ public class StepDefinitions extends InputFormExcel {
 
     private Element createStepDefinitionElement(String stepId, String stepType, boolean required, String restrictions,
                                                 Boolean opened) {
-    	Element stepEl = new Element("step-definition");
-    	stepEl.setAttribute("id", stepId);
+        Element stepEl = new Element("step-definition");
+        stepEl.setAttribute("id", stepId);
 
-    	if (required) {
-    		stepEl.setAttribute("mandatory", "true");
-    	} else {
-    		stepEl.setAttribute("mandatory", "false");
-    	}
+        if (required) {
+            stepEl.setAttribute("mandatory", "true");
+        } else {
+            stepEl.setAttribute("mandatory", "false");
+        }
 
-    	if (opened!=null)
-    		stepEl.setAttribute("opened", opened.toString());
-		stepEl.addContent(new Element("heading").setText(getHeadingByStepTypeAndId(stepType, stepId)));
-    	stepEl.addContent(new Element("processing-class").setText(getProcessingClassByStepType(stepType)));
-    	stepEl.addContent(new Element("type").setText(stepType));
+        if (opened != null) {
+            stepEl.setAttribute("opened", opened.toString());
+        }
+        stepEl.addContent(new Element("heading").setText(getHeadingByStepTypeAndId(stepType, stepId)));
+        stepEl.addContent(new Element("processing-class").setText(getProcessingClassByStepType(stepType)));
+        stepEl.addContent(new Element("type").setText(stepType));
 
-    	if (StringUtils.isNotBlank(restrictions)) {
-    		// New element
+        if (StringUtils.isNotBlank(restrictions)) {
+            // New element
             Element restrictionEl = new Element("scope");
             if (restrictions.equalsIgnoreCase("hidden")) {
                 restrictionEl.setText("submission");
@@ -112,32 +115,32 @@ public class StepDefinitions extends InputFormExcel {
                 }
             }
             stepEl.addContent(restrictionEl);
-    	}
-    	return stepEl;
+        }
+        return stepEl;
     }
-        
+
     private String getProcessingClassByStepType(String stepType) {
-    	String processingClass = ""; 
+        String processingClass;
         switch (stepType) {
-        	case "collection":
-        		processingClass = collectionStepClass;
-        		break;
-        	case "submission-form":
-        		processingClass = formStepClass;
-        		break;
-        	case "upload":
-        		processingClass = uploadStepClass;
-        		break;
-        	case "license":
-        		processingClass = licenseStepClass;
-        		break;
-        	case "detect-duplicate":
-        		processingClass = duplicateStepClass;
-        		break;
-        	case "extract":
-        		processingClass = extractionStepClass;
-        		break;
-        	case "cclicense":
+            case "collection":
+                processingClass = collectionStepClass;
+                break;
+            case "submission-form":
+                processingClass = formStepClass;
+                break;
+            case "upload":
+                processingClass = uploadStepClass;
+                break;
+            case "license":
+                processingClass = licenseStepClass;
+                break;
+            case "detect-duplicate":
+                processingClass = duplicateStepClass;
+                break;
+            case "extract":
+                processingClass = extractionStepClass;
+                break;
+            case "cclicense":
                 processingClass = cclicenseStepClass;
                 break;
             case "accessCondition":
@@ -160,13 +163,15 @@ public class StepDefinitions extends InputFormExcel {
                 break;
             case "external-upload":
                 processingClass = externalUploadStepClass;
-                break;   
+                break;
+            default:
+                processingClass = "";
         }
         return processingClass;
     }
-    
+
     private String getHeadingByStepTypeAndId(String stepType, String stepId) {
-        String heading = stepHeadingPrefix + stepId; 
+        String heading;
         switch (stepType) {
             case "submission-form":
                 heading = stepHeadingPrefix + "describe." + stepId;
@@ -177,6 +182,8 @@ public class StepDefinitions extends InputFormExcel {
             case "cclicense":
                 heading = "submit.progressbar.CClicense";
                 break;
+            default:
+                heading = stepHeadingPrefix + stepId;
         }
         return heading;
     }

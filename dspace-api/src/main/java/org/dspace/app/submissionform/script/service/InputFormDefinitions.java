@@ -9,32 +9,33 @@ package org.dspace.app.submissionform.script.service;
 
 import java.io.File;
 import java.io.IOException;
-import org.apache.commons.lang3.StringUtils;
-import org.dspace.app.submissionform.script.dto.InputFormExcel;
-import org.dspace.app.util.DCInput;
-import org.jdom2.Element;
 
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
+import org.apache.commons.lang3.StringUtils;
+import org.dspace.app.submissionform.script.dto.InputFormExcel;
+import org.dspace.app.util.DCInput;
+import org.jdom2.Element;
 
 public class InputFormDefinitions extends InputFormExcel {
 
     public void create(Element formDefinitions, File fileExcel, String locale) throws BiffException, IOException {
-        String formName, rowNumber;
+        String formName;
+        String rowNumber;
         // DOM element for form, page, field and input type
-        Element form, page, field, inputType;
-
+        Element form;
+        Element page;
+        Element field;
+        Element inputType;
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
         ws.setEncoding(CHAR_ENCODING);
-
         Workbook workbook = Workbook.getWorkbook(fileExcel, ws);
 
         // Sheet input form
         Sheet sheet = workbook.getSheet(INPUTFORM_SHEET_NAME);
-
         // First input form name
         formName = sheet.getCell(0, 1).getContents();
 
@@ -64,7 +65,7 @@ public class InputFormDefinitions extends InputFormExcel {
                 // cell[1] value)
                 while (formName.equals(get(posFormName)) && rowNumber.equals(get(posRowNumber)) &&
                        indexSheetRow < sheetRows) {
-                	String fieldStyle = get(posFieldStyle);
+                    String fieldStyle = get(posFieldStyle);
                     String schemaValue = get(posDcSchema);
                     String elementValue = get(posDcElement);
                     String qualifierValue = get(posDcQualifier);
@@ -89,7 +90,7 @@ public class InputFormDefinitions extends InputFormExcel {
                     field.addContent(new Element("dc-schema").setText(schemaValue));
                     field.addContent(new Element("dc-element").setText(elementValue));
                     if (StringUtils.isNotBlank(qualifierValue)) {
-	                    field.addContent(new Element("dc-qualifier").setText(qualifierValue));
+                        field.addContent(new Element("dc-qualifier").setText(qualifierValue));
                     }
 
                     field.addContent(new Element("label").setText(labelValue));
@@ -128,18 +129,18 @@ public class InputFormDefinitions extends InputFormExcel {
 
                     // Scope
                     if (!restrictions.equals("")) {
-                    	Element restrictionEl;
+                        Element restrictionEl;
                         if (StringUtils.containsIgnoreCase(restrictions, "readonly")) {
-                        	// New element
-	                        restrictionEl = new Element("readonly");
-	                        if (StringUtils.containsIgnoreCase(restrictions, DCInput.WORKFLOW_SCOPE)) {
-	                            restrictionEl.setText(DCInput.WORKFLOW_SCOPE);
-	                        } else if (StringUtils.containsIgnoreCase(restrictions, "submission")) {
-	                            restrictionEl.setText(DCInput.SUBMISSION_SCOPE);
-	                        } else {
-	                            restrictionEl.setText("all");
-	                        }
-	                        field.addContent(restrictionEl);
+                            // New element
+                            restrictionEl = new Element("readonly");
+                            if (StringUtils.containsIgnoreCase(restrictions, DCInput.WORKFLOW_SCOPE)) {
+                                restrictionEl.setText(DCInput.WORKFLOW_SCOPE);
+                            } else if (StringUtils.containsIgnoreCase(restrictions, "submission")) {
+                                restrictionEl.setText(DCInput.SUBMISSION_SCOPE);
+                            } else {
+                                restrictionEl.setText("all");
+                            }
+                            field.addContent(restrictionEl);
                         }
 
                         if (StringUtils.containsIgnoreCase(restrictions, "limited")) {
@@ -170,7 +171,7 @@ public class InputFormDefinitions extends InputFormExcel {
                     if (StringUtils.isNotBlank(vocabulary)) {
                         Element elementVocabulary = new Element("vocabulary");
                         elementVocabulary.setText(vocabulary);
-                        if(Boolean.parseBoolean(closedvocabulary)) {
+                        if (Boolean.parseBoolean(closedvocabulary)) {
                             elementVocabulary.setAttribute("closed", closedvocabulary);
                         }
                         field.addContent(elementVocabulary);
@@ -179,7 +180,7 @@ public class InputFormDefinitions extends InputFormExcel {
                     if (StringUtils.isNotBlank(validation)) {
                         field.addContent(new Element("regex").setText(validation));
                     }
-                    
+
                     if (StringUtils.isNotBlank(multilanguage)) {
                         Element elementMultilanguage = new Element("language");
                         elementMultilanguage.setText("true");

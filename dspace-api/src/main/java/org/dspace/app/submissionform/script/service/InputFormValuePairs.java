@@ -12,18 +12,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jxl.Cell;
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.WorkbookSettings;
+import jxl.read.biff.BiffException;
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jxl.Cell;
-import jxl.Sheet;
-import jxl.Workbook;
-import jxl.WorkbookSettings;
-import jxl.read.biff.BiffException;
-
+/**
+ * InputFormValuePairs - Class to manage the value-pairs form definition from excel file
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
+ */
 public class InputFormValuePairs extends InputFormExcel {
 
     private static final Logger log = LoggerFactory.getLogger(InputFormValuePairs.class);
@@ -44,7 +48,8 @@ public class InputFormValuePairs extends InputFormExcel {
         ws.setEncoding(CHAR_ENCODING);
 
         Workbook workbook = Workbook.getWorkbook(fileExcel, ws);
-        Element valuePairsEl, pair;
+        Element valuePairsEl;
+        Element pair;
         Sheet sheet;
 
         // Sheet value-pair
@@ -86,7 +91,7 @@ public class InputFormValuePairs extends InputFormExcel {
                                 storedValue = columnStoredValue[indexRow].getContents().trim();
                             }
 
-                            if (!displayedValue.equals("")){
+                            if (!displayedValue.equals("")) {
                                 pair.addContent(new Element("displayed-value").setText(displayedValue));
                                 pair.addContent(new Element("stored-value").setText(storedValue));
                                 valuePairsEl.addContent(pair);
@@ -107,7 +112,8 @@ public class InputFormValuePairs extends InputFormExcel {
         List<String> qualifiers = new ArrayList<>();
         Sheet sheet = workbook.getSheet(1);
         if (sheet.getRows() > 0) {
-            Cell[] colonna1, colonna2;
+            Cell[] colonna1;
+            Cell[] colonna2;
             int indexColonna = 1;
             int numeroRighe = sheet.getRow(0).length;
             for (int j = 0; j < numeroRighe; j = j + 2) {
