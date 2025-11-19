@@ -26,7 +26,7 @@ definitions:
           - maven-java17
         script:
           - *setEnv
-          - mvn install -ntp -T 1C -B -P-assembly,pipeline${ADDON_PROFILES} -s settings.xml Drun.jvmArguments="-XX:MaxRAMPercentage=50.0 -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport" $MAVEN_ARGS
+          - mvn install -ntp -T 1C -B -P-assembly,pipeline${ADDON_PROFILES} -s settings.xml -Drun.jvmArguments="-XX:MaxRAMPercentage=50.0 -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport" $MAVEN_ARGS
         artifacts:
           - target/local-repo/**
           - dspace-server-webapp/target/**
