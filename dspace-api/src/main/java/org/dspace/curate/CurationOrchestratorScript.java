@@ -577,10 +577,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String failedMessage(CurationTaskResult result) {
-        String bitstreamId = result.originBitstream().toString();
         var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
         var message = "FAILED Execution of curation-task %s for bitstream %s with error: %s ";
-        return String.format(message, result.curationTask(), error, bitstreamId, result.originBitstream());
+        return String.format(message, result.curationTask(), result.originBitstream(), error);
     }
 
     private String successMessage(CurationTaskResult result) {
