@@ -3046,6 +3046,70 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
         }
     }
 
+    @Test
+    public void testFamilyXmlCrosswalk() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        Item aggregationItem = createItem(context, collection)
+            .withEntityType("Aggregation")
+            .withTitle("Aggregation Title")
+            .build();
+
+        Item eventItem = createItem(context, collection)
+            .withEntityType("Event")
+            .withTitle("Event Title")
+            .build();
+
+        Item familyItem = createItem(context, collection)
+            .withEntityType("Family")
+            .withTitle("Family Title")
+            .withAlternativeTitle("Alternative Family")
+            .withDescription("This is the Family description")
+            .build();
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "glamfamily", "nationality", null,
+            null, "IT"
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "glamfamily", "editor", null,
+            null, "Custom Editor"
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "dc", "relation", "aggreagation",
+            aggregationItem.getName(), aggregationItem.getID().toString()
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "dc", "relation", "event",
+            eventItem.getName(), eventItem.getID().toString()
+        );
+
+        context.commit();
+        context.restoreAuthSystemState();
+
+        ReferCrosswalk referCrossWalk = (ReferCrosswalk) crosswalkMapper.getByType("family-xml");
+        assertThat(referCrossWalk, notNullValue());
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        referCrossWalk.disseminate(context, familyItem, out);
+
+        try (FileInputStream fis = getFileInputStream("family.xml")) {
+            String expectedXml = IOUtils.toString(fis, Charset.defaultCharset());
+            compareEachLine(out.toString(), expectedXml);
+        }
+    }
+
     private void createSelectedRelationship(Item author, Item publication, RelationshipType selectedRelationshipType) {
         createRelationshipBuilder(context, publication, author, selectedRelationshipType, -1, -1).build();
     }
