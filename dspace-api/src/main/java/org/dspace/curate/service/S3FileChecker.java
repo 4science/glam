@@ -50,7 +50,7 @@ public class S3FileChecker {
     private long delayBetweenAttempts = 60;
 
     private TimeUnit globalTimeoutUnit = TimeUnit.MINUTES;
-    private long globalTimeoutDuration = 15;
+    private long globalTimeoutDuration = 20;
 
     private boolean useExponentialBackoff = false;
 
