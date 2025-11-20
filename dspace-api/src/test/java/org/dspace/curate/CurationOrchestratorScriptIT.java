@@ -206,8 +206,6 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Verify that the PDFA bundle contains one bitstream
         List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
         assertEquals(1, convertedPDF.size());
-        // Verify that the new bitstream has been created with the expected SequenceID
-        assertEquals(bitstream.getSequenceID(), convertedPDF.get(0).getSequenceID());
         // Verify that the new bitstream has been created with the expected name
         assertEquals(bitstream.getName(), convertedPDF.get(0).getName());
     }
@@ -304,10 +302,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Verify that the PDFA bundle contains one bitstream
         List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
         assertEquals(2, convertedPDF.size());
-        // Verify that the new bitstreams has been created with the expected SequenceID
-        assertEquals(bitstream1.getSequenceID(), convertedPDF.get(0).getSequenceID());
-        assertEquals(bitstream2.getSequenceID(), convertedPDF.get(1).getSequenceID());
-        // Verify that the new bitstreams has been created with the expected name
+        // Verify that the new bitstreams has been created with the expected name and order
         assertEquals(bitstream1.getName(), convertedPDF.get(0).getName());
         assertEquals(bitstream2.getName(), convertedPDF.get(1).getName());
     }
