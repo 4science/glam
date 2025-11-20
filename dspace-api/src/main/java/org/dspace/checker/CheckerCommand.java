@@ -135,6 +135,13 @@ public final class CheckerCommand {
         }
     }
 
+    private void logWarning(String message) {
+        LOG.warn(message);
+        if (handler != null) {
+            handler.logWarning(message);
+        }
+    }
+
     /**
      * Check a specified bitstream.
      *
@@ -261,6 +268,12 @@ public final class CheckerCommand {
             MostRecentChecksum info = checkBitstream(bitstream);
 
             if (
+                    info == null ||
+                    info.getBitstream() == null ||
+                    ChecksumResultCode.BITSTREAM_INFO_NOT_FOUND.equals(info.getChecksumResult().getResultCode())
+            ) {
+                logWarning("Cannot retrieve bitstream checksum info! Skipping checker for " + bitstream.getID());
+            } else if (
                     isDroidCheck() ||
                     isMailReport() ||
                     reportVerbose ||

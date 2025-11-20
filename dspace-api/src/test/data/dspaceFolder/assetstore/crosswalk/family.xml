@@ -1,0 +1,21 @@
+<Family id="mock-id">
+    <Name>Family Title</Name>
+    <NameAlternative>Alternative Family</NameAlternative>
+    <Description>This is the Family description</Description>
+    <National>IT</National>
+    <Events>
+        <Event>
+            <DisplayName>Event Title</DisplayName>
+        </Event>
+    </Events>
+    <Editors>
+        <Editor>
+            <DisplayName>Custom Editor</DisplayName>
+        </Editor>
+    </Editors>
+    <Aggregations>
+        <Aggregation>
+            <DisplayName>Aggregation Title</DisplayName>
+        </Aggregation>
+    </Aggregations>
+</Family>

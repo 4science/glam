@@ -4,11 +4,11 @@
 	<Description>@dc.description@</Description>
 	<National>@glamfamily.nationality@</National>
 	<Events>
-        @group.dc-relation-event.start@
+        @relation.dc-relation-event.start@
         <Event>
-            <DisplayName>@dc.relation.event@</DisplayName>
+            <DisplayName>@dc.title@</DisplayName>
         </Event>
-        @group.dc-relation-event.end@
+        @relation.dc-relation-event.end@
     </Events>
 	<Editors>
        	@group.glamfamily-editor.start@
@@ -18,10 +18,10 @@
        	@group.glamfamily-editor.end@
     </Editors>
     <Aggregations>
-        @group.dc-relation-aggregation.start@
+        @relation.dc-relation-aggregation.start@
         <Aggregation>
-            <DisplayName>@dc.relation.aggregation@</DisplayName>
+            <DisplayName>@dc.title@</DisplayName>
         </Aggregation>
-        @group.dc-relation-aggregation.end@
-    </Aggregation>
+        @relation.dc-relation-aggregation.end@
+    </Aggregations>
 </Family>
