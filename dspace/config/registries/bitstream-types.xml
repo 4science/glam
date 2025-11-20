@@ -67,8 +67,8 @@
 
     <dc-type>
         <schema>bitstream</schema>
-        <element>curation</element>
-        <qualifier>originalBitstream</qualifier>
+        <element>master</element>
+        <qualifier></qualifier>
     </dc-type>
 
 </dspace-dc-types>
