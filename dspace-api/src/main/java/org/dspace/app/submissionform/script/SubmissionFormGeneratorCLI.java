@@ -13,6 +13,6 @@ package org.dspace.app.submissionform.script;
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
-public class SubmissionFormGeneratorCli extends SubmissionFormGenerator {
+public class SubmissionFormGeneratorCLI extends SubmissionFormGenerator {
 
 }

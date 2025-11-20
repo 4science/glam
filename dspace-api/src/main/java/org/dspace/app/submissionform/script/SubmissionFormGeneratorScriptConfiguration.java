@@ -11,11 +11,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.apache.commons.cli.Options;
-import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.core.Context;
 import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.configuration.ScriptConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Configuration class for the {@link SubmissionFormGenerator} script.
@@ -26,9 +24,6 @@ public class SubmissionFormGeneratorScriptConfiguration<T extends SubmissionForm
         extends ScriptConfiguration<T> {
 
     private Class<T> dspaceRunnableClass;
-
-    @Autowired
-    private AuthorizeService authorizeService;
 
     @Override
     public boolean isAllowedToExecute(Context context, List<DSpaceCommandLineParameter> commandLineParameters) {
