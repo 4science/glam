@@ -14,15 +14,16 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.sql.SQLException;
 
+import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.ClientAbortException;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.rest.utils.ContextUtil;
 import org.dspace.app.rest.utils.HttpHeadersInitializer;
+import org.dspace.app.sitemap.SitemapStorageService;
 import org.dspace.core.Context;
 import org.dspace.services.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +44,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * }
  * </pre>
  *
+ * This controller now uses the SitemapStorageService for abstracted file access,
+ * supporting different storage backends while maintaining the same REST API.
+ *
  * @author Maria Verdonck (Atmire) on 08/07/2020
  */
 @Controller
@@ -50,57 +54,96 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class SitemapRestController {
 
     private static final Logger log = org.apache.logging.log4j.LogManager.getLogger(SitemapRestController.class);
-
-    @Autowired
-    ConfigurationService configurationService;
-
     // Most file systems are configured to use block sizes of 4096 or 8192 and our buffer should be a multiple of that.
     private static final int BUFFER_SIZE = 4096 * 10;
+    @Inject
+    private ConfigurationService configurationService;
+    @Inject
+    private SitemapStorageService sitemapStorageService;
+
 
     /**
-     * Tries to retrieve a matching sitemap file in configured location
+     * Tries to retrieve a matching sitemap file using the configured storage service
      *
      * @param name     the name of the requested sitemap file
      * @param response the HTTP response
      * @param request  the HTTP request
+     * @return ResponseEntity with the sitemap file or error response
      * @throws SQLException if db error while completing DSpace context
      * @throws IOException  if IO error surrounding sitemap file
-     * @return
      */
     @GetMapping("/{name}")
-    public ResponseEntity retrieve(@PathVariable String name, HttpServletResponse response,
-                                                       HttpServletRequest request) throws IOException, SQLException {
-        // Find sitemap with given name in dspace/sitemaps
-        File foundSitemapFile = null;
-        File sitemapOutputDir = new File(configurationService.getProperty("sitemap.dir"));
-        if (sitemapOutputDir.exists() && sitemapOutputDir.isDirectory()) {
-            // List of all files and directories inside sitemapOutputDir
-            File sitemapFilesList[] = sitemapOutputDir.listFiles();
-            for (File sitemapFile : sitemapFilesList) {
-                if (name.equalsIgnoreCase(sitemapFile.getName())) {
-                    if (sitemapFile.isFile()) {
-                        foundSitemapFile = sitemapFile;
-                    } else {
-                        throw new ResourceNotFoundException(
-                            "Directory with name " + name + " in " + sitemapOutputDir.getAbsolutePath() +
-                            " found, but no file.");
-                    }
+    public ResponseEntity<?> retrieve(@PathVariable String name, HttpServletResponse response,
+                                      HttpServletRequest request) throws IOException, SQLException {
+
+        log.debug("Requesting sitemap file: {}", name);
+
+        try {
+
+            // Check if the requested file exists
+            if (!sitemapStorageService.exists(name)) {
+                log.warn("Sitemap file not found: {}", name);
+
+                // List available files for better error message
+                String[] availableFiles = sitemapStorageService.listSitemapFiles();
+                if (availableFiles.length == 0) {
+                    throw new ResourceNotFoundException(
+                        "No sitemap files found. Either sitemaps have not been generated " +
+                            "(./dspace generate-sitemaps), or the storage service is not properly configured.");
+                } else {
+                    log.debug("Available sitemap files: {}", String.join(", ", availableFiles));
+                    throw new ResourceNotFoundException(
+                        "Could not find sitemap file with name '" + name + "'. " +
+                            "Available files: " + String.join(", ", availableFiles));
                 }
             }
-        } else {
-            throw new ResourceNotFoundException(
-                "Sitemap directory in " + sitemapOutputDir.getAbsolutePath() + " does not " +
-                "exist, either sitemaps have not been generated (./dspace generate-sitemaps)," +
-                " or are located elsewhere (config used: sitemap.dir).");
-        }
-        if (foundSitemapFile == null) {
-            throw new ResourceNotFoundException(
-                "Could not find sitemap file with name " + name + " in " + sitemapOutputDir.getAbsolutePath());
-        } else {
-            // return found sitemap file
-            return this.returnSitemapFile(foundSitemapFile, response, request);
+
+            return returnSitemapFileViaStorageService(name, response, request);
+
+        } catch (Exception e) {
+            log.error("Error retrieving sitemap file '{}': {}", name, e.getMessage(), e);
+            if (e instanceof ResourceNotFoundException) {
+                throw e;
+            }
+            throw new ResourceNotFoundException("Error accessing sitemap file: " + e.getMessage());
         }
     }
+
+    /**
+     * Returns a sitemap file using the storage service abstraction.
+     * This method works with different storage backends while maintaining the same API.
+     *
+     * @param filename the name of the sitemap file
+     * @param response the HTTP response
+     * @param request  the HTTP request
+     * @return ResponseEntity with the sitemap file
+     * @throws SQLException if db error while completing DSpace context
+     * @throws IOException  if IO error surrounding sitemap file
+     */
+    private ResponseEntity<?> returnSitemapFileViaStorageService(String filename,
+                                                                 HttpServletResponse response,
+                                                                 HttpServletRequest request)
+        throws SQLException, IOException {
+        String sitemapDir = configurationService.getProperty("sitemap.dir");
+        File sitemapDirectory = new File(sitemapDir);
+        File foundSitemapFile = new File(sitemapDirectory, filename);
+
+        // Path Traversal protection: ensure file is within sitemap directory
+        String canonicalDir = sitemapDirectory.getCanonicalPath();
+        String canonicalFile = foundSitemapFile.getCanonicalPath();
+        if (!canonicalFile.equals(canonicalDir) && !canonicalFile.startsWith(canonicalDir + File.separator)) {
+            log.warn("Blocked path traversal attempt: {}", filename);
+            throw new ResourceNotFoundException("Invalid sitemap file path.");
+        }
+
+        if (!foundSitemapFile.exists() || !foundSitemapFile.isFile()) {
+            throw new ResourceNotFoundException(
+                "Sitemap file does not exist or is not accessible: " + filename);
+        }
+
+        return returnSitemapFile(foundSitemapFile, response, request);
+    }
+
 
     /**
      * Sends back the matching sitemap file as a MultipartFile, with the headers set with details of the file
@@ -109,12 +152,22 @@ public class SitemapRestController {
      * @param foundSitemapFile the found sitemap file, with matching name as in request path
      * @param response         the HTTP response
      * @param request          the HTTP request
+     * @return ResponseEntity with the sitemap file
      * @throws SQLException if db error while completing DSpace context
      * @throws IOException  if IO error surrounding sitemap file
-     * @return
      */
-    private ResponseEntity returnSitemapFile(File foundSitemapFile, HttpServletResponse response,
-                                             HttpServletRequest request) throws SQLException, IOException {
+    private ResponseEntity<?> returnSitemapFile(File foundSitemapFile, HttpServletResponse response,
+                                                HttpServletRequest request) throws SQLException, IOException {
+        // Path Traversal protection: ensure file is within sitemap directory
+        String sitemapDir = configurationService.getProperty("sitemap.dir");
+        File sitemapDirectory = new File(sitemapDir);
+        String canonicalDir = sitemapDirectory.getCanonicalPath();
+        String canonicalFile = foundSitemapFile.getCanonicalPath();
+        if (!canonicalFile.equals(canonicalDir) && !canonicalFile.startsWith(canonicalDir + File.separator)) {
+            log.warn("Blocked path traversal attempt: {}", foundSitemapFile.getName());
+            throw new ResourceNotFoundException("Invalid sitemap file path.");
+        }
+
         // Pipe the bits
         try (InputStream is = new FileInputStream(foundSitemapFile)) {
             HttpHeadersInitializer sender = new HttpHeadersInitializer()
@@ -148,7 +201,7 @@ public class SitemapRestController {
 
         } catch (ClientAbortException e) {
             log.debug("Client aborted the request before the download was completed. " +
-                      "Client is probably switching to a Range request.", e);
+                          "Client is probably switching to a Range request.", e);
         }
         return null;
     }
