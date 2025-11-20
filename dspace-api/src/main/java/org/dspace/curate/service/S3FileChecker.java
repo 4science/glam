@@ -165,7 +165,8 @@ public class S3FileChecker {
     }
 
     protected CompletableFuture<CurationTaskResult> supplyAsyncCurationTask(
-        Context context, AmazonS3 s3Client,
+        Context context,
+        AmazonS3 s3Client,
         ScheduledProcess scheduledProcess,
         ScheduledCurationTask scheduledCurationTask,
         ServerlessCurationTask serverlessTask,
@@ -192,6 +193,11 @@ public class S3FileChecker {
             logStartInitPerform(scheduledCurationTask);
             return serverlessTask.initPerform(threadContext, s3Client, scheduledCurationTask,
                                               scheduledProcess.process());
+        } catch (Exception e) {
+            log.error("S3FileChecker: Error during async curation task execution", e);
+            threadContext.abort();
+            return CurationTaskResult.failure(scheduledCurationTask.jobType(), scheduledCurationTask.uuid(), List.of(),
+                                              e.getMessage());
         } finally {
             cleanUpContext(threadContext);
         }
@@ -199,6 +205,10 @@ public class S3FileChecker {
 
     private static void cleanUpContext(Context threadContext) {
         try {
+            if (!threadContext.isValid()) {
+                log.warn("S3FileChecker: Thread context is not valid during cleanup.");
+                return;
+            }
             threadContext.complete();
         } catch (Exception e) {
             log.error("S3FileChecker: Error completing thread context", e);
