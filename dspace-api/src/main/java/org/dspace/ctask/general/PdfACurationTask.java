@@ -160,7 +160,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                 log.info(message, currentBitstream.getID(), item.getID());
                 continue;
             }
-            if (isPDFaBitstreamAlreadyCreated(item, currentBitstream)) {
+            if (isPDFaBitstreamAlreadyCreated(context, item, currentBitstream)) {
                 log.info("PdfACurationTask: Skipping bitstream:{} of item:{}, because PDF/A version already exists!",
                          currentBitstream.getID(), item.getID());
                 continue;
@@ -291,17 +291,19 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         return originalBitstream.getName();
     }
 
-    private boolean isPDFaBitstreamAlreadyCreated(Item item, Bitstream currentBitstream) {
-        String currentBitstreamUUID = currentBitstream.getID().toString();
-        return item.getBundles(PDFA_BUNDLE_NAME)
-                .stream()
-                .flatMap(bundle -> bundle.getBitstreams().stream())
-                .map(bitstream -> getMetadataFirstValue(bitstream))
-                .anyMatch(masterUUID -> StringUtils.equals(masterUUID, currentBitstreamUUID));
-    }
-
-    private String getMetadataFirstValue(Bitstream bitstream) {
-        return bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "master", null, Item.ANY);
+    private boolean isPDFaBitstreamAlreadyCreated(Context context, Item item, Bitstream currentBitstream) {
+        Iterator<Bitstream> byMetadataValueInBundle;
+        try {
+            byMetadataValueInBundle = bitstreamService.findByMetadataValueInBundle(
+                context, item.getID(), PDFA_BUNDLE_NAME, "bitstream.master", currentBitstream.getID().toString());
+        } catch (SQLException e) {
+            log.error(
+                "Skipping bitstream: {} because of error during exclusion of already processed PDF",
+                currentBitstream.getID(), e
+            );
+            return true;
+        }
+        return byMetadataValueInBundle.hasNext();
     }
 
     private String getGeneratedName(String outputPath) {
