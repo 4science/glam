@@ -48,4 +48,9 @@ public interface CurationTask {
      * @throws IOException if error
      */
     int perform(Context ctx, String id) throws IOException;
+
+    default String getRelatedBundle() {
+        return "";
+    }
+
 }

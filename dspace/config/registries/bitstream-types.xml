@@ -58,4 +58,11 @@
         <scope_note>Metadata field used to store the correct vertical position of the bitstream when used as a cover image</scope_note>
     </dc-type>
 
+    <dc-type>
+        <schema>bitstream</schema>
+        <element>curation</element>
+        <qualifier>exclude</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
 </dspace-dc-types>

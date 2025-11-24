@@ -58,6 +58,18 @@
           <hint />
         </field>
       </row>
+      <row>
+        <field>
+          <dc-schema>bitstream</dc-schema>
+          <dc-element>curation</dc-element>
+          <dc-qualifier>exclude</dc-qualifier>
+          <label>Escludi i curation task</label>
+          <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
+        </field>
+      </row>
     </form>
     <form name="publication-dc-contributor-author">
       <row>
@@ -7346,6 +7358,20 @@
         </field>
       </row>
     </form>
+    <form name="curation">
+      <row>
+        <field>
+          <dc-schema>cris</dc-schema>
+          <dc-element>curation</dc-element>
+          <dc-qualifier>task</dc-qualifier>
+          <label>Tipo di curation task da eseguire in fase di deposito</label>
+          <input-type value-pairs-name="curation_tasks">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Seleziona curation task</hint>
+        </field>
+      </row>
+    </form>
   </form-definitions>
   <form-value-pairs>
     <value-pairs value-pairs-name="common_iso_countries" dc-term="common_iso_countries">
@@ -9794,6 +9820,22 @@
       <pair>
         <displayed-value>materiale vario</displayed-value>
         <stored-value>materiale vario</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
+      <pair>
+        <displayed-value>Crea PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="bitstream_curation_tasks">
+      <pair>
+        <displayed-value>ALL</displayed-value>
+        <stored-value>all</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>
