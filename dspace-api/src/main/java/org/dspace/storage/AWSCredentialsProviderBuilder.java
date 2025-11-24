@@ -43,24 +43,24 @@ public class AWSCredentialsProviderBuilder {
 
     private static final Logger log = LogManager.getLogger(AWSCredentialsProviderBuilder.class);
 
-    @Value("assetstore.s3.irsa.role")
+    @Value("${assetstore.s3.irsa.role}")
     protected String roleArn;
-    @Value("assetstore.s3.irsa.session")
+    @Value("${assetstore.s3.irsa.session}")
     protected String roleSessionName;
-    @Value("assetstore.s3.irsa.tokenfile")
+    @Value("${assetstore.s3.irsa.tokenfile}")
     protected String webIdentityTokenFile;
 
-    @Value("assetstore.s3.stsRoleArn")
+    @Value("${assetstore.s3.stsRoleArn}")
     protected String stsRole;
-    @Value("assetstore.s3.stsSessionName")
+    @Value("${assetstore.s3.stsSessionName}")
     protected String stsSessionName;
-    @Value("assetstore.s3.stsRegion")
+    @Value("${assetstore.s3.stsRegion}")
     protected String stsRegion;
-    @Value("assetstore.s3.stsEndpoint")
+    @Value("${assetstore.s3.stsEndpoint}")
     protected String stsEndpoint;
-    @Value("assetstore.s3.stsSessionDuration")
+    @Value("${assetstore.s3.stsSessionDuration}")
     protected Integer stsSessionDuration;
-    @Value("assetstore.s3.stsExternalid")
+    @Value("${assetstore.s3.stsExternalid}")
     protected String stsExternalId;
 
     protected String awsAccessKey;
@@ -84,7 +84,7 @@ public class AWSCredentialsProviderBuilder {
         return WebIdentityTokenCredentialsProvider
             .builder()
             .roleArn(roleArn)
-            .roleArn(roleSessionName)
+            .roleSessionName(roleSessionName)
             .webIdentityTokenFile(webIdentityTokenFile)
             .build();
     }
@@ -320,9 +320,7 @@ public class AWSCredentialsProviderBuilder {
         AWSCredentialProviderType providerType =
             AWSCredentialProviderType.fromString(type);
         if (IRSA.equals(providerType)) {
-            log.info(
-                "Using IRSA (IAM Roles for Service Accounts) credentials for S3 authentication."
-            );
+            log.info("Using IRSA (IAM Roles for Service Accounts) credentials for S3 authentication.");
             return () -> irsa(roleArn, roleSessionName, webIdentityTokenFile);
         } else if (STS.equals(providerType)) {
             log.info("Using STS (Security Token Service) credentials for S3 authentication with role assumption.");
@@ -332,7 +330,8 @@ public class AWSCredentialsProviderBuilder {
                 log.warn("Using static S3 credentials with session token (not recommended for production)");
                 return () -> session(awsAccessKey, awsSecretKey, awsSessionToken);
             }
-            log.warn("Using static S3 credentials with access and secret keys (not recommended for production)");
+            log.warn("Using static S3 credentials with access and secret keys. This is not recommended for production" +
+                         "due to security risks. Consider using IAM roles or other secure authentication methods.");
             return () -> basic(awsAccessKey, awsSecretKey);
         } else {
             // Default to the standard AWS credentials provider chain
@@ -342,7 +341,7 @@ public class AWSCredentialsProviderBuilder {
     }
 
     private boolean isStaticProvider(AWSCredentialProviderType providerType) {
-        return providerType.equals(STATIC) ||
+        return STATIC.equals(providerType) ||
             (StringUtils.isNotBlank(awsAccessKey) && StringUtils.isNotBlank(awsSecretKey));
     }
 

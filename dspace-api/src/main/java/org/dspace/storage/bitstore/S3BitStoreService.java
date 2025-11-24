@@ -659,9 +659,8 @@ public class S3BitStoreService extends BaseBitStoreService {
             if (attrs.contains("checksum")) {
                 try (
                     InputStream in = get(bitstream);
-                    DigestInputStream dis = new DigestInputStream(
-                        in,
-                        MessageDigest.getInstance(CSA))) {
+                    DigestInputStream dis = new DigestInputStream(in,MessageDigest.getInstance(CSA))
+                ) {
                     Utils.copy(dis, NullOutputStream.NULL_OUTPUT_STREAM);
                     byte[] md5Digest = dis.getMessageDigest().digest();
                     metadata.put("checksum", Utils.toHex(md5Digest));
