@@ -8,12 +8,16 @@
 package org.dspace.app.submissionform.script;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import com.ibm.icu.text.SimpleDateFormat;
 import com.ibm.icu.util.GregorianCalendar;
@@ -23,12 +27,12 @@ import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dspace.app.submissionform.script.builder.IInputFormFixBuilder;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
-import org.dspace.app.submissionform.script.checker.InputFormMetadataFieldChecker;
-import org.dspace.app.submissionform.script.checker.InputFormRulesChecker;
-import org.dspace.app.submissionform.script.checker.SubmissionDefinitionRulesChecker;
-import org.dspace.app.submissionform.script.checker.SubmissionStepRulesChecker;
+import org.dspace.app.submissionform.script.checker.ExcelSheetValidator;
 import org.dspace.app.submissionform.script.dto.InputFormDTO;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.exception.InputFormException;
@@ -37,6 +41,7 @@ import org.dspace.app.submissionform.script.service.InputFormValuePairs;
 import org.dspace.app.submissionform.script.service.InputSubmissionMap;
 import org.dspace.app.submissionform.script.service.StepDefinitions;
 import org.dspace.app.submissionform.script.service.SubmissionDefinitions;
+import org.dspace.authorize.AuthorizeException;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.eperson.factory.EPersonServiceFactory;
@@ -54,33 +59,42 @@ import org.jdom2.output.XMLOutputter;
  *
  * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
-public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGeneratorScriptConfiguration> {
+public class SubmissionFormGenerator
+        extends DSpaceRunnable<SubmissionFormGeneratorScriptConfiguration<SubmissionFormGenerator>> {
+
+    private final static Logger log = LogManager.getLogger(SubmissionFormGenerator.class);
 
     public static final String SUBMISSION_FORM_GENERATOR_SCRIPT_NAME = "generate-submission-forms";
     private static final String SUBMISSION_FORMS_FILE_NAME = "submission-forms.xml";
     private static final String ITEM_SUBMISSION_FILE_NAME = "item-submission.xml";
+    private static final String OUTPUT_ZIP_FILE_NAME = "submission-forms.zip";
+    private static final String ZIP_TYPE = "application/zip";
 
     private Context context;
     private String fileExcel;
-    private String outputPath;
     private boolean forceUpload;
+    private String outputPath = "./";
     private String defaultDefinition;
+
+    private InputSubmissionMap submissionMap;
+    private List<ExcelSheetValidator> excelSheetValidators;
 
     @Override
     public void setup() throws ParseException {
+        ServiceManager serviceManager = new DSpace().getServiceManager();
+        this.excelSheetValidators = serviceManager.getServicesByType(ExcelSheetValidator.class);
+        this.submissionMap = serviceManager.getServiceByName("inputFormMapping", InputSubmissionMap.class);
         parseCommandLineOptions();
     }
 
     private void parseCommandLineOptions() {
         this.forceUpload = commandLine.hasOption('f');
+        this.fileExcel = commandLine.getOptionValue('e');
+        this.defaultDefinition = commandLine.getOptionValue('d');
         if (commandLine.hasOption('p')) {
             String param = commandLine.getOptionValue('p');
             outputPath = param.endsWith("/") ? param : param + "/";
-        } else {
-            outputPath = "./";
         }
-        this.defaultDefinition = commandLine.hasOption('d') ? commandLine.getOptionValue('d') : "";
-        this.fileExcel = commandLine.hasOption('e') ? commandLine.getOptionValue('e') : "input-forms.xls";
     }
 
     @Override
@@ -90,26 +104,74 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
 
         String submissionFormFilePath = this.outputPath + SUBMISSION_FORMS_FILE_NAME;
         File submissionFormFile = new File(submissionFormFilePath);
+        submissionFormFile.deleteOnExit();
         File itemSubmissionFile = new File(this.outputPath + ITEM_SUBMISSION_FILE_NAME);
-        File xlsFile = new File(fileExcel);
+        itemSubmissionFile.deleteOnExit();
+        File xlsFile = getFile();
 
         context.turnOffAuthorisationSystem();
         process(xlsFile, submissionFormFile, itemSubmissionFile, null);
 
-        String[] extraLanguages = InputFormExcel.getExtraLanguages();
-        for (String extraLang : extraLanguages) {
-            String xmlFileExtra = submissionFormFilePath.replaceAll("\\.xml", "") + "_" + extraLang + ".xml";
-            File submissionFormFileLocalized = new File(xmlFileExtra);
-            process(xlsFile, submissionFormFileLocalized, null, extraLang);
+        File zipFile = createZipFile();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            addFileToZip(zipOutputStream, submissionFormFile);
+            addFileToZip(zipOutputStream, itemSubmissionFile);
+
+            for (String extraLanguage : InputFormExcel.getExtraLanguages()) {
+                String xmlFileExtra = submissionFormFilePath.replaceAll("\\.xml", "") + "_" + extraLanguage + ".xml";
+                File submissionFormFileLocalized = new File(xmlFileExtra);
+                log.info("Processing xml for extra language:{}", extraLanguage);
+                process(xlsFile, submissionFormFileLocalized, null, extraLanguage);
+                addFileToZip(zipOutputStream, submissionFormFileLocalized);
+            }
         }
+        attachZipToProcess(zipFile);
         context.restoreAuthSystemState();
+    }
+
+    private File createZipFile() throws IOException {
+        File zipFile = File.createTempFile("submission-forms-", ".zip");
+        zipFile.deleteOnExit();
+        return zipFile;
+    }
+
+    private void addFileToZip(ZipOutputStream zipOutputStream, File file) throws IOException {
+        log.info("Adding file to zip:{}", file.getName());
+        ZipEntry zipEntry = new ZipEntry(file.getName());
+        zipOutputStream.putNextEntry(zipEntry);
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            fileInputStream.transferTo(zipOutputStream);
+        }
+        zipOutputStream.closeEntry();
+    }
+
+    private void attachZipToProcess(File zipFile) {
+        log.info("Attaching zip file to the process");
+        try {
+            handler.writeFilestream(context, OUTPUT_ZIP_FILE_NAME, new FileInputStream(zipFile), ZIP_TYPE);
+        } catch (IOException | SQLException | AuthorizeException e) {
+            log.error("Error attaching zip file to the process", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private File getFile() throws AuthorizeException, IOException {
+        var error = "Error reading file, the file couldn't be found for filename: " + fileExcel;
+        InputStream inputStream = handler.getFileStream(context, fileExcel)
+                                         .orElseThrow(() -> new IllegalArgumentException(error));
+        File xlsFile = File.createTempFile("submission-form-", ".xls");
+        try (inputStream; FileOutputStream out = new FileOutputStream(xlsFile)) {
+            inputStream.transferTo(out);
+        }
+        return xlsFile;
     }
 
     private InputFormDTO process(File xlsFile, File submissionFormFile, File itemSubmissionFile, String locale)
             throws SQLException, BiffException, IOException {
 
-        // Check xls file
-        List<InputFormErrorBuilder> errors = checkFileXls(xlsFile);
+        // Validate xls file
+        List<InputFormErrorBuilder> errors = validateFileXls(xlsFile);
+        errors.forEach(e -> handler.logInfo("LEVEL:" + e.getLevel() + " ERROR:" + e.getErrorMsg()));
 
         List<InputFormErrorBuilder> errorsFix = new ArrayList<>();
         errorsFix = ListUtils.union(errors, errorsFix);
@@ -129,7 +191,6 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
 
         // GO ahead if !blocking errors (only WARNING) and force upload
         if (!findBlock && this.forceUpload) {
-
             for (InputFormErrorBuilder errorInputForm : errors) {
                 if (errorInputForm.getLevel() == InputFormErrorBuilder.Level.WARN) {
                     IInputFormFixBuilder fixWarn = errorInputForm.getFixWarn();
@@ -154,7 +215,7 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         errors = errorsFix;
 
         if (findNoError || !findBlock && this.forceUpload) {
-            if ("".equals(defaultDefinition)) {
+            if (StringUtils.isBlank(defaultDefinition)) {
                 this.defaultDefinition = getDefaultSubmissiondefinitionName(xlsFile);
             }
             if (itemSubmissionFile != null) {
@@ -167,32 +228,22 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         return new InputFormDTO(errors);
     }
 
-    private List<InputFormErrorBuilder> checkFileXls(File xlsFile) throws BiffException, SQLException, IOException {
-
+    private List<InputFormErrorBuilder> validateFileXls(File xlsFile) throws BiffException, SQLException, IOException {
         List<InputFormErrorBuilder> errors = new ArrayList<>();
-
-        SubmissionDefinitionRulesChecker submissionCheck = new SubmissionDefinitionRulesChecker();
-        List<InputFormErrorBuilder> errorSubmissionCheckExcel = submissionCheck.check(xlsFile, defaultDefinition);
-
-        SubmissionStepRulesChecker stepCheck = new SubmissionStepRulesChecker();
-        List<InputFormErrorBuilder> errorStepCheckExcel = stepCheck.check(xlsFile);
-
-        InputFormRulesChecker check = new InputFormRulesChecker();
-        List<InputFormErrorBuilder> errorCheckExcel = check.check(xlsFile);
-
-        InputFormMetadataFieldChecker dspaceCheck = new InputFormMetadataFieldChecker();
-        List<InputFormErrorBuilder> errorCheckDspace = dspaceCheck.check(xlsFile, context);
-
-        if (errorSubmissionCheckExcel.isEmpty() && errorStepCheckExcel.isEmpty()
-            && errorCheckExcel.isEmpty() && errorCheckDspace.isEmpty()) {
-            System.out.println("Validation Success!!!");
-        } else {
-            errors = ListUtils.union(errorSubmissionCheckExcel, errorStepCheckExcel);
-            errors = ListUtils.union(errors, errorCheckExcel);
-            errors = ListUtils.union(errors, errorCheckDspace);
-            System.out.println("###################Validation Failed!!!#####################");
+        for (ExcelSheetValidator excelValidator : excelSheetValidators) {
+            List<InputFormErrorBuilder> excelErrors = excelValidator.check(xlsFile, context, defaultDefinition);
+            errors.addAll(excelErrors);
         }
 
+        if (errors.isEmpty()) {
+            handler.logInfo("######################################");
+            handler.logInfo("####     Validation Success!!!    ####");
+            handler.logInfo("######################################");
+        } else {
+            handler.logInfo("######################################");
+            handler.logInfo("####     Validation Failed!!!    #####");
+            handler.logInfo("######################################");
+        }
         return errors;
     }
 
@@ -209,9 +260,7 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
 
     private void createItemSubmissionXml(File xlsFile, File itemSubmissionFile)
             throws SQLException, BiffException, IOException {
-        DSpace dspace = new DSpace();
-        InputSubmissionMap submissionMap = dspace.getServiceManager()
-                                                 .getServiceByName("inputFormMapping", InputSubmissionMap.class);
+
         StepDefinitions stepDefinitions = new StepDefinitions();
         SubmissionDefinitions submissionDefinitions = new SubmissionDefinitions();
 
@@ -244,7 +293,9 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
         out.flush();
         out.close();
 
-        System.out.println("XML created:" + itemSubmissionFile);
+        handler.logInfo("**********************************");
+        handler.logInfo("** Created: " + ITEM_SUBMISSION_FILE_NAME + " **");
+        handler.logInfo("**********************************");
     }
 
     private void createSubmissionFormXml(File xlsFile, File submissionFormFile, String locale)
@@ -278,7 +329,10 @@ public class SubmissionFormGenerator extends DSpaceRunnable<SubmissionFormGenera
 
         out.flush();
         out.close();
-        System.out.println("XML created:" + submissionFormFile);
+
+        handler.logInfo("***********************************");
+        handler.logInfo("** Created: " + SUBMISSION_FORMS_FILE_NAME + " **");
+        handler.logInfo("***********************************");
     }
 
     private void renameOldInputForm(File xmlFile) {

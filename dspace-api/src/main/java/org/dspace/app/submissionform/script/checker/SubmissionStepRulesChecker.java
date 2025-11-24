@@ -20,21 +20,22 @@ import jxl.read.biff.BiffException;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.util.I18nUtil;
+import org.dspace.core.Context;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SubmissionStepRulesChecker extends InputFormExcel {
+/**
+ * Class to check the rules on the steps-definition sheet
+ */
+public class SubmissionStepRulesChecker extends InputFormExcel implements ExcelSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(SubmissionStepRulesChecker.class);
 
-    private static final String[] STEPTYPE_VALUES = new String[] { "collection", "submission-form", "upload",
-                                                                   "unpaywall", "license", "detect-duplicate",
-                                                                   "extract", "cclicense", "correction",
-                                                                   "accessCondition", "custom-url", "sherpaPolicy",
-                                                                   "identifiers", "external-upload" };
+    private List<String> stepTypeValues;
 
-    public List<InputFormErrorBuilder> check(File fileExcel) {
+    @Override
+    public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition) {
         Workbook workbook = null;
         StringBuilder errorMessage;
         List<InputFormErrorBuilder> errors = new ArrayList<>();
@@ -91,8 +92,7 @@ public class SubmissionStepRulesChecker extends InputFormExcel {
                             .getArrayProperty("inputforms.custom.step-type", new String[0]);
 
                     // No right step type set on cell
-                    if (!Arrays.asList(STEPTYPE_VALUES).contains(stepType) &&
-                            !Arrays.asList(customStepTypes).contains(stepType)) {
+                    if (!stepTypeValues.contains(stepType) && !Arrays.asList(customStepTypes).contains(stepType)) {
                         errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                                 "excel.to.inputform.check.step.type.valid", new Object[] {sheetRowNumber}));
                         InputFormErrorBuilder.manageError(errors, errorMessage);
@@ -142,11 +142,11 @@ public class SubmissionStepRulesChecker extends InputFormExcel {
                 }
             }
         }
-
-        for (InputFormErrorBuilder err : errors) {
-            System.out.println("LEVEL:" + err.getLevel() + " SHEET:steps-definition" + " MESSAGE:" + err.getErrorMsg());
-        }
         return errors;
+    }
+
+    public void setStepTypeValues(List<String> stepTypeValues) {
+        this.stepTypeValues = stepTypeValues;
     }
 
 }

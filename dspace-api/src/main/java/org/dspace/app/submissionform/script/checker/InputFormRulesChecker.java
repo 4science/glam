@@ -10,7 +10,6 @@ package org.dspace.app.submissionform.script.checker;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -25,30 +24,27 @@ import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.dto.InputFormFieldElement;
 import org.dspace.app.submissionform.script.util.I18nUtil;
 import org.dspace.app.util.RegexPatternUtils;
+import org.dspace.content.authority.ItemControlledVocabularyService;
+import org.dspace.core.Context;
+import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InputFormRulesChecker extends InputFormExcel {
+/**
+ * Class to check rules on input form excel file
+ *
+ * @author Mykhaylo Boychuk (4science.com)
+ */
+public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(InputFormRulesChecker.class);
 
-    private String[] VISIBILITYSCOPE_VALUES = new String[] { "", "limited to submission", "limited to workflow",
-                                                             "limited to submission hidden",
-                                                             "limited to submission readonly",
-                                                             "limited to workflow hidden",
-                                                             "limited to workflow readonly",
-                                                             "submission hidden", "submission readonly",
-                                                             "workflow hidden", "workflow readonly", "readonly",
-                                                             "hidden" };
+    private List<String> inputTypeValues;
+    private List<String> visibilityScopeValues;
 
-    private static final String[] INPUTTYPE_VALUES = new String[] { "onebox", "tag", "textarea", "name", "link",
-                                                                    "date", "dropdown", "list", "qualdrop_value",
-                                                                    "number", "series", "group", "inline-group",
-                                                                    "calendar", "markdown", "openlist", "opendropdown",
-                                                                    "geomap" };
-
-    public List<InputFormErrorBuilder> check(File fileExcel) {
+    @Override
+    public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition) {
         List<InputFormErrorBuilder> errors = new ArrayList<>();
 
         StringBuilder errorMessage;
@@ -132,11 +128,12 @@ public class InputFormRulesChecker extends InputFormExcel {
                 String labelValue = this.get(posLabel);
 
                 // form element to add
-                InputFormFieldElement element = new InputFormFieldElement(
-                        this.get(posFormName), this.get(posDcSchema), this.get(posDcElement), this.get(posDcQualifier));
-
+                InputFormFieldElement element = new InputFormFieldElement(this.get(posFormName),
+                                                                          this.get(posDcSchema),
+                                                                          this.get(posDcElement),
+                                                                          this.get(posDcQualifier));
                 // No right form name set on cell
-                if (this.get(posFormName).equals("")) {
+                if (StringUtils.isBlank(this.get(posFormName))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.formname.required",
                              new Object[]{element.toString()}));
@@ -144,7 +141,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right page number set on cell or is not a number
-                if (this.get(posRowNumber).equals("")) {
+                if (StringUtils.isBlank(this.get(posRowNumber))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.row_number.required",
                             new Object[]{element.toString()}));
@@ -161,8 +158,8 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right repeat value set on cell
-                if (!this.get(posParent).equals("") &&
-                    this.get(posRepeatable).equals("true") && !this.get(posInputType).equals("list")) {
+                if (StringUtils.isNotBlank(this.get(posParent)) && this.get(posRepeatable).equals("true")
+                    && !this.get(posInputType).equals("list")) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.repeatable.parent",
                             new Object[]{element.toString()}));
@@ -170,7 +167,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right dc element set on cell
-                if (this.get(posDcElement).equals("")) {
+                if (StringUtils.isBlank(this.get(posDcElement))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.dc_element.required",
                             new Object[]{element.toString()}));
@@ -178,7 +175,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right input type set on cell
-                if (this.get(posInputType).equals("")) {
+                if (StringUtils.isBlank(this.get(posInputType))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.input_type.required",
                             new Object[]{element.toString()}));
@@ -199,7 +196,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right label value set on cell
-                if (labelValue.equals("")) {
+                if (StringUtils.isBlank(labelValue)) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.label.required",
                             new Object[]{element.toString()}));
@@ -207,7 +204,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right repeat value set on cell
-                if (this.get(posRepeatable).equals("")) {
+                if (StringUtils.isBlank(this.get(posRepeatable))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.repeatable.valid",
                             new Object[]{element.toString()}));
@@ -215,8 +212,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right scope and required set on cell
-                if (!this.get(posVisibility).equals("")
-                        && this.get(posRequired).equals("true")) {
+                if (StringUtils.isNotBlank(this.get(posVisibility)) && this.get(posRequired).equals("true")) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.required.valid",
                             new Object[]{element.toString()}));
@@ -224,7 +220,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right scope set on cell
-                if (!Arrays.asList(VISIBILITYSCOPE_VALUES).contains(this.get(posVisibility))) {
+                if (!visibilityScopeValues.contains(this.get(posVisibility))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.scope.valid",
                             new Object[] { element.toString() }));
@@ -232,7 +228,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // No right input type set on cell
-                if (!Arrays.asList(INPUTTYPE_VALUES).contains(this.get(posInputType))) {
+                if (!inputTypeValues.contains(this.get(posInputType))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.inputtype.valid",
                             new Object[] { element.toString() }));
@@ -240,8 +236,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // if tag must be repeatable
-                if (inputType.equals("tag")
-                        && !this.get(posRepeatable).equals("true")) {
+                if (inputType.equals("tag") && !this.get(posRepeatable).equals("true")) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.repeatable.tag",
                             new Object[]{element.toString()}));
@@ -258,7 +253,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
 
                 // if qualdrop_value no dc qualifier must be set
-                if (inputType.equals("qualdrop_value") && !this.get(posDcQualifier).equals("")) {
+                if (inputType.equals("qualdrop_value") && StringUtils.isNotBlank(this.get(posDcQualifier))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.posDcQualifier.qualdropvalue",
                             new Object[]{element.toString()}));
@@ -323,7 +318,7 @@ public class InputFormRulesChecker extends InputFormExcel {
                     groupFieldList.add(element.getElementName().replace(".", "_"));
                 }
 
-                if (!this.get(posParent).equals("")) {
+                if (StringUtils.isNotBlank(this.get(posParent))) {
                     nestedRows.add(this.sheetRow);
                     nestedEls.add(element);
                     if (!nestedFormNameList.contains(this.get(posFormName))) {
@@ -335,13 +330,8 @@ public class InputFormRulesChecker extends InputFormExcel {
                 if (StringUtils.isNotBlank(vocabulary)) {
                     if (inputType.equals("onebox") || inputType.equals("tag")) {
                         // check if file exist
-                        File file = new File(DSpaceServicesFactory.getInstance().getConfigurationService()
-                                .getProperty("dspace.dir")
-                                        + File.separator + "config"
-                                        + File.separator
-                                        + "controlled-vocabularies"
-                                        + File.separator + vocabulary + ".xml");
-                        if (!file.exists()) {
+                        File file = getVocabularyFile(vocabulary);
+                        if (!isItemControlledVocabulary(vocabulary) && !file.exists()) {
                             // errors you should define terms of vocabulary,
                             // file xml not found
                             errorMessage = new StringBuilder().append(I18nUtil.getMessage(
@@ -455,11 +445,26 @@ public class InputFormRulesChecker extends InputFormExcel {
                 }
             }
         }
-
-        for (InputFormErrorBuilder err : errors) {
-            System.out.println("LEVEL:" + err.getLevel() + " ERROR:" + err.getErrorMsg());
-        }
         return errors;
+    }
+
+    private boolean isItemControlledVocabulary(String vocabulary) {
+        return List.of(ItemControlledVocabularyService.getPluginNames()).contains(vocabulary);
+    }
+
+    private File getVocabularyFile(String vocabulary) {
+        ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+        var dspaceDir = configurationService.getProperty("dspace.dir");
+        var path2Vocabulary = File.separator + "config" + File.separator + "controlled-vocabularies" + File.separator;
+        return new File(dspaceDir + path2Vocabulary + vocabulary + ".xml");
+    }
+
+    public void setInputTypeValues(List<String> inputTypeValues) {
+        this.inputTypeValues = inputTypeValues;
+    }
+
+    public void setVisibilityScopeValues(List<String> visibilityScopeValues) {
+        this.visibilityScopeValues = visibilityScopeValues;
     }
 
 }

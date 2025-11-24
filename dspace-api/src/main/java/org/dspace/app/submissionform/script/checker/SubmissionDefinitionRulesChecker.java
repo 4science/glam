@@ -18,17 +18,23 @@ import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
+import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.util.I18nUtil;
+import org.dspace.core.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SubmissionDefinitionRulesChecker extends InputFormExcel {
+/**
+ * Class that checks the submission-definition sheet rules
+ */
+public class SubmissionDefinitionRulesChecker extends InputFormExcel implements ExcelSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(SubmissionDefinitionRulesChecker.class);
 
-    public List<InputFormErrorBuilder> check(File fileExcel, String defaultDefinition) {
+    @Override
+    public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition) {
         List<InputFormErrorBuilder> errors = new ArrayList<>();
 
         Workbook workbook = null;
@@ -78,14 +84,14 @@ public class SubmissionDefinitionRulesChecker extends InputFormExcel {
                 }
 
                 // No right step id set on cell
-                if (stepId.equals("")) {
+                if (StringUtils.isBlank(stepId)) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                     "excel.to.inputform.check.stepid.required", new Object[]{sheetRowNumber}));
                     InputFormErrorBuilder.manageError(errors, errorMessage);
                 }
 
                 // No right order set on cell or is not a number
-                if (this.get(posSubmissionStepOrder).equals("")) {
+                if (StringUtils.isBlank(this.get(posSubmissionStepOrder))) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                     "excel.to.inputform.check.step.order.required", new Object[]{sheetRowNumber}));
                     InputFormErrorBuilder.manageError(errors, errorMessage);
@@ -193,7 +199,7 @@ public class SubmissionDefinitionRulesChecker extends InputFormExcel {
 
             // Check if all form steps have a form definition
             for (int i = 0; i < stepIdList.size(); i++) {
-                String stepIdEntry = (String) stepIdList.get(i);
+                String stepIdEntry = stepIdList.get(i);
                 stepIdEntry = stepIdEntry.trim();
                 if (!stepsOnStepsDefinitionSheet.contains(stepIdEntry) && !stepIdEntry.equals("")) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
@@ -203,16 +209,11 @@ public class SubmissionDefinitionRulesChecker extends InputFormExcel {
                 }
             }
 
-            if (!"".equals(defaultDefinition) && !definitionNameList.contains(defaultDefinition)) {
+            if (StringUtils.isNotBlank(defaultDefinition) && !definitionNameList.contains(defaultDefinition)) {
                 errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                 "excel.to.inputform.check.default.definition", new Object[]{defaultDefinition}));
                 InputFormErrorBuilder.manageError(errors, errorMessage);
             }
-        }
-
-        for (InputFormErrorBuilder err : errors) {
-            System.out.println("LEVEL:" + err.getLevel() +
-                               " SHEET: submissions-definition" + " MESSAGE:" + err.getErrorMsg());
         }
         return errors;
     }

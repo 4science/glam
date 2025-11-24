@@ -12,12 +12,11 @@ import java.util.ResourceBundle;
 
 public class I18nUtil {
 
-    /**
-     * Default constructor
-     */
+    private static final String LABELS_PATH = "org.dspace.submissionforms.inputform-validation-labels";
+
     private I18nUtil() { }
 
-    private static ResourceBundle messageSource = ResourceBundle.getBundle("inputform-validation-labels");
+    private static ResourceBundle messageSource = ResourceBundle.getBundle(LABELS_PATH);
 
     public static String getMessage(String i18nMetadataCheckError, Object[] objects) {
         String message = messageSource.getString(i18nMetadataCheckError);

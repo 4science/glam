@@ -33,17 +33,23 @@ import org.dspace.importer.external.metadatamapping.MetadataFieldConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InputFormMetadataFieldChecker extends InputFormExcel {
+/**
+ * Class to check if all metadata field used in form-definition are present in metadata registry.
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
+ */
+public class InputFormMetadataFieldChecker extends InputFormExcel implements ExcelSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(InputFormMetadataFieldChecker.class);
 
     private static final String I18N_LISTVALUES_CHECK_WARNING = "excel.to.inputform.check.listvalues";
     private static final String I18N_METADATA_CHECK_ERROR = "excel.to.inputform.checkvsdspace.metadata.check";
 
-    public List<InputFormErrorBuilder> check(File fileExcel, Context context)
+    @Override
+    public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition)
             throws SQLException, BiffException, IOException {
-        List<InputFormErrorBuilder> errors = new ArrayList<>();
 
+        List<InputFormErrorBuilder> errors = new ArrayList<>();
         StringBuilder errorMessage;
         Workbook workbook = null;
 
@@ -63,21 +69,15 @@ public class InputFormMetadataFieldChecker extends InputFormExcel {
         }
 
         if (workbook != null) {
-            // input-form sheet
+            // form-definition sheet
             Sheet sheet = workbook.getSheet(INPUTFORM_SHEET_NAME);
 
             // Retrieve element/qualifier from DB
-            List<MetadataFieldConfig> elements = new ArrayList<MetadataFieldConfig>(1000);
-            List<MetadataFieldConfig> addedElements = new ArrayList<MetadataFieldConfig>(1000);
+            List<MetadataFieldConfig> elements = new ArrayList<>(1000);
+            List<MetadataFieldConfig> addedElements = new ArrayList<>(1000);
 
-            MetadataSchemaService schemaService = ContentServiceFactory.getInstance().getMetadataSchemaService();
-            MetadataFieldService fieldService = ContentServiceFactory.getInstance().getMetadataFieldService();
+            loadMetadataFromDataBase(context, elements);
 
-            for (MetadataSchema schema : schemaService.findAll(context)) {
-                for (MetadataField field : fieldService.findAllInSchema(context, schema)) {
-                    elements.add(new MetadataFieldConfig(schema.getName(), field.getElement(), field.getQualifier()));
-                }
-            }
             // Cells under of posListName and posInputType column number
             Cell[] listNames = sheet.getColumn(posListName);
             Cell[] inputTypes = sheet.getColumn(posInputType);
@@ -120,26 +120,23 @@ public class InputFormMetadataFieldChecker extends InputFormExcel {
                         if (storedValues != null) {
                             for (String storeValue : storedValues) {
                                 if (!"_".equalsIgnoreCase(storeValue)) {
-                                    MetadataFieldConfig element = new MetadataFieldConfig(this.get(posDcSchema),
-                                                                                          this.get(posDcElement),
-                                                                                          storeValue);
-
+                                    MetadataFieldConfig element = getMetadataField(this.get(posDcSchema),
+                                                                                   this.get(posDcElement), storeValue);
                                     if (!elements.contains(element) && !addedElements.contains(element)) {
                                         // ERROR
                                         addedElements.add(element);
                                         errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                                                        I18N_METADATA_CHECK_ERROR, new Object[] {element.toString()}));
-                                        MetadataRegistryFixBuilder fixRegistry =
-                                                                                new MetadataRegistryFixBuilder(element);
-                                        InputFormErrorBuilder.manageWarning(errors, errorMessage, fixRegistry);
+                                                        I18N_METADATA_CHECK_ERROR, new Object[] {element.getField()}));
+                                        InputFormErrorBuilder.manageWarning(errors, errorMessage,
+                                                                            new MetadataRegistryFixBuilder(element));
                                     }
                                 }
                             }
 
                             if (checkNullListValue(workbook, this.get(posListName))) {
-                                MetadataFieldConfig element = new MetadataFieldConfig(this.get(posDcSchema),
-                                                                                      this.get(posDcElement),
-                                                                                      this.get(posListName));
+                                MetadataFieldConfig element = getMetadataField(this.get(posDcSchema),
+                                                                               this.get(posDcElement),
+                                                                               this.get(posListName));
                                 errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                                                      I18N_LISTVALUES_CHECK_WARNING, new Object[] {element.toString()}));
                                 MetadataRegistryFixBuilder fixRegistry = new MetadataRegistryFixBuilder(element);
@@ -148,24 +145,29 @@ public class InputFormMetadataFieldChecker extends InputFormExcel {
                         }
                     }
                 } else {
-                    MetadataFieldConfig element = new MetadataFieldConfig(this.get(posDcSchema),
-                                                                          this.get(posDcElement),
-                                                                          this.get(posDcQualifier));
+                    MetadataFieldConfig element = getMetadataField(this.get(posDcSchema), this.get(posDcElement),
+                                                                   this.get(posDcQualifier));
                     if (!elements.contains(element) && !addedElements.contains(element)) {
                         addedElements.add(element);
-                        errorMessage = new StringBuilder().append(
-                                I18nUtil.getMessage(I18N_METADATA_CHECK_ERROR, new Object[] { element.toString() }));
+                        var message = I18nUtil.getMessage(I18N_METADATA_CHECK_ERROR, new Object[] {element.getField()});
+                        errorMessage = new StringBuilder().append(message);
                         MetadataRegistryFixBuilder fixRegistry = new MetadataRegistryFixBuilder(element);
                         InputFormErrorBuilder.manageWarning(errors, errorMessage, fixRegistry);
                     }
                 }
             }
         }
-
-        for (InputFormErrorBuilder err : errors) {
-            System.out.println("LEVEL:" + err.getLevel() + " ERROR:" + err.getErrorMsg());
-        }
         return errors;
+    }
+
+    private void loadMetadataFromDataBase(Context context, List<MetadataFieldConfig> elements) throws SQLException {
+        MetadataSchemaService schemaService = ContentServiceFactory.getInstance().getMetadataSchemaService();
+        MetadataFieldService fieldService = ContentServiceFactory.getInstance().getMetadataFieldService();
+        for (MetadataSchema schema : schemaService.findAll(context)) {
+            for (MetadataField field : fieldService.findAllInSchema(context, schema)) {
+                elements.add(new MetadataFieldConfig(schema.getName(), field.getElement(), field.getQualifier()));
+            }
+        }
     }
 
     /**
@@ -216,7 +218,6 @@ public class InputFormMetadataFieldChecker extends InputFormExcel {
                                 }
                                 indexColonna++;
                             } catch (RuntimeException e) {
-                                System.out.println("colonna(j): " + j + "  indexColonna(riga): " + indexColonna);
                                 log.error(e.getMessage() + " colonna(j): " + j + " indexColonna(riga):" + indexColonna);
                                 throw e;
                             }
@@ -266,6 +267,10 @@ public class InputFormMetadataFieldChecker extends InputFormExcel {
             }
         }
         return ret;
+    }
+
+    private MetadataFieldConfig getMetadataField(String schema, String element, String qualifier) {
+        return new MetadataFieldConfig(schema, element, StringUtils.isBlank(qualifier) ? null : qualifier);
     }
 
 }

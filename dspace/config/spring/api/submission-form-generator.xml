@@ -1,0 +1,89 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd"
+       default-autowire-candidates="*Service,*DAO,javax.sql.DataSource">
+
+    <context:annotation-config/>
+    <!-- allows us to use spring annotations in beans -->
+
+    <bean id="inputFormMapping" class="org.dspace.app.submissionform.script.service.InputFormMapAdvanced"/>
+
+    <!-- xls validators -->
+    <bean class="org.dspace.app.submissionform.script.checker.InputFormMetadataFieldChecker"/>
+
+    <bean class="org.dspace.app.submissionform.script.checker.InputFormRulesChecker">
+        <property name="inputTypeValues" ref="inputTypeValues"/>
+        <property name="visibilityScopeValues" ref="visibilityScopeValues"/>
+    </bean>
+
+    <bean class="org.dspace.app.submissionform.script.checker.SubmissionDefinitionRulesChecker"/>
+
+    <bean class="org.dspace.app.submissionform.script.checker.SubmissionStepRulesChecker">
+        <property name="stepTypeValues" ref="stepTypeValues"/>
+    </bean>
+
+    <!-- Step type values configuration -->
+    <util:list id="stepTypeValues">
+        <value>collection</value>
+        <value>submission-form</value>
+        <value>upload</value>
+        <value>unpaywall</value>
+        <value>license</value>
+        <value>detect-duplicate</value>
+        <value>extract</value>
+        <value>cclicense</value>
+        <value>correction</value>
+        <value>accessCondition</value>
+        <value>custom-url</value>
+        <value>sherpaPolicy</value>
+        <value>identifiers</value>
+        <value>external-upload</value>
+    </util:list>
+
+    <!-- Input type values configuration -->
+    <util:list id="inputTypeValues">
+        <value>onebox</value>
+        <value>tag</value>
+        <value>textarea</value>
+        <value>name</value>
+        <value>link</value>
+        <value>date</value>
+        <value>dropdown</value>
+        <value>list</value>
+        <value>qualdrop_value</value>
+        <value>number</value>
+        <value>series</value>
+        <value>group</value>
+        <value>inline-group</value>
+        <value>calendar</value>
+        <value>markdown</value>
+        <value>openlist</value>
+        <value>opendropdown</value>
+        <value>geomap</value>
+    </util:list>
+
+    <!-- Visibility scope values configuration -->
+    <util:list id="visibilityScopeValues">
+        <value></value>
+        <value>limited to submission</value>
+        <value>limited to workflow</value>
+        <value>limited to submission hidden</value>
+        <value>limited to submission readonly</value>
+        <value>limited to workflow hidden</value>
+        <value>limited to workflow readonly</value>
+        <value>submission hidden</value>
+        <value>submission readonly</value>
+        <value>workflow hidden</value>
+        <value>workflow readonly</value>
+        <value>readonly</value>
+        <value>hidden</value>
+    </util:list>
+
+</beans>

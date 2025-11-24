@@ -7,6 +7,7 @@
  */
 package org.dspace.app.submissionform.script;
 
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -39,10 +40,21 @@ public class SubmissionFormGeneratorScriptConfiguration<T extends SubmissionForm
         if (options == null) {
             Options options = new Options();
             super.options = options;
-            options.addOption("e", "excel", true, "Input file");
-            options.addOption("p", "xml", true, "Output path");
-            options.addOption("f", "force", false, "Force Upload");
-            options.addOption("d", "default", true, "Default mapping [traditional]");
+            options.addOption("e", "excel", true, "Input file excel");
+            options.getOption("e").setType(InputStream.class);
+            options.getOption("e").setRequired(true);
+
+            options.addOption("p", "output-path", true, "Output path");
+            options.getOption("p").setType(String.class);
+            options.getOption("p").setRequired(false);
+
+            options.addOption("f", "force", false,
+                    "Proceed with XML generation even if validation produces warnings!");
+            options.getOption("f").setRequired(false);
+
+            options.addOption("d", "submission-name", true, "Default submission-definition name");
+            options.getOption("d").setType(String.class);
+            options.getOption("d").setRequired(false);
         }
         return options;
     }
