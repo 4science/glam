@@ -29,8 +29,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.hateoas.server.LinkRelationProvider;
+import org.springframework.integration.leader.event.OnGrantedEvent;
+import org.springframework.integration.leader.event.OnRevokedEvent;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -61,9 +64,14 @@ public class WebApplication {
     @Autowired
     private GoogleAsyncEventListener googleAsyncEventListener;
 
+    private volatile boolean isLeader = false;
+
     @Scheduled(cron = "${sitemap.cron:-}")
     public void generateSitemap() throws IOException, SQLException {
-        GenerateSitemaps.generateSitemapsScheduled();
+        // Only execute if this pod is the leader
+        if (isLeader) {
+            GenerateSitemaps.generateSitemapsScheduled();
+        }
     }
 
     @Scheduled(cron = "${ldn.queue.extractor.cron:-}")
@@ -274,5 +282,25 @@ public class WebApplication {
                 argumentResolvers.add(new SearchFilterResolver());
             }
         };
+    }
+
+    /**
+     * Called when this pod becomes the leader.
+     * Enables scheduled task execution.
+     */
+    @EventListener
+    public void onGrantedEvent(OnGrantedEvent event) {
+        this.isLeader = true;
+        System.out.println("DSpace pod became leader - enabling scheduled tasks");
+    }
+
+    /**
+     * Called when this pod loses leadership.
+     * Disables scheduled task execution.
+     */
+    @EventListener
+    public void onRevokedEvent(OnRevokedEvent event) {
+        this.isLeader = false;
+        System.out.println("DSpace pod lost leadership - disabling scheduled tasks");
     }
 }
