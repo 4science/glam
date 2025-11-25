@@ -543,7 +543,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             email.addArgument(taskList);
 
             var baseUrl = configurationService.getProperty("dspace.ui.url");
-            var processLink = baseUrl + "/process/" + scheduledProcess.process();
+            var processLink = baseUrl + "/processes/" + scheduledProcess.process();
             email.addArgument(processLink);
 
             email.send();
