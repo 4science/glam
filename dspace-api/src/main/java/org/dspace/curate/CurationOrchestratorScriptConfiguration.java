@@ -7,10 +7,13 @@
  */
 package org.dspace.curate;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.cli.Options;
+import org.dspace.core.Context;
+import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
 /**
@@ -24,6 +27,14 @@ public class CurationOrchestratorScriptConfiguration<T extends CurationOrchestra
 
     private Class<T> dspaceRunnableClass;
     private List<ServerlessCurationTask> serverlessCurationTasks;
+
+    public boolean isAllowedToExecute(Context context, List<DSpaceCommandLineParameter> commandLineParameters) {
+        try {
+            return authorizeService.isAdmin(context) || authorizeService.isComColAdmin(context);
+        } catch (SQLException e) {
+            throw new RuntimeException("SQLException occurred when checking if the current user is an admin", e);
+        }
+    }
 
     @Override
     public Options getOptions() {

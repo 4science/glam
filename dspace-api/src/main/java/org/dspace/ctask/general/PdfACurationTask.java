@@ -114,17 +114,38 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     @Override
     public void finalizeTask(Context context, Item item, CurationTaskResult CurationTaskResult)
-            throws SQLException, AuthorizeException {
+        throws CurationTaskException {
         Bundle pdfaBundle;
-        List<Bundle> pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
+        List<Bundle> pdfaBundles = null;
+        try {
+            pdfaBundles = itemService.getBundles(item, PDFA_BUNDLE_NAME);
+        } catch (SQLException e) {
+            log.error("Cannot find any bundle: {} related to this item: {}", PDFA_BUNDLE_NAME, item);
+        }
         if (pdfaBundles.isEmpty()) {
             log.info("PdfACurationTask: Creating new PDFA bundle for item: {} ", item.getID());
-            pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
+            context.turnOffAuthorisationSystem();
+            try {
+                pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
+            } catch (Exception e) {
+                log.error("Cannot create the bundle: {}", PDFA_BUNDLE_NAME, e);
+                throw new CurationTaskException("Cannot create the bundle: " + PDFA_BUNDLE_NAME, e);
+            } finally {
+                context.restoreAuthSystemState();
+            }
         } else {
             pdfaBundle = pdfaBundles.get(0);
         }
         for (Bitstream bitstream : CurationTaskResult.bitsreams()) {
-            addBitstreamToBundle(context, bitstream, pdfaBundle);
+            try {
+                addBitstreamToBundle(context, bitstream, pdfaBundle);
+            } catch (AuthorizeException | SQLException e) {
+                log.error("Cannot create the bitstream: {} for bundle: {}", bitstream, PDFA_BUNDLE_NAME, e);
+                throw new CurationTaskException(
+                    "Cannot create the bitstream: " + bitstream.getID() + " for bundle: " + PDFA_BUNDLE_NAME,
+                    e
+                );
+            }
         }
     }
 
@@ -138,9 +159,18 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
      * @throws SQLException if database operations fail
      */
     @Override
-    public List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException {
+    public List<Bitstream> getProcessableBitstreams(Context context, Item item) throws CurationTaskException {
         List<Bitstream> processableBitstreams = new ArrayList<>();
-        Iterator<Bitstream> bitstreams = this.bitstreamService.getBitstreamByBundleName(item, "ORIGINAL").iterator();
+        Iterator<Bitstream> bitstreams = null;
+        try {
+            bitstreams = this.bitstreamService.getBitstreamByBundleName(item, "ORIGINAL").iterator();
+        } catch (SQLException e) {
+            log.error("Cannot find any bitstream for the item: {} in bundle ORIGINAL", item.getID(), e);
+            throw new CurationTaskException(
+                "Cannot find any bitstream for the item: " + item.getID() + " in bundle ORIGINAL",
+                e
+            );
+        }
         while (bitstreams.hasNext()) {
             Bitstream currentBitstream = bitstreams.next();
             var currentBitstreamStoreNumber = currentBitstream.getStoreNumber();
