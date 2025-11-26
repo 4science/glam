@@ -16,6 +16,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.dspace.app.ldn.LDNQueueExtractor;
 import org.dspace.app.ldn.LDNQueueTimeoutChecker;
 import org.dspace.app.rest.filter.DSpaceRequestContextFilter;
+import org.dspace.app.rest.leader.DSpaceLeadershipService;
 import org.dspace.app.rest.model.hateoas.DSpaceLinkRelationProvider;
 import org.dspace.app.rest.parameter.resolver.SearchFilterResolver;
 import org.dspace.app.rest.utils.ApplicationConfig;
@@ -31,11 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.hateoas.server.LinkRelationProvider;
-import org.springframework.integration.leader.event.OnGrantedEvent;
-import org.springframework.integration.leader.event.OnRevokedEvent;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -68,12 +66,13 @@ public class WebApplication {
     @Autowired
     private GoogleAsyncEventListener googleAsyncEventListener;
 
-    private volatile boolean isLeader = false;
+    @Autowired
+    private DSpaceLeadershipService leadershipService;
 
     @Scheduled(cron = "${sitemap.cron:-}")
     public void generateSitemap() throws IOException, SQLException {
-        // Only execute if this pod is the leader
-        if (isLeader) {
+        // Only execute if this pod is the leader or if leader election is disabled
+        if (leadershipService.isLeader()) {
             GenerateSitemaps.generateSitemapsScheduled();
         }
     }
@@ -288,23 +287,4 @@ public class WebApplication {
         };
     }
 
-    /**
-     * Called when this pod becomes the leader.
-     * Enables scheduled task execution.
-     */
-    @EventListener
-    public void onGrantedEvent(OnGrantedEvent event) {
-        this.isLeader = true;
-        log.info("DSpace pod became leader - enabling scheduled tasks");
-    }
-
-    /**
-     * Called when this pod loses leadership.
-     * Disables scheduled task execution.
-     */
-    @EventListener
-    public void onRevokedEvent(OnRevokedEvent event) {
-        this.isLeader = false;
-        log.info("DSpace pod lost leadership - disabling scheduled tasks");
-    }
 }
