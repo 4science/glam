@@ -7,8 +7,10 @@
  */
 package org.dspace.app.rest.leader;
 
+import org.dspace.services.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.integration.leader.event.OnGrantedEvent;
 import org.springframework.integration.leader.event.OnRevokedEvent;
@@ -25,8 +27,26 @@ import org.springframework.stereotype.Service;
 public class DSpaceLeadershipService {
 
     private static final Logger log = LoggerFactory.getLogger(DSpaceLeadershipService.class);
+    @Autowired
+    private ConfigurationService configurationService;
 
     private boolean isLeader;
+
+    /**
+     * Check if this instance should execute scheduled tasks.
+     * This is the primary method that should be used by scheduled task methods.
+     *
+     * @return true if this instance should execute scheduled tasks
+     */
+    public boolean isLeader() {
+        boolean leaderElectionEnabled =
+            configurationService.getBooleanProperty("spring.cloud.kubernetes.leader.enabled", false);
+        if (leaderElectionEnabled) {
+            return isLeader;
+        } else {
+            return true;
+        }
+    }
 
     /**
      * Called when this pod becomes the leader.
@@ -36,17 +56,6 @@ public class DSpaceLeadershipService {
     public void onGrantedEvent(OnGrantedEvent event) {
         this.isLeader = true;
         log.info("DSpace pod became leader - enabling scheduled tasks");
-    }
-
-
-    /**
-     * Check if this instance should execute scheduled tasks.
-     * This is the primary method that should be used by scheduled task methods.
-     *
-     * @return true if this instance should execute scheduled tasks
-     */
-    public boolean isLeader() {
-        return isLeader;
     }
 
     /**
