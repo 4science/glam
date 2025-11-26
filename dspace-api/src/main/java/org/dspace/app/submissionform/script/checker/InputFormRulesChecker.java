@@ -27,8 +27,6 @@ import org.dspace.app.util.RegexPatternUtils;
 import org.dspace.content.authority.DSpaceControlledVocabulary;
 import org.dspace.content.authority.ItemControlledVocabularyService;
 import org.dspace.core.Context;
-import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +64,8 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
             InputFormErrorBuilder.manageError(errors, new StringBuilder(e.getMessage()));
         }
 
-        if (workbook != null) {
+        try {
+            if (workbook != null) {
             // Array for list name match in value-pairs (no default value type)
             List<String> listNamesD = new ArrayList<>();
 
@@ -417,7 +416,7 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
             // Sheet #2 -> forms-definition
             // Sheet #3... value pair
             int totalSheets = workbook.getNumberOfSheets();
-            List listNameOnValuePairSheet = new ArrayList();
+            List<String> listNameOnValuePairSheet = new ArrayList<>();
 
             // Start from sheet number 3 -> build listNameOnValuePairSheet
             for (int j = InputFormExcel.VALUEPAIRS_SHEET_NAME; j < totalSheets; j++) {
@@ -436,15 +435,20 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
             }
 
             //Check if all list name on sheet 0 is set on sheet 1 or 2 ....
-            Iterator iterListNamesD = listNamesD.iterator();
+            Iterator<String> iterListNamesD = listNamesD.iterator();
             while (iterListNamesD.hasNext()) {
-                String listaS = (String) iterListNamesD.next();
+                String listaS = iterListNamesD.next();
                 listaS = listaS.trim();
                 if (!listNameOnValuePairSheet.contains(listaS) && !listaS.equals("")) {
                     errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                             "excel.to.inputform.check.formvaluepairs", new Object[]{listaS}));
                     InputFormErrorBuilder.manageError(errors, errorMessage);
                 }
+            }
+            }
+        } finally {
+            if (workbook != null) {
+                workbook.close();
             }
         }
         return errors;

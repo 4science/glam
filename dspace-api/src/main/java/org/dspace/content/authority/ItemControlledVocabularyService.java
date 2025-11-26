@@ -385,9 +385,4 @@ public class ItemControlledVocabularyService extends SelfNamedPlugin
         return List.of(getPluginNames()).contains(vocabulary);
     }
 
-    public static void reloadPluginNames() {
-        pluginNames = null;
-        initPluginNames();
-    }
-
 }

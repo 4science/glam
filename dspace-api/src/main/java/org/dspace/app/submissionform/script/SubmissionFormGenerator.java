@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import org.dspace.app.submissionform.script.builder.IInputFormFixBuilder;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.checker.ExcelSheetValidator;
-import org.dspace.app.submissionform.script.dto.InputFormDTO;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.exception.InputFormException;
 import org.dspace.app.submissionform.script.service.InputFormDefinitions;
@@ -275,7 +274,7 @@ public class SubmissionFormGenerator
         Document doc = new Document(root, dt);
 
         // rename old xml file
-        renameOldInputForm(itemSubmissionFile);
+        //renameOldInputForm(itemSubmissionFile);
 
         // build form
         submissionMap.create(formMapEl, context, defaultDefinition);
@@ -314,7 +313,7 @@ public class SubmissionFormGenerator
         Document doc = new Document(root, dt);
 
         // rename old xml file
-        renameOldInputForm(submissionFormFile);
+        //renameOldInputForm(submissionFormFile);
 
         // build form
         formDefinitions.create(formDefinitionsEl, xlsFile, locale);
