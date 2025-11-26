@@ -43,6 +43,7 @@ public class SubmissionStepRulesChecker extends InputFormExcel implements ExcelS
             // Set workbook
             WorkbookSettings ws = new WorkbookSettings();
             ws.setEncoding(CHAR_ENCODING);
+            ws.setSuppressWarnings(true);
             // Get workbook
             workbook = Workbook.getWorkbook(fileExcel, ws);
         } catch (BiffException | IOException e) {

@@ -32,6 +32,7 @@ public class SubmissionDefinitions extends InputFormExcel {
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
         ws.setEncoding(CHAR_ENCODING);
+        ws.setSuppressWarnings(true);
 
         Workbook workbook = Workbook.getWorkbook(fileExcel, ws);
         List<Element> processEls = new ArrayList<Element>();

@@ -34,6 +34,7 @@ public class StepDefinitions extends InputFormExcel {
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
         ws.setEncoding(CHAR_ENCODING);
+        ws.setSuppressWarnings(true);
 
         Workbook workbook = Workbook.getWorkbook(fileExcel, ws);
 
