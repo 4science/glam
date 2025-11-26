@@ -26,26 +26,26 @@
         </Logger>
 
         <!-- Add DEBUG logging for troubleshooting leader election -->
-        <Logger name="org.springframework.cloud.kubernetes"
-                level="TRACE"
-                additivity="false">
-            <AppenderRef ref="ConsoleJson"/>
-        </Logger>
-        <Logger name="org.springframework.integration"
-                level="TRACE"
-                additivity="false">
-            <AppenderRef ref="ConsoleJson"/>
-        </Logger>
-        <Logger name="org.springframework.boot.autoconfigure"
-                level="TRACE"
-                additivity="false">
-            <AppenderRef ref="ConsoleJson"/>
-        </Logger>
-        <Logger name="io.fabric8"
-                level="TRACE"
-                additivity="false">
-            <AppenderRef ref="ConsoleJson"/>
-        </Logger>
+<!--        <Logger name="org.springframework.cloud.kubernetes"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.integration"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.boot.autoconfigure"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="io.fabric8"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
 
         <!-- Block beanutil logging except on exceptions -->
         <Logger name="org.apache.commons.beanutils"
