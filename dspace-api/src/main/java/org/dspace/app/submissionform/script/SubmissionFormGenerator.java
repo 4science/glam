@@ -166,12 +166,10 @@ public class SubmissionFormGenerator
         return xlsFile;
     }
 
-    private InputFormDTO process(File xlsFile, File submissionFormFile, File itemSubmissionFile, String locale)
-            throws SQLException, BiffException, IOException {
-
+    private void process(File xlsFile, File submissionFormFile, File itemSubmissionFile, String locale)
+            throws SQLException, BiffException, IOException, InputFormException {
         // Validate xls file
         List<InputFormErrorBuilder> errors = validateFileXls(xlsFile);
-        errors.forEach(e -> handler.logInfo("LEVEL:" + e.getLevel() + " ERROR:" + e.getErrorMsg()));
 
         List<InputFormErrorBuilder> errorsFix = new ArrayList<>();
         errorsFix = ListUtils.union(errors, errorsFix);
@@ -213,6 +211,7 @@ public class SubmissionFormGenerator
         }
 
         errors = errorsFix;
+        errors.forEach(e -> handler.logError("LEVEL:" + e.getLevel() + " ERROR:" + e.getErrorMsg()));
 
         if (findNoError || !findBlock && this.forceUpload) {
             if (StringUtils.isBlank(defaultDefinition)) {
@@ -224,8 +223,9 @@ public class SubmissionFormGenerator
             if (submissionFormFile != null) {
                 createSubmissionFormXml(xlsFile, submissionFormFile, locale);
             }
+        } else {
+            throw new InputFormException("Blocking errors found, cannot proceed to XML generation.");
         }
-        return new InputFormDTO(errors);
     }
 
     private List<InputFormErrorBuilder> validateFileXls(File xlsFile) throws BiffException, SQLException, IOException {

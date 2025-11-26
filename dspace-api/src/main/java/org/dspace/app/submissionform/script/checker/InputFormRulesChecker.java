@@ -24,6 +24,7 @@ import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.dto.InputFormFieldElement;
 import org.dspace.app.submissionform.script.util.I18nUtil;
 import org.dspace.app.util.RegexPatternUtils;
+import org.dspace.content.authority.DSpaceControlledVocabulary;
 import org.dspace.content.authority.ItemControlledVocabularyService;
 import org.dspace.core.Context;
 import org.dspace.services.ConfigurationService;
@@ -331,13 +332,13 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
                 if (StringUtils.isNotBlank(vocabulary)) {
                     if (inputType.equals("onebox") || inputType.equals("tag")) {
                         // check if file exist
-                        File file = getVocabularyFile(vocabulary);
-                        if (!isItemControlledVocabulary(vocabulary) && !file.exists()) {
+                        if (!ItemControlledVocabularyService.isItemControlledVocabulary(vocabulary) &&
+                            !DSpaceControlledVocabulary.isControlledVocabulary(vocabulary)) {
                             // errors you should define terms of vocabulary,
                             // file xml not found
                             errorMessage = new StringBuilder().append(I18nUtil.getMessage(
                                             "excel.to.inputform.check.vocabulary.notfound",
-                                            new Object[] { element.toString(), inputType, file.getAbsolutePath() }));
+                                            new Object[] { element.toString(), inputType, vocabulary }));
                             InputFormErrorBuilder.manageError(errors, errorMessage);
                         }
                     } else {
@@ -447,17 +448,6 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
             }
         }
         return errors;
-    }
-
-    private boolean isItemControlledVocabulary(String vocabulary) {
-        return List.of(ItemControlledVocabularyService.getPluginNames()).contains(vocabulary);
-    }
-
-    private File getVocabularyFile(String vocabulary) {
-        ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-        var dspaceDir = configurationService.getProperty("dspace.dir");
-        var path2Vocabulary = File.separator + "config" + File.separator + "controlled-vocabularies" + File.separator;
-        return new File(dspaceDir + path2Vocabulary + vocabulary + ".xml");
     }
 
     public void setInputTypeValues(List<String> inputTypeValues) {
