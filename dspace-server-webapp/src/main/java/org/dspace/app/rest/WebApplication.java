@@ -24,10 +24,7 @@ import org.dspace.app.sitemap.GenerateSitemaps;
 import org.dspace.app.solrdatabaseresync.SolrDatabaseResyncCli;
 import org.dspace.app.util.DSpaceContextListener;
 import org.dspace.google.GoogleAsyncEventListener;
-import org.dspace.leader.DSpaceLeadershipService;
 import org.dspace.utils.servlet.DSpaceWebappServletFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -58,32 +55,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebApplication {
 
-    private static final Logger log = LoggerFactory.getLogger(WebApplication.class);
-
     @Autowired
     private ApplicationConfig configuration;
 
     @Autowired
     private GoogleAsyncEventListener googleAsyncEventListener;
 
-    @Autowired
-    private DSpaceLeadershipService leadershipService;
-
     @Scheduled(cron = "${sitemap.cron:-}")
     public void generateSitemap() throws IOException, SQLException {
-        if (!leadershipService.isLeader()) {
-            log.debug("Skipping generateSitemap: not the leader");
-            return;
-        }
         GenerateSitemaps.generateSitemapsScheduled();
     }
 
     @Scheduled(cron = "${ldn.queue.extractor.cron:-}")
-    public void ldnExtractFromQueue() throws SQLException {
-        if (!leadershipService.isLeader()) {
-            log.debug("Skipping ldnExtractFromQueue: not the leader");
-            return;
-        }
+    public void ldnExtractFromQueue() throws IOException, SQLException {
         if (!configuration.getLdnEnabled()) {
             return;
         }
@@ -91,11 +75,7 @@ public class WebApplication {
     }
 
     @Scheduled(cron = "${ldn.queue.timeout.checker.cron:-}")
-    public void ldnQueueTimeoutCheck() throws SQLException {
-        if (!leadershipService.isLeader()) {
-            log.debug("Skipping ldnQueueTimeoutCheck: not the leader");
-            return;
-        }
+    public void ldnQueueTimeoutCheck() throws IOException, SQLException {
         if (!configuration.getLdnEnabled()) {
             return;
         }
@@ -104,19 +84,11 @@ public class WebApplication {
 
     @Scheduled(cron = "${solr-database-resync.cron:-}")
     public void solrDatabaseResync() throws Exception {
-        if (!leadershipService.isLeader()) {
-            log.debug("Skipping solrDatabaseResync: not the leader");
-            return;
-        }
         SolrDatabaseResyncCli.runScheduled();
     }
 
     @Scheduled(cron = "${google.analytics.cron:-}")
     public void sendGoogleAnalyticsEvents() {
-        if (!leadershipService.isLeader()) {
-            log.debug("Skipping sendGoogleAnalyticsEvents: not the leader");
-            return;
-        }
         googleAsyncEventListener.sendCollectedEvents();
     }
 
@@ -203,7 +175,7 @@ public class WebApplication {
                 String[] bitstreamAllowedOrigins = configuration
                     .getCorsAllowedOrigins(configuration.getBitstreamAllowedOriginsConfig());
                 String[] signpostingAllowedOrigins = configuration
-                    .getCorsAllowedOrigins(configuration.getSignpostingAllowedOriginsConfig());
+                        .getCorsAllowedOrigins(configuration.getSignpostingAllowedOriginsConfig());
 
                 boolean corsAllowCredentials = configuration.getCorsAllowCredentials();
                 boolean iiifAllowCredentials = configuration.getIiifAllowCredentials();
@@ -215,15 +187,15 @@ public class WebApplication {
                 }
                 if (!ArrayUtils.isEmpty(bitstreamAllowedOrigins)) {
                     registry.addMapping("/api/core/bitstreams/**").allowedMethods(CorsConfiguration.ALL)
-                            // Set Access-Control-Allow-Credentials to "true" and specify which origins are valid
-                            // for our Access-Control-Allow-Origin header
-                            .allowCredentials(bitstreamAllowCredentials).allowedOrigins(bitstreamAllowedOrigins)
-                            // Allow list of request preflight headers allowed to be sent to us from the client
-                            .allowedHeaders("Accept", "Authorization", "Content-Type", "Origin", "X-On-Behalf-Of",
-                                            "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
-                                            "x-recaptcha-token", "Access-Control-Allow-Origin")
-                            // Allow list of response headers allowed to be sent by us (the server) to the client
-                            .exposedHeaders("Authorization", "DSPACE-XSRF-TOKEN", "Location", "WWW-Authenticate");
+                        // Set Access-Control-Allow-Credentials to "true" and specify which origins are valid
+                        // for our Access-Control-Allow-Origin header
+                        .allowCredentials(bitstreamAllowCredentials).allowedOrigins(bitstreamAllowedOrigins)
+                        // Allow list of request preflight headers allowed to be sent to us from the client
+                        .allowedHeaders("Accept", "Authorization", "Content-Type", "Origin", "X-On-Behalf-Of",
+                            "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
+                            "x-recaptcha-token", "Access-Control-Allow-Origin")
+                        // Allow list of response headers allowed to be sent by us (the server) to the client
+                        .exposedHeaders("Authorization", "DSPACE-XSRF-TOKEN", "Location", "WWW-Authenticate");
                 }
                 if (corsAllowedOrigins != null) {
                     registry.addMapping("/api/**").allowedMethods(CorsConfiguration.ALL)
@@ -233,8 +205,8 @@ public class WebApplication {
                             .allowCredentials(corsAllowCredentials).allowedOrigins(corsAllowedOrigins)
                             // Allow list of request preflight headers allowed to be sent to us from the client
                             .allowedHeaders("Accept", "Authorization", "Content-Type", "Origin", "X-On-Behalf-Of",
-                                            "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
-                                            "x-recaptcha-token")
+                                "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
+                                "x-recaptcha-token")
                             // Allow list of response headers allowed to be sent by us (the server) to the client
                             .exposedHeaders("Authorization", "DSPACE-XSRF-TOKEN", "Location", "WWW-Authenticate");
                 }
@@ -245,8 +217,8 @@ public class WebApplication {
                             .allowCredentials(iiifAllowCredentials).allowedOrigins(iiifAllowedOrigins)
                             // Allow list of request preflight headers allowed to be sent to us from the client
                             .allowedHeaders("Accept", "Authorization", "Content-Type", "Origin", "X-On-Behalf-Of",
-                                            "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
-                                            "x-recaptcha-token")
+                                "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
+                                "x-recaptcha-token")
                             // Allow list of response headers allowed to be sent by us (the server) to the client
                             .exposedHeaders("Authorization", "DSPACE-XSRF-TOKEN", "Location", "WWW-Authenticate");
                 }
@@ -257,8 +229,8 @@ public class WebApplication {
                             .allowCredentials(signpostingAllowCredentials).allowedOrigins(signpostingAllowedOrigins)
                             // Allow list of request preflight headers allowed to be sent to us from the client
                             .allowedHeaders("Accept", "Authorization", "Content-Type", "Origin", "X-On-Behalf-Of",
-                                            "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
-                                            "x-recaptcha-token", "access-control-allow-headers")
+                                    "X-Requested-With", "X-XSRF-TOKEN", "X-CORRELATION-ID", "X-REFERRER",
+                                    "x-recaptcha-token", "access-control-allow-headers")
                             // Allow list of response headers allowed to be sent by us (the server) to the client
                             .exposedHeaders("Authorization", "DSPACE-XSRF-TOKEN", "Location", "WWW-Authenticate");
                 }
@@ -303,5 +275,4 @@ public class WebApplication {
             }
         };
     }
-
 }
