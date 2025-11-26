@@ -346,7 +346,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
         curationOrchestratorScript.initialize(args, testDSpaceRunnableHandler, admin);
 
-        String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRundomId(),
+        String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRandomId(),
                                                                         bitstream1.getID());
         try (InputStream jsonInputStream = generateFailedOutputJSON(bitstream1)) {
             amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());

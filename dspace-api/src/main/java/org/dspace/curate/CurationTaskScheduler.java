@@ -73,8 +73,10 @@ public class CurationTaskScheduler {
         }
 
         EPerson currentUser = context.getCurrentUser();
-        ProcessDSpaceRunnableHandler processDSpaceRunnableHandler = new ProcessDSpaceRunnableHandler(currentUser,
-                                           SCRIPT_NAME, params, context.getSpecialGroups(), context.getCurrentLocale());
+        ProcessDSpaceRunnableHandler processDSpaceRunnableHandler =
+            new ProcessDSpaceRunnableHandler(
+                currentUser, SCRIPT_NAME, params, context.getSpecialGroups(), context.getCurrentLocale()
+            );
 
         try {
             DSpaceRunnable<?> dSpaceRunnable =

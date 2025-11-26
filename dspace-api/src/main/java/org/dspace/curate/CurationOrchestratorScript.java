@@ -38,6 +38,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
+import org.dspace.authorize.factory.AuthorizeServiceFactory;
+import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.DCDate;
@@ -49,6 +51,7 @@ import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.core.Email;
 import org.dspace.core.I18nUtil;
+import org.dspace.ctask.general.CurationTaskException;
 import org.dspace.curate.service.CurationTaskResult;
 import org.dspace.curate.service.S3FileChecker;
 import org.dspace.eperson.EPerson;
@@ -109,6 +112,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
                                                                                    .getBitstreamStorageService();
+    private AuthorizeService authorizeService = AuthorizeServiceFactory.getInstance().getAuthorizeService();
 
     // Parameters
     private boolean force;
@@ -116,7 +120,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private Curator curator;
     private String identifier;
     private List<String> tasks;
-    private String processRundomId;
+    private String processRandomId;
     private ExecutorService executorService;
     private TaskResolver resolver = new TaskResolver();
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -167,7 +171,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.force = commandLine.hasOption("force");
         this.tasks = List.of(commandLine.getOptionValues("task"));
         this.identifier = commandLine.getOptionValue("identifier");
-        this.processRundomId = "unknown-" + UUID.randomUUID();
+        this.processRandomId = "unknown-" + UUID.randomUUID();
     }
 
     private boolean hasInvalidParameters() {
@@ -190,18 +194,22 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.context = new Context();
         this.curator = initCurator();
         assignCurrentUserInContext();
-        handler.logInfo("*************************************************************");
-        handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
-        handler.logInfo("*************************************************************");
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
         if (item$.isEmpty()) {
             var errorMessage = String.format("Cannot find any related item with identifier:%s ", identifier);
-            handler.logInfo(errorMessage);
+            handler.logError(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
         try {
             Item item = item$.get();
+
+            authorizeProcess(context, item);
+
+            handler.logInfo("*************************************************************");
+            handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
+            handler.logInfo("*************************************************************");
+
             if (this.force) {
                 remomoveCurationTaksRelatedBundle(item);
                 // Reload item after commit
@@ -247,6 +255,48 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         handler.logInfo("**END** : All Curation Tasks completed!");
         handler.logInfo("***************************************");
         lauchExceptionForFailedTasks();
+    }
+
+    /**
+     * This method checks if the current user in context is authorized to complete the script.
+     * Only users that are:
+     * <ul>
+     *     <li>Admin</li>
+     *     <li>Collection / Community Admin</li>
+     *     <li>Submitter</li>
+     * </ul>
+     * can execute this script
+     * @param context Dspace Context
+     * @param item actual Item that would be processed
+     */
+    protected void authorizeProcess(Context context, Item item) {
+        try {
+            if (authorizeService.isAdmin(context) || authorizeService.isComColAdmin(context)) {
+                return;
+            }
+        } catch (SQLException e) {
+            handler.logError("Cannot retrieve details about the user in the context!", e);
+        }
+
+        EPerson currentUser = context.getCurrentUser();
+        if (currentUser == null) {
+            handler.logError("Cannot find the user in the context, aborting the process!");
+            throw new IllegalArgumentException("Cannot find the user in the context, aborting the process!");
+        }
+
+        EPerson submitter = item.getSubmitter();
+        if (submitter == null) {
+            handler.logError("Submit the item and then try again to execute this process!");
+            throw new IllegalArgumentException("Submit the item and then try again to execute this process!");
+        }
+
+        if (!submitter.equals(currentUser)) {
+            handler.logError("The process cannot be executed by this user: " + currentUser.getID() + " is not a valid" +
+                                 " submitter or admin");
+            throw new IllegalArgumentException("The process cannot be executed by this user: " + currentUser.getID() +
+                                                   " is not a valid submitter or admin");
+        }
+
     }
 
     private void forceCompletionOfRunningTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures) {
@@ -341,10 +391,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
                     serverlessTask.finalizeTask(context, item, curationTaskResult);
                 }
-            } catch (IOException | SQLException e) {
-                handler.logError("Error during finalization of serverless task:" + curationTaskResult.curationTask(),e);
-            } catch (AuthorizeException e) {
-                handler.logError("Authorization error during finalization of serverless task:" +
+            } catch (Exception e) {
+                handler.logError("Error during finalization of serverless task:" +
                        curationTaskResult.curationTask() + " and bitstream " + curationTaskResult.originBitstream(), e);
             }
         }
@@ -374,12 +422,11 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return curator;
     }
 
-    private ScheduledProcess scheduleProcess(Item item) throws SQLException, IOException, InterruptedException,
-                                                               AuthorizeException {
+    private ScheduledProcess scheduleProcess(Item item) throws CurationTaskException {
         List<ScheduledCurationTask> scheduledCurationTasks = new ArrayList<>();
         for (String task : this.tasks) {
             ResolvedTask resolvedTask = getResolvedTasks(task);
-            if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
+            if (resolvedTask != null && resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
                 List<Bitstream> bitstreams = serverlessTask.getProcessableBitstreams(this.context, item);
                 handler.logInfo("Task:" + task + " will process:" + bitstreams.size() + " bitstreams.");
                 for (Bitstream currentBitstream : bitstreams) {
@@ -398,6 +445,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         try {
             transferManager = TransferManagerBuilder.standard().withS3Client(this.getS3Client()).build();
             uploadFile(curationProcess, transferManager, uploadBucket);
+        } catch (Exception e) {
+            throw new CurationTaskException("Cannot upload the curation-task process: " + curationProcess, e);
         } finally {
             if (transferManager != null) {
                 transferManager.shutdownNow(false);
@@ -471,19 +520,23 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         if (handler instanceof ProcessDSpaceRunnableHandler processDSpaceRunnableHandler) {
             return processDSpaceRunnableHandler.getProcessId().toString();
         }
-        log.warn("Cannot retrieve process id from handler, using random id:{} .", this.processRundomId);
-        return this.processRundomId;
+        log.warn("Cannot retrieve process id from handler, using random id:{} .", this.processRandomId);
+        return this.processRandomId;
     }
 
-    private ResolvedTask getResolvedTasks(String task) throws IOException {
+    private ResolvedTask getResolvedTasks(String task) {
         ResolvedTask resolvedTask = this.allResolvedTasks.stream()
                                                          .filter(rt -> rt.getName().equals(task))
                                                          .findFirst()
                                                          .orElse(null);
         if (resolvedTask == null) {
             resolvedTask = resolver.resolveTask(task);
-            resolvedTask.init(this.curator);
-            allResolvedTasks.add(resolvedTask);
+            try {
+                resolvedTask.init(this.curator);
+                allResolvedTasks.add(resolvedTask);
+            } catch (IOException e) {
+                log.error("Cannot initialize the task: {} for the curator: {}", resolvedTask, this.curator, e);
+            }
         }
         return resolvedTask;
     }
@@ -534,7 +587,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             email.addArgument(taskList);
 
             var baseUrl = configurationService.getProperty("dspace.ui.url");
-            var processLink = baseUrl + "/process/" + scheduledProcess.process();
+            var processLink = baseUrl + "/processes/" + scheduledProcess.process();
             email.addArgument(processLink);
 
             email.send();
@@ -774,8 +827,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.s3Client = s3Client;
     }
 
-    public String getProcessRundomId() {
-        return processRundomId;
+    public String getProcessRandomId() {
+        return processRandomId;
     }
 
     @Override
