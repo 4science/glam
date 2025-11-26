@@ -955,6 +955,22 @@ public class CrisLayoutSectionRest extends BaseObjectRest<String> {
 
     }
 
+    /**
+     * Initializes the rest component using the
+     * CrisLayoutCarouselSlimComponentRest component
+     *
+     */
+    public static class CrisLayoutCarouselSlimComponentRest extends CrisLayoutCarouselComponentRest {
+        public CrisLayoutCarouselSlimComponentRest(CrisLayoutCarouselComponent component) {
+            super(component);
+        }
+
+        @Override
+        public String getComponentType() {
+            return "carousel-slim";
+        }
+    }
+
     public static class CrisGridComponentRest implements CrisLayoutSectionComponentRest {
 
         private String discoveryConfigurationName;
