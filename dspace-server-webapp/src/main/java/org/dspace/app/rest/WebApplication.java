@@ -16,7 +16,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.dspace.app.ldn.LDNQueueExtractor;
 import org.dspace.app.ldn.LDNQueueTimeoutChecker;
 import org.dspace.app.rest.filter.DSpaceRequestContextFilter;
-import org.dspace.app.rest.leader.DSpaceLeadershipService;
 import org.dspace.app.rest.model.hateoas.DSpaceLinkRelationProvider;
 import org.dspace.app.rest.parameter.resolver.SearchFilterResolver;
 import org.dspace.app.rest.utils.ApplicationConfig;
@@ -25,6 +24,7 @@ import org.dspace.app.sitemap.GenerateSitemaps;
 import org.dspace.app.solrdatabaseresync.SolrDatabaseResyncCli;
 import org.dspace.app.util.DSpaceContextListener;
 import org.dspace.google.GoogleAsyncEventListener;
+import org.dspace.leader.DSpaceLeadershipService;
 import org.dspace.utils.servlet.DSpaceWebappServletFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,14 +71,19 @@ public class WebApplication {
 
     @Scheduled(cron = "${sitemap.cron:-}")
     public void generateSitemap() throws IOException, SQLException {
-        // Only execute if this pod is the leader or if leader election is disabled
-        if (leadershipService.isLeader()) {
-            GenerateSitemaps.generateSitemapsScheduled();
+        if (!leadershipService.isLeader()) {
+            log.debug("Skipping generateSitemap: not the leader");
+            return;
         }
+        GenerateSitemaps.generateSitemapsScheduled();
     }
 
     @Scheduled(cron = "${ldn.queue.extractor.cron:-}")
-    public void ldnExtractFromQueue() throws IOException, SQLException {
+    public void ldnExtractFromQueue() throws SQLException {
+        if (!leadershipService.isLeader()) {
+            log.debug("Skipping ldnExtractFromQueue: not the leader");
+            return;
+        }
         if (!configuration.getLdnEnabled()) {
             return;
         }
@@ -86,7 +91,11 @@ public class WebApplication {
     }
 
     @Scheduled(cron = "${ldn.queue.timeout.checker.cron:-}")
-    public void ldnQueueTimeoutCheck() throws IOException, SQLException {
+    public void ldnQueueTimeoutCheck() throws SQLException {
+        if (!leadershipService.isLeader()) {
+            log.debug("Skipping ldnQueueTimeoutCheck: not the leader");
+            return;
+        }
         if (!configuration.getLdnEnabled()) {
             return;
         }
@@ -95,11 +104,19 @@ public class WebApplication {
 
     @Scheduled(cron = "${solr-database-resync.cron:-}")
     public void solrDatabaseResync() throws Exception {
+        if (!leadershipService.isLeader()) {
+            log.debug("Skipping solrDatabaseResync: not the leader");
+            return;
+        }
         SolrDatabaseResyncCli.runScheduled();
     }
 
     @Scheduled(cron = "${google.analytics.cron:-}")
     public void sendGoogleAnalyticsEvents() {
+        if (!leadershipService.isLeader()) {
+            log.debug("Skipping sendGoogleAnalyticsEvents: not the leader");
+            return;
+        }
         googleAsyncEventListener.sendCollectedEvents();
     }
 

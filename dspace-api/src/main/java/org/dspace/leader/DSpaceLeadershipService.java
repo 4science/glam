@@ -5,7 +5,7 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.app.rest.leader;
+package org.dspace.leader;
 
 import org.dspace.services.ConfigurationService;
 import org.slf4j.Logger;
