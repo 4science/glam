@@ -97,6 +97,7 @@ public class S3BitStoreService extends BaseBitStoreService {
         .serializeNulls()
         .setPrettyPrinting()
         .create();
+    public static final long DEFAULT_EXPIRATION = Duration.ofMinutes(2).toSeconds();
     // Prefix indicating a registered bitstream
     protected final String REGISTERED_FLAG = "-R";
     /**
