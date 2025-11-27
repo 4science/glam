@@ -25,6 +25,7 @@
     <bean id="contentServiceFactory" class="org.dspace.content.factory.ContentServiceFactoryImpl"/>
     <bean id="scriptServiceFactory" class="org.dspace.scripts.factory.impl.ScriptServiceFactoryImpl"/>
     <bean id="coreServiceFactory" class="org.dspace.core.factory.CoreServiceFactoryImpl"/>
+    <bean id="curationTaskSchedulerFactory" class="org.dspace.curate.CurationTaskSchedulerFactoryImpl"/>
 
 
     <bean id="accessStatusServiceFactory" class="org.dspace.access.status.factory.AccessStatusServiceFactoryImpl"/>
@@ -66,8 +67,10 @@
     <bean id="supervisionOrderServiceFactory" class="org.dspace.supervision.factory.SupervisionOrderServiceFactoryImpl"/>
 
     <bean id="notifyServiceFactory" class="org.dspace.app.ldn.factory.NotifyServiceFactoryImpl"/>
-    
+
     <bean id="ldnMessageServiceFactory" class="org.dspace.app.ldn.factory.LDNMessageServiceFactoryImpl"/>
+
+    <bean id="droidServiceFactory" class="org.dspace.checker.factory.DroidServiceFactoryImpl"/>
 
     <bean id="submissionServiceFactory" class="org.dspace.submit.factory.SubmissionServiceFactoryImpl"/>
 

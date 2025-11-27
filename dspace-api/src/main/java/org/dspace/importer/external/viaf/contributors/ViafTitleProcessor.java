@@ -37,8 +37,8 @@ public class ViafTitleProcessor extends AbstractJsonPathMetadataProcessor {
 
     private static final String UNSUPPORTED_TITLE_TYPE = "Unsupported type of title";
     private static final String DTYPE_PATH = "/dtype";
-    private static final String DATAFIELD_PATH = "/ns1:datafield";
-    private static final String MAIN_HEADING_EL_PATH = "/ns1:VIAFCluster/ns1:mainHeadings/ns1:mainHeadingEl";
+    private static final String DATAFIELD_PATH = "/datafield";
+    private static final String MAIN_HEADING_EL_PATH = "/VIAFCluster/mainHeadings/mainHeadingEl";
 
     private String separetor;
     private List<String> marc21codes;
@@ -56,9 +56,9 @@ public class ViafTitleProcessor extends AbstractJsonPathMetadataProcessor {
     private Collection<String> getTitleBySource(JsonNode jsonNode, String preferedSource) {
         JsonNode mainHeadingElNode = jsonNode.at(MAIN_HEADING_EL_PATH);
         if (!mainHeadingElNode.isArray()) {
-            var currentSourceName = mainHeadingElNode.at("/ns1:sources/ns1:s").asText();
+            var currentSourceName = mainHeadingElNode.at("/sources/s").asText();
             if (StringUtils.equalsIgnoreCase(preferedSource, currentSourceName)) {
-                JsonNode datafieldNode = mainHeadingElNode.at("/ns1:datafield");
+                JsonNode datafieldNode = mainHeadingElNode.at("/datafield");
                 return getTitle(datafieldNode);
             }
         }
@@ -66,9 +66,9 @@ public class ViafTitleProcessor extends AbstractJsonPathMetadataProcessor {
         Iterator<JsonNode> mainHeadingEl = mainHeadingElNode.iterator();
         while (mainHeadingEl.hasNext()) {
             JsonNode node = mainHeadingEl.next();
-            var currentSourceName = node.at("/ns1:sources/ns1:s").asText();
+            var currentSourceName = node.at("/sources/s").asText();
             if (StringUtils.equalsIgnoreCase(preferedSource, currentSourceName)) {
-                JsonNode datafieldNode = node.at("/ns1:datafield");
+                JsonNode datafieldNode = node.at("/datafield");
                 return getTitle(datafieldNode);
             }
         }
@@ -120,7 +120,7 @@ public class ViafTitleProcessor extends AbstractJsonPathMetadataProcessor {
     }
 
     private String getSubfieldValueByCode(DocumentContext documentContext, String codeValue) {
-        String path = String.format("$.ns1:subfield.[?(@.code == '%s')].content", codeValue);
+        String path = String.format("$.subfield.[?(@.code == '%s')].content", codeValue);
         List<String> results = documentContext.read(path);
         return results.isEmpty() ? null : results.get(0);
     }
@@ -144,7 +144,7 @@ public class ViafTitleProcessor extends AbstractJsonPathMetadataProcessor {
 
     private Set<String> getTitleAvaibleSources(JsonNode json) {
         Set<String> sources = new HashSet<>();
-        JsonNode sourceNode = json.at("/ns1:VIAFCluster/ns1:sources/ns1:source");
+        JsonNode sourceNode = json.at("/VIAFCluster/sources/source");
         if (!sourceNode.isArray()) {
             var sourceName = getSourceName(sourceNode);
             return StringUtils.isNotBlank(sourceName) ? Set.of(sourceName) : Set.of();

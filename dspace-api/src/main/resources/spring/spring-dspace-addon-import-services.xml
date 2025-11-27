@@ -238,7 +238,10 @@
     </bean>
     <bean id="ADSMetadataFieldMapping" class="org.dspace.importer.external.ads.ADSFieldMapping"/>
 
-    <bean id="ViafImportService" class="org.dspace.importer.external.viaf.ViafImportMetadataSourceServiceImpl" scope="singleton">
+    <bean id="viafServiceFactory" class="org.dspace.importer.external.viaf.ViafServiceFactoryImpl">
+        <constructor-arg name="metadataSourceService" ref="ViafImportService"/>
+    </bean>
+    <bean id="ViafImportService" class="org.dspace.importer.external.viaf.ViafImportMetadataSourceServiceImpl">
         <property name="metadataFieldMapping" ref="viafMetadataFieldMapping"/>
         <property name="url" value="${viaf.url}"/>
         <property name="searchUrl" value="${viaf.searchUrl}"/>
@@ -265,7 +268,7 @@
                 <value>pdf</value>
             </list>
         </property>
-        <property name="metadataFieldMap" ref="grobidMetadataFieldMap"></property>
+        <property name="metadataFieldMap" ref="grobidMetadataFieldMap"/>
     </bean>
 
 </beans>

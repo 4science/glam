@@ -30,6 +30,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.service.AuthorizeService;
+import org.dspace.checker.service.ChecksumHistoryService;
+import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.dao.BitstreamDAO;
 import org.dspace.content.service.BitstreamFormatService;
 import org.dspace.content.service.BitstreamService;
@@ -74,6 +76,10 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
     protected BundleService bundleService;
     @Autowired(required = true)
     protected BitstreamStorageService bitstreamStorageService;
+    @Autowired(required = true)
+    protected MostRecentChecksumService checksumService;
+    @Autowired(required = true)
+    protected ChecksumHistoryService checksumHistoryService;
 
     @Autowired
     private ConfigurationService configurationService;
@@ -301,6 +307,9 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
         //Remove all bundles from the bitstream object, clearing the connection in 2 ways
         bundles.clear();
 
+        checksumService.deleteByBitstream(context, bitstream);
+        checksumHistoryService.deleteByBitstream(context, bitstream);
+
         // Remove policies only after the bitstream has been updated (otherwise the current user has not WRITE rights)
         authorizeService.removeAllPolicies(context, bitstream);
     }
@@ -390,6 +399,12 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
     @Override
     public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException {
         return bitstreamDAO.findBitstreamsWithNoRecentChecksum(context);
+    }
+
+    @Override
+    public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, int offset, int limit)
+        throws SQLException {
+        return bitstreamDAO.findBitstreamsWithNoRecentChecksum(context, offset, limit);
     }
 
     @Override
@@ -714,6 +729,13 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
+                                                           String metadataField, String metadataValue)
+        throws SQLException {
+        return bitstreamDAO.findByMetadataValueInBundle(context, itemId, bundleName, metadataField, metadataValue);
     }
 
 }

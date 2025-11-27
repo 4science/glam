@@ -15,6 +15,7 @@ import java.util.Map;
 import org.dspace.checker.dao.ChecksumHistoryDAO;
 import org.dspace.checker.service.ChecksumHistoryService;
 import org.dspace.checker.service.ChecksumResultService;
+import org.dspace.checker.service.DroidHistoryService;
 import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.Bitstream;
 import org.dspace.core.Context;
@@ -34,8 +35,12 @@ public class ChecksumHistoryServiceImpl implements ChecksumHistoryService {
 
     @Autowired(required = true)
     protected MostRecentChecksumService mostRecentChecksumService;
+
     @Autowired(required = true)
     protected ChecksumResultService checksumResultService;
+
+    @Autowired
+    private DroidHistoryService droidHistoryService;
 
     protected ChecksumHistoryServiceImpl() {
 
@@ -80,6 +85,8 @@ public class ChecksumHistoryServiceImpl implements ChecksumHistoryService {
 
         checksumHistory.setResult(checksumResult);
 
+        droidHistoryService.addHistory(context, checksumHistory, mostRecentChecksum);
+
         checksumHistoryDAO.create(context, checksumHistory);
         checksumHistoryDAO.save(context, checksumHistory);
     }
@@ -103,6 +110,8 @@ public class ChecksumHistoryServiceImpl implements ChecksumHistoryService {
     public void deleteByBitstream(Context context, Bitstream bitstream) throws SQLException {
         //Delete the most recent
         mostRecentChecksumService.deleteByBitstream(context, bitstream);
+        //Delete from droid-history
+        droidHistoryService.deleteByBitstream(context, bitstream);
         //Delete the history as well
         checksumHistoryDAO.deleteByBitstream(context, bitstream);
     }

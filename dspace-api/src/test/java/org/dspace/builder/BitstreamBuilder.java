@@ -165,7 +165,11 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
         if (bf != null) {
             bitstream.setFormat(context, bf);
         }
+        return this;
+    }
 
+    public BitstreamBuilder withStoreNumber(int storeNumber) throws SQLException {
+        bitstream.setStoreNumber(storeNumber);
         return this;
     }
 
@@ -256,6 +260,11 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
 
     public BitstreamBuilder withReaderGroup(Group group) {
         readerGroup = group;
+        return this;
+    }
+
+    public BitstreamBuilder withChecksum(String checksum) {
+        bitstream.setChecksum(checksum);
         return this;
     }
 
