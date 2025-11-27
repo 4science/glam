@@ -14,7 +14,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.sql.SQLException;
 
-import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.ClientAbortException;
@@ -24,6 +23,7 @@ import org.dspace.app.rest.utils.HttpHeadersInitializer;
 import org.dspace.app.sitemap.SitemapStorageService;
 import org.dspace.core.Context;
 import org.dspace.services.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpHeaders;
@@ -56,9 +56,9 @@ public class SitemapRestController {
     private static final Logger log = org.apache.logging.log4j.LogManager.getLogger(SitemapRestController.class);
     // Most file systems are configured to use block sizes of 4096 or 8192 and our buffer should be a multiple of that.
     private static final int BUFFER_SIZE = 4096 * 10;
-    @Inject
+    @Autowired
     private ConfigurationService configurationService;
-    @Inject
+    @Autowired
     private SitemapStorageService sitemapStorageService;
 
 

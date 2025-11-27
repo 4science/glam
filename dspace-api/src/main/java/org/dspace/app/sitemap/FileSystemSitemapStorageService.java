@@ -14,11 +14,11 @@ import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.services.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * File system implementation of SitemapStorageService. This implementation
@@ -36,7 +36,7 @@ public class FileSystemSitemapStorageService implements SitemapStorageService {
 
     private static final Logger log = LogManager.getLogger(FileSystemSitemapStorageService.class);
 
-    @Inject
+    @Autowired
     protected ConfigurationService configurationService;
 
     /**

@@ -23,7 +23,7 @@ import java.io.OutputStream;
  * The service handles compression, file naming, and storage-specific operations
  * transparently to the sitemap generators.
  *
- * @author DSpace Development Team
+ * @author Adamo Fapohunda (adamo.fapohunda at 4science.com)
  */
 public interface SitemapStorageService {
 

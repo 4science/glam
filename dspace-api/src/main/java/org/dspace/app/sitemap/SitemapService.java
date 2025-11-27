@@ -20,7 +20,7 @@ import java.sql.SQLException;
  * generation, and storage operations, providing a clean interface
  * for sitemap-related operations.
  *
- * @author DSpace Development Team
+ * @author Adamo Fapohunda (adamo.fapohunda at 4science.com)
  */
 public interface SitemapService {
 
