@@ -194,18 +194,22 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         this.context = new Context();
         this.curator = initCurator();
         assignCurrentUserInContext();
-        handler.logInfo("*************************************************************");
-        handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
-        handler.logInfo("*************************************************************");
         Optional<Item> item$ = getItemByUUID().or(this::getItemByHandle);
         if (item$.isEmpty()) {
             var errorMessage = String.format("Cannot find any related item with identifier:%s ", identifier);
-            handler.logInfo(errorMessage);
+            handler.logError(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
         try {
             Item item = item$.get();
+
+            authorizeProcess(context, item);
+
+            handler.logInfo("*************************************************************");
+            handler.logInfo("**START** : CurationOrchestrator script for Item:" + identifier);
+            handler.logInfo("*************************************************************");
+
             if (this.force) {
                 remomoveCurationTaksRelatedBundle(item);
                 // Reload item after commit
@@ -251,6 +255,48 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         handler.logInfo("**END** : All Curation Tasks completed!");
         handler.logInfo("***************************************");
         lauchExceptionForFailedTasks();
+    }
+
+    /**
+     * This method checks if the current user in context is authorized to complete the script.
+     * Only users that are:
+     * <ul>
+     *     <li>Admin</li>
+     *     <li>Collection / Community Admin</li>
+     *     <li>Submitter</li>
+     * </ul>
+     * can execute this script
+     * @param context Dspace Context
+     * @param item actual Item that would be processed
+     */
+    protected void authorizeProcess(Context context, Item item) {
+        try {
+            if (authorizeService.isAdmin(context) || authorizeService.isComColAdmin(context)) {
+                return;
+            }
+        } catch (SQLException e) {
+            handler.logError("Cannot retrieve details about the user in the context!", e);
+        }
+
+        EPerson currentUser = context.getCurrentUser();
+        if (currentUser == null) {
+            handler.logError("Cannot find the user in the context, aborting the process!");
+            throw new IllegalArgumentException("Cannot find the user in the context, aborting the process!");
+        }
+
+        EPerson submitter = item.getSubmitter();
+        if (submitter == null) {
+            handler.logError("Submit the item and then try again to execute this process!");
+            throw new IllegalArgumentException("Submit the item and then try again to execute this process!");
+        }
+
+        if (!submitter.equals(currentUser)) {
+            handler.logError("The process cannot be executed by this user: " + currentUser.getID() + " is not a valid" +
+                                 " submitter or admin");
+            throw new IllegalArgumentException("The process cannot be executed by this user: " + currentUser.getID() +
+                                                   " is not a valid submitter or admin");
+        }
+
     }
 
     private void forceCompletionOfRunningTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures) {

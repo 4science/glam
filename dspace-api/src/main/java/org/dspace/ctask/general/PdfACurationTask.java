@@ -122,16 +122,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
             log.error("Cannot find any bundle: {} related to this item: {}", PDFA_BUNDLE_NAME, item);
         }
         if (pdfaBundles.isEmpty()) {
-            log.info("PdfACurationTask: Creating new PDFA bundle for item: {} ", item.getID());
-            context.turnOffAuthorisationSystem();
-            try {
-                pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
-            } catch (Exception e) {
-                log.error("Cannot create the bundle: {}", PDFA_BUNDLE_NAME, e);
-                throw new CurationTaskException("Cannot create the bundle: " + PDFA_BUNDLE_NAME, e);
-            } finally {
-                context.restoreAuthSystemState();
-            }
+            pdfaBundle = createPDFABundle(context, item);
         } else {
             pdfaBundle = pdfaBundles.get(0);
         }
@@ -146,6 +137,21 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                 );
             }
         }
+    }
+
+    private Bundle createPDFABundle(Context context, Item item) throws CurationTaskException {
+        Bundle pdfaBundle;
+        log.info("PdfACurationTask: Creating new PDFA bundle for item: {} ", item.getID());
+        context.turnOffAuthorisationSystem();
+        try {
+            pdfaBundle = bundleService.create(context, item, PDFA_BUNDLE_NAME);
+        } catch (Exception e) {
+            log.error("Cannot create the bundle: {}", PDFA_BUNDLE_NAME, e);
+            throw new CurationTaskException("Cannot create the bundle: " + PDFA_BUNDLE_NAME, e);
+        } finally {
+            context.restoreAuthSystemState();
+        }
+        return pdfaBundle;
     }
 
     /**
@@ -281,26 +287,37 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
     private Bitstream createBitstream(Context context, InputStream is, ScheduledCurationTask scheduledTask,
                                       StatusJsonDTO dto) throws SQLException, IOException {
-        log.info("PdfACurationTask: Creating PDF/A bitstream without bundle association.");
-        Bitstream pdfaBitstream = bitstreamService.create(context, is);
+        context.turnOffAuthorisationSystem();
+        Bitstream pdfaBitstream;
+        try {
+            log.info("PdfACurationTask: Creating PDF/A bitstream without bundle association.");
+            pdfaBitstream = bitstreamService.create(context, is);
 
-        log.info("PdfACurationTask: PDF/A bitstream created with id:{} .", pdfaBitstream.getID());
-        Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
-        addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
-        String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
+            log.info("PdfACurationTask: PDF/A bitstream created with id:{} .", pdfaBitstream.getID());
+            Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
+            addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
+            String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
 
-        log.info("PdfACurationTask: Setting PDF/A bitstream name to:{} ", fileName);
-        pdfaBitstream.setName(context, fileName);
-        BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, pdfaBitstream);
-        bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
+            log.info("PdfACurationTask: Setting PDF/A bitstream name to:{} ", fileName);
+            pdfaBitstream.setName(context, fileName);
+            BitstreamFormat bitstreamFormat = bitstreamFormatService.guessFormat(context, pdfaBitstream);
+            bitstreamService.setFormat(context, pdfaBitstream, bitstreamFormat);
+        } finally {
+            context.restoreAuthSystemState();
+        }
         return pdfaBitstream;
     }
 
     private void addBitstreamToBundle(Context context, Bitstream pdfaBitstream, Bundle pdfaBundle)
             throws SQLException, AuthorizeException {
-        var message = "PdfACurationTask: Adding PDF/A bitstream:{} to PDFA bundle:{} .";
-        log.info(message, pdfaBitstream.getID(), pdfaBundle.getID());
-        bundleService.addBitstream(context, pdfaBundle, pdfaBitstream);
+        context.turnOffAuthorisationSystem();
+        try {
+            var message = "PdfACurationTask: Adding PDF/A bitstream:{} to PDFA bundle:{} .";
+            log.info(message, pdfaBitstream.getID(), pdfaBundle.getID());
+            bundleService.addBitstream(context, pdfaBundle, pdfaBitstream);
+        } finally {
+            context.restoreAuthSystemState();
+        }
     }
 
     private void addReferenceToOriginalBitstream(Context context, Bitstream pdfaBitstream, Bitstream originalBitstream)
