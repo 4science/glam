@@ -15,12 +15,22 @@
 
     <bean id="inputFormMapping" class="org.dspace.app.submissionform.script.service.InputFormMapAdvanced"/>
 
+    <bean id="submissionFormGeneratorI18nService" class="org.dspace.app.submissionform.script.service.SubmissionFormGeneratorI18nServiceImpl"/>
+
+    <bean id="submissionFormXmlGenerator" class="org.dspace.app.submissionform.script.service.SubmissionFormXmlGeneratorImpl">
+        <property name="submissionMap" ref="inputFormMapping"/>
+        <property name="i18nService" ref="submissionFormGeneratorI18nService"/>
+    </bean>
+
     <!-- xls validators -->
-    <bean class="org.dspace.app.submissionform.script.checker.InputFormMetadataFieldChecker"/>
+    <bean class="org.dspace.app.submissionform.script.checker.InputFormMetadataFieldChecker">
+        <property name="i18nService" ref="submissionFormGeneratorI18nService"/>
+    </bean>
 
     <bean class="org.dspace.app.submissionform.script.checker.InputFormRulesChecker">
         <property name="inputTypeValues" ref="inputTypeValues"/>
         <property name="visibilityScopeValues" ref="visibilityScopeValues"/>
+        <property name="i18nService" ref="submissionFormGeneratorI18nService"/>
     </bean>
 
     <bean class="org.dspace.app.submissionform.script.checker.SubmissionDefinitionRulesChecker"/>

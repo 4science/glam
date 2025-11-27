@@ -21,6 +21,12 @@ import org.jdom2.Element;
 
 public class InputFormDefinitions extends InputFormExcel {
 
+    private SubmissionFormGeneratorI18nService i18nService;
+
+    public InputFormDefinitions(SubmissionFormGeneratorI18nService i18nService) {
+        this.i18nService = i18nService;
+    }
+
     public void create(Element formDefinitions, File fileExcel, String locale) throws BiffException, IOException {
         String formName;
         String rowNumber;
@@ -71,9 +77,9 @@ public class InputFormDefinitions extends InputFormExcel {
                     String elementValue = get(posDcElement);
                     String qualifierValue = get(posDcQualifier);
                     String parentValue = get(posParent);
-                    String labelValue = getMultiLangCellUnion(posLabel, 0, locale);
-                    String requiredValue = getMultiLangCellUnion(posRequired, 1, locale);
-                    String hint = getMultiLangCellUnion(posHint, 2, locale);
+                    String labelValue = i18nService.getMultiLangCellValue(this.sheetRow, posLabel, 0, locale);
+                    String requiredValue = i18nService.getMultiLangCellValue(this.sheetRow, posRequired, 1, locale);
+                    String hint = i18nService.getMultiLangCellValue(this.sheetRow, posHint, 2, locale);
                     String listNameValue = get(posListName);
                     String typeBindValue = get(posTypeBind);
 
@@ -82,7 +88,8 @@ public class InputFormDefinitions extends InputFormExcel {
                     String validation = get(posValidation);
                     String vocabulary = get(posVocabulary);
                     String closedvocabulary = get(posClosedVocabulary);
-                    String multilanguage = i18nExtraLangs.length > 0 ? get(posMultilanguageValuePairs) : "";
+                    String multilanguage = i18nService.getExtraLanguages().length > 0 ?
+                                                      get(posMultilanguageValuePairs) : "";
 
                     // New element for current page on current form
                     field = new Element("field");

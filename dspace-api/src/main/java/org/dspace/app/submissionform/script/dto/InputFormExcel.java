@@ -8,12 +8,14 @@
 package org.dspace.app.submissionform.script.dto;
 
 import jxl.Cell;
-import org.apache.commons.lang3.StringUtils;
-import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * InputFormExcel - Base class to manage the input form definition from excel file
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
+ */
 public class InputFormExcel {
 
     private static final Logger log = LoggerFactory.getLogger(InputFormExcel.class);
@@ -72,79 +74,33 @@ public class InputFormExcel {
     public static String identifiersStepClass = "org.dspace.app.rest.submit.step.ShowIdentifiersStep";
     public static String externalUploadStepClass = "org.dspace.app.rest.submit.step.ExternalUploadStep";
 
-    private static ConfigurationService config = DSpaceServicesFactory.getInstance().getConfigurationService();
-    public static String[] i18nExtraLangs = config.getArrayProperty("inputforms.additional-languages");
     public static String CHAR_ENCODING = "Cp1252";
-    public static String[] cellLabel = { "label", "required", "hint" };
 
     protected Cell[] sheetRow;
 
     /**
-     * Get cell on index
-     * @param index
-     * @return
+     * Retrieves the cell content at the specified index from the Excel sheet row.
+     * 
+     * @param index the cell index in the row (0-based)
+     * @return the trimmed cell content
      */
     public String get(int index) {
         try {
-            return this.sheetRow[index].getContents().trim();
+            if (sheetRow == null || index < 0 || index >= sheetRow.length) {
+                log.error("Invalid sheet row or index out of bounds: index={}", index);
+                return "";
+            }
+            Cell cell = sheetRow[index];
+            if (cell == null) {
+                log.error("Cell at index {} is null - assuming empty string", index);
+                return "";
+            }
+            String contents = cell.getContents();
+            return contents != null ? contents.trim() : "";
         } catch (RuntimeException e) {
-            log.warn(e.getMessage() + ": assuming empty string");
+            log.error("Error reading cell at index {}: {} - assuming empty string", index, e.getMessage(), e);
             return "";
         }
-    }
-
-    /**
-     * Get cell in multi language LANG_SEPARATOR separated base on start index
-     * @param index
-     * @param indexOnMulti
-     * @return
-     */
-    public String getMultiLangCellUnion(int index, int indexOnMulti, String locale) {
-        StringBuilder multiCellStringConcat = new StringBuilder();
-        if (StringUtils.isNotBlank(locale)) {
-            int extraLanguageCount = getIndexExtraLanguages(locale);
-            multiCellStringConcat.append(
-                                 get(posI18nStartOnInputForm + indexOnMulti + (extraLanguageCount * cellLabel.length)));
-        } else {
-            multiCellStringConcat.append(get(index));
-        }
-        return multiCellStringConcat.toString();
-    }
-
-    public static String[] getI18nExtraLangs() {
-        return i18nExtraLangs;
-    }
-
-    public static int getValuePairColumnsDelta() {
-        // default | language (>=0) | stored
-        int length = getExtraLanguages().length;
-        return length + 2;
-    }
-
-    /**
-     * Get extra language as array (from string comma separated)
-     *
-     * @return
-     */
-    public static String[] getExtraLanguages() {
-        String[] extraLang = getI18nExtraLangs();
-        if (extraLang == null || (extraLang.length == 1 && extraLang[0].isEmpty())) {
-            return new String[0];
-        } else {
-            return extraLang;
-        }
-    }
-
-    public static int getIndexExtraLanguages(String locale) {
-        String[] extraLang = getExtraLanguages();
-        int index = 0;
-        for (String ee : extraLang) {
-            if (StringUtils.equals(ee, locale)) {
-                return index;
-            }
-            index++;
-        }
-        return 0;
     }
 
 }

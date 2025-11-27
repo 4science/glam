@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.builder.MetadataRegistryFixBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
+import org.dspace.app.submissionform.script.service.SubmissionFormGeneratorI18nService;
 import org.dspace.app.submissionform.script.util.I18nUtil;
 import org.dspace.content.MetadataField;
 import org.dspace.content.MetadataSchema;
@@ -50,6 +51,8 @@ public class InputFormMetadataFieldChecker extends InputFormExcel implements Exc
     private static final String QUALDROP_PLACEHOLDER_VALUE = "_";
     private static final String I18N_LISTVALUES_CHECK_WARNING = "excel.to.inputform.check.listvalues";
     private static final String I18N_METADATA_CHECK_ERROR = "excel.to.inputform.checkvsdspace.metadata.check";
+
+    private SubmissionFormGeneratorI18nService i18nService;
 
     @Override
     public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition)
@@ -214,7 +217,7 @@ public class InputFormMetadataFieldChecker extends InputFormExcel implements Exc
                 Cell[] storedValueColumn;
                 int numberOfColumns = sheet.getRow(0).length;
 
-                int delta = getValuePairColumnsDelta();
+                int delta = i18nService.getValuePairColumnsDelta();
 
                 for (int j = 0; j < numberOfColumns; j = j + delta) {
                     userValueColumn = sheet.getColumn(j);
@@ -257,7 +260,7 @@ public class InputFormMetadataFieldChecker extends InputFormExcel implements Exc
                 int columnIndex = 1;
                 int numberOfColumns = sheet.getRow(0).length;
 
-                int delta = getValuePairColumnsDelta();
+                int delta = i18nService.getValuePairColumnsDelta();
 
                 for (int j = 0; j < numberOfColumns; j = j + delta) {
                     userValueColumn = sheet.getColumn(j);
@@ -288,6 +291,14 @@ public class InputFormMetadataFieldChecker extends InputFormExcel implements Exc
 
     private MetadataFieldConfig getMetadataField(String schema, String element, String qualifier) {
         return new MetadataFieldConfig(schema, element, StringUtils.isBlank(qualifier) ? null : qualifier);
+    }
+
+    public SubmissionFormGeneratorI18nService getI18nService() {
+        return i18nService;
+    }
+
+    public void setI18nService(SubmissionFormGeneratorI18nService i18nService) {
+        this.i18nService = i18nService;
     }
 
 }

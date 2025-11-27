@@ -44,15 +44,17 @@ public class SubmissionFormGeneratorScriptConfiguration<T extends SubmissionForm
             options.getOption("e").setType(InputStream.class);
             options.getOption("e").setRequired(true);
 
-            options.addOption("p", "output-path", true, "Output path");
+            options.addOption("p", "output-path", true,
+                    "Directory path where the generated submission-forms.zip file will be copied");
             options.getOption("p").setType(String.class);
             options.getOption("p").setRequired(false);
 
             options.addOption("f", "force", false,
-                    "Proceed with XML generation even if validation produces warnings!");
+                    "Proceed with XML generation even if validation produces warnings (attempts to auto-fix warnings)");
             options.getOption("f").setRequired(false);
 
-            options.addOption("d", "submission-name", true, "Default submission-definition name");
+            options.addOption("d", "submission-name", true, "Submission definition name to use " +
+                                            "(if not specified, the first available from the Excel file will be used)");
             options.getOption("d").setType(String.class);
             options.getOption("d").setRequired(false);
         }

@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.dto.InputFormFieldElement;
+import org.dspace.app.submissionform.script.service.SubmissionFormGeneratorI18nService;
 import org.dspace.app.submissionform.script.util.I18nUtil;
 import org.dspace.app.util.RegexPatternUtils;
 import org.dspace.content.authority.DSpaceControlledVocabulary;
@@ -57,6 +58,8 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
 
     private List<String> inputTypeValues;
     private List<String> visibilityScopeValues;
+
+    private SubmissionFormGeneratorI18nService i18nService;
 
     @Override
     public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition) {
@@ -155,7 +158,7 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
                     validateVocabulary(element, inputType, errors);
 
                     // Set listNamesFromInputForm
-                    if (!listNamesFromInputForm.contains(listName)) {
+                    if (StringUtils.isNotBlank(listName) && !listNamesFromInputForm.contains(listName)) {
                         listNamesFromInputForm.add(listName);
                     }
 
@@ -430,7 +433,7 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
         // Build list of list names from value pair sheets
         for (int j = InputFormExcel.VALUEPAIRS_SHEET_NAME; j < totalSheets; j++) {
             Sheet sheet = workbook.getSheet(j);
-            int delta = getValuePairColumnsDelta();
+            int delta = i18nService.getValuePairColumnsDelta();
             if (sheet.getRows() > 0) {
                 this.sheetRow = sheet.getRow(0);
                 for (int i = 0; i < this.sheetRow.length; i = i + delta) {
@@ -518,6 +521,10 @@ public class InputFormRulesChecker extends InputFormExcel implements ExcelSheetV
                 || inputType.equals(INPUT_TYPE_OPENLIST)
                 || inputType.equals(INPUT_TYPE_LIST)
                 || inputType.equals(INPUT_TYPE_LINK);
+    }
+
+    public void setI18nService(SubmissionFormGeneratorI18nService i18nService) {
+        this.i18nService = i18nService;
     }
 
 }

@@ -32,6 +32,12 @@ public class InputFormValuePairs extends InputFormExcel {
 
     private static final Logger log = LoggerFactory.getLogger(InputFormValuePairs.class);
 
+    private SubmissionFormGeneratorI18nService i18nService;
+
+    public InputFormValuePairs(SubmissionFormGeneratorI18nService i18nService) {
+        this.i18nService = i18nService;
+    }
+
     /**
      * Genero gli elenchi delle form-value-pairs che ho trovati nel foglio
      * form-value-pairs
@@ -63,7 +69,7 @@ public class InputFormValuePairs extends InputFormExcel {
             if (sheet.getRows() > 0) {
                 int indexRow = 1;
                 int numeroColonne = sheet.getRow(0).length;
-                int delta = getValuePairColumnsDelta();
+                int delta = i18nService.getValuePairColumnsDelta();
 
                 Cell[] columnStoredValue;
 
@@ -143,7 +149,7 @@ public class InputFormValuePairs extends InputFormExcel {
     private String getMultiLangDisplayUnion(Sheet sheet, int j, int indexRow, String locale) {
         StringBuilder multiCellStringConcat = new StringBuilder();
         if (StringUtils.isNotBlank(locale)) {
-            int extraLanguageCount = getIndexExtraLanguages(locale);
+            int extraLanguageCount = i18nService.getIndexForLocale(locale);
             multiCellStringConcat.append(sheet.getColumn(j + extraLanguageCount + 1)[indexRow].getContents().trim());
         } else {
             multiCellStringConcat.append(sheet.getColumn(j)[indexRow].getContents().trim());

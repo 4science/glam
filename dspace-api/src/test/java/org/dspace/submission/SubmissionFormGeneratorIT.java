@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +37,17 @@ import jxl.WorkbookSettings;
 import org.dspace.AbstractIntegrationTestWithDatabase;
 import org.dspace.app.launcher.ScriptLauncher;
 import org.dspace.app.scripts.handler.impl.TestDSpaceRunnableHandler;
+import org.dspace.app.submissionform.script.service.SubmissionFormGeneratorI18nService;
+import org.dspace.authorize.AuthorizeException;
+import org.dspace.kernel.ServiceManager;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.utils.DSpace;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -52,10 +59,27 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
 
     private static final String BASE_XLS_DIR_PATH = "./target/testing/dspace/assetstore/submission/script";
 
-    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+    private ConfigurationService configurationService;
+    private SubmissionFormGeneratorI18nService i18nService;
+
+    @Before
+    public void before() throws Exception {
+        ServiceManager sm = new DSpace().getServiceManager();
+        this.configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
+        this.i18nService = sm.getServiceByName("submissionFormGeneratorI18nService",
+                                               SubmissionFormGeneratorI18nService.class);
+    }
+
+    @After
+    public void after() throws SQLException, AuthorizeException {
+        File zipFile = new File("submission-forms.zip");
+        if (zipFile.exists()) {
+            zipFile.delete();
+        }
+    }
 
     @Test
-    public void generationSubmissionFormsTest() throws Exception {
+    public void testGenerateSubmissionForms() throws Exception {
         Set<String> stepDefinitionsExpected = Set.of("collection", "upload", "license", "orgunit", "detect-duplicate",
                 "publication", "publication_indexing", "publication_bibliographic_details", "publication_references",
                 "person", "cclicense", "itemAccessConditions", "extractionstep", "correction", "custom-url");
@@ -70,10 +94,8 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages(), empty());
         assertThat(handler.getWarningMessages(), empty());
 
-        File exportedFile = new File("submission-forms.zip");
-        exportedFile.deleteOnExit();
-
-        assertThat(handler.getFileStream(context, "submission-forms.zip").isPresent(), is(true));
+        // Verify that the ZIP file was created
+        assertTrue(handler.getFileStream(context, "submission-forms.zip").isPresent());
 
         try (InputStream fisExported = handler.getFileStream(context, "submission-forms.zip").get();
              ZipInputStream zipIn = new ZipInputStream(fisExported)) {
@@ -86,7 +108,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
             assertThat(zipContents.containsKey("item-submission.xml"), is(true));
 
             // Verify submission-forms.xml content
-            verifySubmissionFormsXml(zipContents.get("submission-forms.xml"));
+            verifySubmissionFormsXml(zipContents.get("submission-forms.xml"), 13, 14);
             // Verify item-submission.xml content
             verifyItemSubmissionXml(zipContents.get("item-submission.xml"), stepDefinitionsExpected,
                                                                             submissionProcessExpected);
@@ -94,7 +116,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
     }
 
     @Test
-    public void generationSubmissionFormsCompareEntireFileTest() throws Exception {
+    public void testGenerateSubmissionFormsAndCompareWithExpectedFiles() throws Exception {
         String fileLocation = getXlsFilePath("submission-form-full-test.xls");
         String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
                                                                               "-d", "product" };
@@ -103,10 +125,8 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages(), empty());
         assertThat(handler.getWarningMessages(), empty());
 
-        File exportedFile = new File("submission-forms.zip");
-        exportedFile.deleteOnExit();
-
-        assertThat(handler.getFileStream(context, "submission-forms.zip").isPresent(), is(true));
+        // Verify that the ZIP file was created
+        assertTrue(handler.getFileStream(context, "submission-forms.zip").isPresent());
 
         String locationItemSubmission = getXlsFilePath("expected-item-submission.xml");
         String locationSubmissionForms = getXlsFilePath("expected-submission-forms.xml");
@@ -132,7 +152,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
     }
 
     @Test
-    public void failedValidationOfItemControlledVocabularyTest() throws Exception {
+    public void testValidationFailsWithInvalidItemControlledVocabulary() throws Exception {
         String fileLocation = getXlsFilePath("submission-forms-with-wrong-ItemControlledVocabulary.xls");
         String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
                                                                               "-d", "publication" };
@@ -142,9 +162,9 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
         assertThat(handler.getErrorMessages().size(), is(5));
         assertThat(handler.getErrorMessages().get(0),
-                is("LEVEL:WARN ERROR:You have to add the element dc.source.content"));
+                is("LEVEL:WARN ERROR:You have to add the element dc.source.test"));
         assertThat(handler.getErrorMessages().get(1),
-                is("LEVEL:WARN ERROR:You have to add the element dc.relation.ispublishedin"));
+                is("LEVEL:WARN ERROR:You have to add the element dc.relation.ispublishedon"));
         assertThat(handler.getErrorMessages().get(2), is("LEVEL:ERROR ERROR:The item : " +
                                     "publication:dc.relation.aggregation has Vocabulary aggregationsTree not found!!"));
         assertThat(handler.getErrorMessages().get(3),
@@ -152,10 +172,13 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages().get(4),
                 is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
         assertThat(handler.getWarningMessages(), empty());
+
+        // Verify that the ZIP file was NOT generated
+        assertFalse(handler.getFileStream(context, "submission-forms.zip").isPresent());
     }
 
     @Test
-    public void passValidationOfItemControlledVocabularyTest() throws Exception {
+    public void testValidationFailsWithCorrectVocabularyButMissingRequiredElements() throws Exception {
         String fileLocation = getXlsFilePath("submission-forms-with-correct-ItemControlledVocabulary.xls");
         String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation, "-d", "publication" };
         TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
@@ -172,47 +195,67 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages().get(2),
                 is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
         assertThat(handler.getWarningMessages(), empty());
+        // Verify that the ZIP file was NOT generated
+        assertFalse(handler.getFileStream(context, "submission-forms.zip").isPresent());
     }
 
     @Test
-    public void forceUploadWithWarningsOnlyTest() throws Exception {
-        String fileLocation = getXlsFilePath("submission-forms-with-correct-ItemControlledVocabulary.xls");
-        // Use -f flag to force upload even with warnings
-        String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
-                                                                              "-d", "publication",
-                                                                              "-f" };
-        TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
-        handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
+    public void testForceGenerationWithWarningsOnly() throws Exception {
+        String fileLocation = getXlsFilePath("submission-forms-with-warnings.xls");
 
-        File exportedFile = new File("submission-forms.zip");
-        exportedFile.deleteOnExit();
+        // First execution: without -f to show validation errors
+        String[] argsWithoutForce = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
+                                                                                          "-d", "publication" };
+        TestDSpaceRunnableHandler handlerWithoutForce = new TestDSpaceRunnableHandler();
+        handleScript(argsWithoutForce, ScriptLauncher.getConfig(kernelImpl), handlerWithoutForce, kernelImpl, admin);
+
+        // Verify that validation failed
+        assertThat(handlerWithoutForce.getInfoMessages().size(), is(3));
+        assertThat(handlerWithoutForce.getInfoMessages().get(0), is("######################################"));
+        assertThat(handlerWithoutForce.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handlerWithoutForce.getInfoMessages().get(2), is("######################################"));
+
+        // Verify that there are validation errors (warnings)
+        assertThat(handlerWithoutForce.getErrorMessages().size(), is(3));
+        assertThat(handlerWithoutForce.getErrorMessages().get(0),
+                is("LEVEL:WARN ERROR:You have to add the element dc.content.content"));
+        assertThat(handlerWithoutForce.getErrorMessages().get(1),
+                is("LEVEL:WARN ERROR:You have to add the element dc.content.ispublishedin"));
+        assertThat(handlerWithoutForce.getErrorMessages().get(2),
+                is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
+
+        // Verify that the ZIP file was NOT generated
+        assertFalse(handlerWithoutForce.getFileStream(context, "submission-forms.zip").isPresent());
+
+        // Second execution: with -f to show the effect of -f option
+        String[] argsWithForce = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
+                                                                                       "-d", "publication",
+                                                                                       "-f" };
+        TestDSpaceRunnableHandler handlerWithForce = new TestDSpaceRunnableHandler();
+        handleScript(argsWithForce, ScriptLauncher.getConfig(kernelImpl), handlerWithForce, kernelImpl, admin);
 
         // With -f and only WARNING (no ERROR), the process should continue
         // Verify that validation failed initially (has warnings) but process continued
-        assertThat(handler.getInfoMessages().size(), is(9));
-        assertThat(handler.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handler.getInfoMessages().get(4), is("** Created: item-submission.xml **"));
-        assertThat(handler.getInfoMessages().get(7), is("** Created: submission-forms.xml **"));
+        assertThat(handlerWithForce.getInfoMessages().size(), is(9));
+        assertThat(handlerWithForce.getInfoMessages().get(0), is("######################################"));
+        assertThat(handlerWithForce.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handlerWithForce.getInfoMessages().get(2), is("######################################"));
+        assertThat(handlerWithForce.getInfoMessages().get(3), is("**********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(4), is("** Created: item-submission.xml **"));
+        assertThat(handlerWithForce.getInfoMessages().get(5), is("**********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(6), is("***********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(7), is("** Created: submission-forms.xml **"));
+        assertThat(handlerWithForce.getInfoMessages().get(8), is("***********************************"));
 
-        // With -f flag, warnings that have fixWarn are automatically fixed and removed
-        // Verify that no blocking errors occurred (process continued)
-        boolean hasBlockingError = handler.getErrorMessages()
-                                          .stream()
-                                          .anyMatch(msg -> msg.contains("Blocking errors found"));
-        assertFalse("Expected no blocking errors with -f flag and only warnings", hasBlockingError);
-
-        // Verify that warnings with fixWarn have been automatically fixed
-        // Warnings should not appear in error messages because they were fixed by -f
-        boolean hasWarnings = handler.getErrorMessages()
-                                     .stream()
-                                     .anyMatch(msg -> msg.contains("LEVEL:WARN"));
-        assertFalse("Expected no warnings in error messages as -f flag should have fixed them", hasWarnings);
+        // Verify that there are NO validation errors now
+        assertThat(handlerWithForce.getErrorMessages().size(), is(0));
+        assertThat(handlerWithForce.getWarningMessages().size(), is(0));
 
         // Verify that ZIP file was generated
-        assertThat(handler.getFileStream(context, "submission-forms.zip").isPresent(), is(true));
+        assertTrue(handlerWithForce.getFileStream(context, "submission-forms.zip").isPresent());
 
         // Verify ZIP contains expected files
-        try (InputStream fisExported = handler.getFileStream(context, "submission-forms.zip").get();
+        try (InputStream fisExported = handlerWithForce.getFileStream(context, "submission-forms.zip").get();
              ZipInputStream zipIn = new ZipInputStream(fisExported)) {
             Map<String, byte[]> zipContents = extractZipContents(zipIn);
             assertThat(zipContents.size(), is(2));
@@ -222,7 +265,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
      }
 
     @Test
-    public void executeScriptWithoutDOptionTest() throws Exception {
+    public void testExecuteScriptWithoutDOption() throws Exception {
         String fileLocation = getXlsFilePath("submission-form-test.xls");
         // Execute script without -d option to test reading default definition from Excel
         String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation };
@@ -250,6 +293,94 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
 
             // Verify that the submission-name in item-submission.xml matches the one from Excel
             verifySubmissionNameFromExcel(zipContents.get("item-submission.xml"), expectedDefaultDefinition);
+        }
+    }
+
+    @Test
+    public void testGenerateSubmissionFormsWithCustomOutputPath() throws Exception {
+        String fileLocation = getXlsFilePath("submission-form-test.xls");
+        // Create a temporary directory for custom output path
+        File tempDir = Files.createTempDirectory("custom-path-test").toFile();
+        tempDir.deleteOnExit();
+        String customOutputPath = tempDir.getAbsolutePath() + File.separator;
+
+        String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation,
+                                                                              "-d", "publication",
+                                                                              "-p", customOutputPath };
+        TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
+        handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
+        assertThat(handler.getErrorMessages(), empty());
+        assertThat(handler.getWarningMessages(), empty());
+
+        // Verify that XML files were created in the custom output path
+        File zipFile = new File(customOutputPath + "submission-forms.zip");
+
+        assertTrue("submission-forms.zip should exist in custom output path", zipFile.exists());
+        assertTrue("submission-forms.zip should be readable", zipFile.canRead());
+        zipFile.delete();
+    }
+
+    @Test
+    public void testGenerateSubmissionFormsWithExtraLanguages() throws Exception {
+        var originLanguages = List.of(configurationService.getArrayProperty("inputforms.additional-languages"));
+
+        configurationService.setProperty("inputforms.additional-languages", "de");
+        i18nService.reloadExtraLanguages();
+
+        String fileLocation = getXlsFilePath("submission-forms-with-extra-language.xls");
+        String[] args = new String[] { SUBMISSION_FORM_GENERATOR_SCRIPT_NAME, "-e", fileLocation, "-d", "publication" };
+        TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
+        handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
+        assertThat(handler.getErrorMessages(), empty());
+        assertThat(handler.getWarningMessages(), empty());
+
+        // Verify that the ZIP file was created
+        assertTrue(handler.getFileStream(context, "submission-forms.zip").isPresent());
+
+        try (InputStream fisExported = handler.getFileStream(context, "submission-forms.zip").get();
+             ZipInputStream zipIn = new ZipInputStream(fisExported)) {
+
+            Map<String, byte[]> zipContents = extractZipContents(zipIn);
+
+            // Verify that zip contains base files
+            assertThat(zipContents.containsKey("submission-forms.xml"), is(true));
+            assertThat(zipContents.containsKey("item-submission.xml"), is(true));
+
+            var extraLanguages = List.of(configurationService.getArrayProperty("inputforms.additional-languages"));
+            // Verify that zip contains files for each extra language
+            for (String extraLanguage : extraLanguages) {
+                String expectedFileName = "submission-forms_" + extraLanguage + ".xml";
+                assertTrue("ZIP should contain file for extra language: " + extraLanguage,
+                          zipContents.containsKey(expectedFileName));
+
+                // Verify that the file is not empty
+                byte[] extraLanguageContent = zipContents.get(expectedFileName);
+                assertTrue("File for extra language " + extraLanguage + " should not be empty",
+                          extraLanguageContent.length > 0);
+
+                // Verify that the file is valid XML
+                verifySubmissionFormsXml(extraLanguageContent, 2,4);
+
+                // Read the content and compare with expected file
+                // Convert byte arrays to UTF-8 strings
+                String actualItemSubmissionStr = new String(extraLanguageContent, UTF_8).replaceAll("\r\n", "\n");
+                // Read expected files as UTF-8 strings
+                String locationSubmissionFormsDe = getXlsFilePath("expected-submission-forms_de.xml");
+                String expectedSubmissionFormsStr = Files.readString(Paths.get(locationSubmissionFormsDe), UTF_8)
+                                                                       .replaceAll("\r\n", "\n");
+
+                // Compare the content
+                assertThat(actualItemSubmissionStr, is(expectedSubmissionFormsStr));
+            }
+
+            // Verify total number of files: 2 base files + number of extra languages
+            int expectedFileCount = 2 + extraLanguages.size();
+            assertThat("ZIP should contain " + expectedFileCount + " files",
+                      zipContents.size(), is(expectedFileCount));
+        } finally {
+            // Restore original languages configuration
+            configurationService.setProperty("inputforms.additional-languages", originLanguages);
+            i18nService.reloadExtraLanguages();
         }
     }
 
@@ -304,7 +435,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         return saxBuilder;
     }
 
-    private void verifySubmissionFormsXml(byte[] content) throws Exception {
+    private void verifySubmissionFormsXml(byte[] content, int totForm, int totValuePairs) throws Exception {
         SAXBuilder saxBuilder = createNonValidatingSaxBuilder();
         Document document = saxBuilder.build(new ByteArrayInputStream(content));
         Element root = document.getRootElement();
@@ -315,12 +446,12 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         // Verify form-definitions element exists and has content
         Element formDefinitions = root.getChild("form-definitions");
         assertThat(formDefinitions, notNullValue());
-        assertThat(formDefinitions.getChildren("form").size(), is(13));
+        assertThat(formDefinitions.getChildren("form").size(), is(totForm));
 
         // Verify form-value-pairs element exists
         Element formValuePairs = root.getChild("form-value-pairs");
         assertThat(formValuePairs, notNullValue());
-        assertThat(formValuePairs.getChildren("value-pairs").size(), is(14));
+        assertThat(formValuePairs.getChildren("value-pairs").size(), is(totValuePairs));
     }
 
     private void verifyItemSubmissionXml(byte[] content, Set<String> stepDefinitionsExpected,
