@@ -21,129 +21,179 @@ import org.dspace.app.submissionform.script.builder.InputFormErrorBuilder;
 import org.dspace.app.submissionform.script.dto.InputFormExcel;
 import org.dspace.app.submissionform.script.util.I18nUtil;
 import org.dspace.core.Context;
+import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Class to check the rules on the steps-definition sheet
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.it)
  */
 public class SubmissionStepRulesChecker extends InputFormExcel implements ExcelSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(SubmissionStepRulesChecker.class);
 
+    // Step type constants
+    private static final String STEP_TYPE_SUBMISSION_FORM = "submission-form";
+
     private List<String> stepTypeValues;
+
+    private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
 
     @Override
     public List<InputFormErrorBuilder> check(File fileExcel, Context context, String defaultDefinition) {
-        Workbook workbook = null;
-        StringBuilder errorMessage;
         List<InputFormErrorBuilder> errors = new ArrayList<>();
+
+        Workbook workbook = openWorkbook(fileExcel, errors);
+        if (workbook == null) {
+            return errors;
+        }
+
         try {
-            // Set workbook
+            // Get steps-definition sheet
+            Sheet sheet = workbook.getSheet(STEPSDEFINITION_SHEET_NAME);
+
+            List<String> stepIdList = new ArrayList<>();
+            List<String> formStepIdList = new ArrayList<>();
+
+            validateSteps(sheet, stepIdList, formStepIdList, errors);
+
+            List<String> formsOnFormsDefinitionSheet = collectFormNames(workbook);
+            validateFormSteps(formStepIdList, formsOnFormsDefinitionSheet, errors);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (Exception e) {
+                    log.error("Error closing workbook", e);
+                }
+            }
+        }
+        log.info("Validation completed. Found {} error(s) in steps-definition sheet", errors.size());
+        return errors;
+    }
+
+    private Workbook openWorkbook(File fileExcel, List<InputFormErrorBuilder> errors) {
+        try {
             WorkbookSettings ws = new WorkbookSettings();
             ws.setEncoding(CHAR_ENCODING);
             ws.setSuppressWarnings(true);
-            // Get workbook
-            workbook = Workbook.getWorkbook(fileExcel, ws);
+            return Workbook.getWorkbook(fileExcel, ws);
         } catch (BiffException | IOException e) {
-            log.error(e.getMessage());
+            log.error("Error reading Excel workbook from file:{}", fileExcel != null ? fileExcel.getName() : "null", e);
             InputFormErrorBuilder.manageError(errors, new StringBuilder(e.getMessage()));
+            return null;
         }
+    }
 
-        if (workbook != null) {
-            // Array containing all defined step id
-            List<String> stepIdList = new ArrayList<>();
-            // Array containing all form step id
-            List<String> formStepIdList = new ArrayList<>();
-            //Input form row
-            Sheet sheet = workbook.getSheet(STEPSDEFINITION_SHEET_NAME);
+    private void validateSteps(Sheet sheet, List<String> stepIdList, List<String> formStepIdList,
+                               List<InputFormErrorBuilder> errors) {
+        if (sheet.getRows() == 0) {
+            log.error("Sheet 'steps-definition' is empty (no rows)");
+            addError(errors, "excel.to.inputform.check.sheet.empty", "steps-definition");
+            return;
+        }
+        int rows = sheet.getColumn(0).length;
 
-            //init:
-            //all sheet rows (based on column 0)
-            int rows = sheet.getColumn(0).length;
-            //current list name and input type
-            String stepId;
-            String stepType;
-            int indexRow;
-            int sheetRowNumber;
+        String[] customStepTypes = configurationService.getArrayProperty("inputforms.custom.step-type", new String[0]);
+        List<String> customStepTypesList = Arrays.asList(customStepTypes);
 
-            for (indexRow = 1; indexRow < rows; indexRow++) {
-                sheetRowNumber = indexRow + 1;
-                //current sheet row
-                this.sheetRow = sheet.getRow(indexRow);
-                stepId = this.get(posStepId);
-                stepType = this.get(posStepType);
+        for (int indexRow = 1; indexRow < rows; indexRow++) {
+            int sheetRowNumber = indexRow + 1;
+            this.sheetRow = sheet.getRow(indexRow);
+            String stepId = this.get(posStepId);
+            String stepType = this.get(posStepType);
 
-                // No right step id set on cell
-                if (stepId.equals("")) {
-                    errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                            "excel.to.inputform.check.stepid.required", new Object[]{sheetRowNumber}));
-                    InputFormErrorBuilder.manageError(errors, errorMessage);
-                }
+            validateStepId(stepId, sheetRowNumber, errors);
+            validateStepType(stepType, sheetRowNumber, customStepTypesList, errors);
+            validateStepRequired(sheetRowNumber, errors);
+            checkDuplicateStepId(stepId, stepIdList, sheetRowNumber, errors);
 
-                // No step type set on cell
-                if (stepType.equals("")) {
-                    errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                            "excel.to.inputform.check.input_type.required", new Object[]{sheetRowNumber}));
-                    InputFormErrorBuilder.manageError(errors, errorMessage);
-                } else {
-                    // Retrieve possible custom step types
-                    String[] customStepTypes = DSpaceServicesFactory.getInstance().getConfigurationService()
-                            .getArrayProperty("inputforms.custom.step-type", new String[0]);
-
-                    // No right step type set on cell
-                    if (!stepTypeValues.contains(stepType) && !Arrays.asList(customStepTypes).contains(stepType)) {
-                        errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                                "excel.to.inputform.check.step.type.valid", new Object[] {sheetRowNumber}));
-                        InputFormErrorBuilder.manageError(errors, errorMessage);
-                    }
-                }
-                // No right repeat value set on cell
-                if (this.get(posStepRequired).equals("") || (!this.get(posStepRequired).equals("true")
-                        && !this.get(posStepRequired).equals("false"))) {
-                    errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                            "excel.to.inputform.check.step.required.valid", new Object[]{sheetRowNumber}));
-                    InputFormErrorBuilder.manageError(errors, errorMessage);
-                }
-
-                if (stepIdList.contains(stepId)) {
-                    errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                            "excel.to.inputform.check.stepid.checkduplicate", new Object[]{sheetRowNumber}));
-                    InputFormErrorBuilder.manageError(errors, errorMessage);
-                } else {
-                    stepIdList.add(stepId);
-                }
-
-                if (stepType.equals("submission-form")) {
-                    formStepIdList.add(stepId);
-                }
-            }
-
-            List<String> formsOnFormsDefinitionSheet = new ArrayList<>();
-            Sheet formSheet = workbook.getSheet(INPUTFORM_SHEET_NAME);
-
-            if (formSheet.getRows() > 0) {
-                int formRows = formSheet.getColumn(0).length;
-                for (int i = 1; i < formRows; i++) {
-                    String formName = formSheet.getRow(i)[posFormName].getContents().trim();
-                    if (!formName.equals("") && !formsOnFormsDefinitionSheet.contains(formName)) {
-                        formsOnFormsDefinitionSheet.add(formName);
-                    }
-                }
-            }
-            // Check if all form steps have a form definition
-            for (int i = 1; i < formStepIdList.size(); i++) {
-                String stepIdEntry = formStepIdList.get(i);
-                stepIdEntry = stepIdEntry.trim();
-                if (!formsOnFormsDefinitionSheet.contains(stepIdEntry) && !stepIdEntry.equals("")) {
-                    errorMessage = new StringBuilder().append(I18nUtil.getMessage(
-                            "excel.to.inputform.check.step.form.required", new Object[]{ stepIdEntry }));
-                    InputFormErrorBuilder.manageError(errors, errorMessage);
-                }
+            if (STEP_TYPE_SUBMISSION_FORM.equals(stepType)) {
+                formStepIdList.add(stepId);
             }
         }
-        return errors;
+    }
+
+    private void validateStepId(String stepId, int sheetRowNumber, List<InputFormErrorBuilder> errors) {
+        if (stepId.isEmpty()) {
+            addError(errors, "excel.to.inputform.check.stepid.required", sheetRowNumber);
+        }
+    }
+
+    private void validateStepType(String stepType, int sheetRowNumber, List<String> customStepTypesList,
+                                  List<InputFormErrorBuilder> errors) {
+        if (stepType.isEmpty()) {
+            addError(errors, "excel.to.inputform.check.input_type.required", sheetRowNumber);
+            return;
+        }
+
+        if (!isValidStepType(stepType, customStepTypesList)) {
+            addError(errors, "excel.to.inputform.check.step.type.valid", sheetRowNumber);
+        }
+    }
+
+    private boolean isValidStepType(String stepType, List<String> customStepTypesList) {
+        if (stepTypeValues != null && stepTypeValues.contains(stepType)) {
+            return true;
+        }
+
+        return customStepTypesList.contains(stepType);
+    }
+
+    private void validateStepRequired(int sheetRowNumber, List<InputFormErrorBuilder> errors) {
+        String required = this.get(posStepRequired);
+        if (required.isEmpty() || (!"true".equals(required) && !"false".equals(required))) {
+            addError(errors, "excel.to.inputform.check.step.required.valid", sheetRowNumber);
+        }
+    }
+
+    private void checkDuplicateStepId(String stepId, List<String> stepIdList, int sheetRowNumber,
+                                       List<InputFormErrorBuilder> errors) {
+        if (stepIdList.contains(stepId)) {
+            addError(errors, "excel.to.inputform.check.stepid.checkduplicate", sheetRowNumber);
+        } else {
+            stepIdList.add(stepId);
+        }
+    }
+
+    private List<String> collectFormNames(Workbook workbook) {
+        List<String> formsOnFormsDefinitionSheet = new ArrayList<>();
+        Sheet formSheet = workbook.getSheet(INPUTFORM_SHEET_NAME);
+
+        if (formSheet.getRows() == 0) {
+            return formsOnFormsDefinitionSheet;
+        }
+
+        int formRows = formSheet.getColumn(0).length;
+        for (int i = 1; i < formRows; i++) {
+            String formName = formSheet.getRow(i)[posFormName].getContents().trim();
+            if (!formName.isEmpty() && !formsOnFormsDefinitionSheet.contains(formName)) {
+                formsOnFormsDefinitionSheet.add(formName);
+            }
+        }
+        return formsOnFormsDefinitionSheet;
+    }
+
+    private void validateFormSteps(List<String> formStepIdList, List<String> formsOnFormsDefinitionSheet,
+                                   List<InputFormErrorBuilder> errors) {
+        for (int i = 0; i < formStepIdList.size(); i++) {
+            String stepIdEntry = formStepIdList.get(i).trim();
+            if (!stepIdEntry.isEmpty() && !formsOnFormsDefinitionSheet.contains(stepIdEntry)) {
+                log.warn("Step ID '{}' not found in input-form sheet", stepIdEntry);
+                addError(errors, "excel.to.inputform.check.step.form.required", stepIdEntry);
+            }
+        }
+    }
+
+    /**
+     * Helper method to add error to the errors list
+     */
+    private void addError(List<InputFormErrorBuilder> errors, String messageKey, Object... params) {
+        StringBuilder errorMessage = new StringBuilder().append(I18nUtil.getMessage(messageKey, params));
+        InputFormErrorBuilder.manageError(errors, errorMessage);
     }
 
     public void setStepTypeValues(List<String> stepTypeValues) {
