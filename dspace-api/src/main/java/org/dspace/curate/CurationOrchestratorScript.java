@@ -481,6 +481,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                          .findFirst()
                                                          .orElse(null);
         if (resolvedTask == null) {
+            log.info("Resolving task:{} .", task);
             resolvedTask = resolver.resolveTask(task);
             resolvedTask.init(this.curator);
             allResolvedTasks.add(resolvedTask);
