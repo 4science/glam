@@ -160,6 +160,11 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                 log.info(message, currentBitstream.getID(), item.getID());
                 continue;
             }
+            if (isPDFaBitstreamAlreadyCreated(item, currentBitstream)) {
+                log.info("PdfACurationTask: Skipping bitstream:{} of item:{}, because PDF/A version already exists!",
+                         currentBitstream.getID(), item.getID());
+                continue;
+            }
             processableBitstreams.add(currentBitstream);
         }
         return processableBitstreams;
@@ -251,10 +256,6 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
 
         log.info("PdfACurationTask: PDF/A bitstream created with id:{} .", pdfaBitstream.getID());
         Bitstream originalBitstream = getOriginalBitstream(context, scheduledTask.uuid());
-        int originSequenceID = originalBitstream.getSequenceID();
-        var message = "PdfACurationTask: Setting bitstream:{} sequenceID:{} to bitstream:{} .";
-        log.info(message, originalBitstream.getID(), originSequenceID, pdfaBitstream.getID());
-        pdfaBitstream.setSequenceID(originSequenceID);
         addReferenceToOriginalBitstream(context, pdfaBitstream, originalBitstream);
         String fileName = getPDFaName(originalBitstream, dto.getOutputPath());
 
@@ -275,7 +276,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     private void addReferenceToOriginalBitstream(Context context, Bitstream pdfaBitstream, Bitstream originalBitstream)
             throws SQLException {
         var uuid = originalBitstream.getID().toString();
-        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "curation", "originalBitstream", null, uuid);
+        bitstreamService.addMetadata(context, pdfaBitstream, "bitstream", "master", null, null, uuid);
     }
 
     private String getPDFaName(Bitstream originalBitstream, String outputPath) {
@@ -288,6 +289,19 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
         var message = "PdfACurationTask: Using original bitstream name: {} for PDF/A bitstream! ";
         log.info(message, originalBitstream.getName());
         return originalBitstream.getName();
+    }
+
+    private boolean isPDFaBitstreamAlreadyCreated(Item item, Bitstream currentBitstream) {
+        String currentBitstreamUUID = currentBitstream.getID().toString();
+        return item.getBundles(PDFA_BUNDLE_NAME)
+                .stream()
+                .flatMap(bundle -> bundle.getBitstreams().stream())
+                .map(bitstream -> getMetadataFirstValue(bitstream))
+                .anyMatch(masterUUID -> StringUtils.equals(masterUUID, currentBitstreamUUID));
+    }
+
+    private String getMetadataFirstValue(Bitstream bitstream) {
+        return bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "master", null, Item.ANY);
     }
 
     private String getGeneratedName(String outputPath) {

@@ -54,6 +54,7 @@
           <dc-element>curation</dc-element>
           <label>Escludi i curation task</label>
           <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
+          <repeatable>false</repeatable>
           <required />
           <repeatable>true</repeatable>
           <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
@@ -4247,18 +4248,18 @@ it, please enter the types and the actual numbers or codes.</hint>
     </value-pairs>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
-        <displayed-value>PDF/A</displayed-value>
+        <displayed-value>Crea PDF/A</displayed-value>
         <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
-    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="curation_tasks">
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="bitstream_curation_tasks">
       <pair>
-          <displayed-value>ALL</displayed-value>
-          <stored-value>all</stored-value>
+        <displayed-value>ALL</displayed-value>
+        <stored-value>all</stored-value>
       </pair>
       <pair>
-          <displayed-value>PDF/A</displayed-value>
-          <stored-value>pdfATransformer</stored-value>
+        <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>

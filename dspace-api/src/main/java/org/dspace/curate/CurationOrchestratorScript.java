@@ -12,7 +12,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -226,11 +229,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                 logServerCurationTaskResults(serverFutures);
                 logServerlessCurationTaskResults(serverlessFutures);
             } else {
-                throw new RuntimeException("Tasks did not complete after maximum retries");
+                handler.logError("Curation tasks did not complete within the configured timeout.");
+                forceCompletionOfRunningTasks(serverlessFutures);
             }
+
             // PHASE 3: Finalization of serverless tasks
             log.info("Launching finalization tasks for serverless curation tasks.");
-            launchFinalizationTasks(serverlessFutures, item);
+            List<CurationTaskResult> orderedSuccessfulCurationTaskResults =
+                                                 getSuccessfulAndOrderedTaskResult(scheduledProcess, serverlessFutures);
+            launchFinalizationTasks(orderedSuccessfulCurationTaskResults, item);
             setExecutionMetadata(item);
         } finally {
             cleanup();
@@ -240,6 +247,66 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         handler.logInfo("**END** : All Curation Tasks completed!");
         handler.logInfo("***************************************");
         lauchExceptionForFailedTasks();
+    }
+
+    private void forceCompletionOfRunningTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures) {
+        for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
+            if (!future.isDone()) {
+                future.cancel(true);
+                handler.logError("Serverless task was forcefully cancelled due to timeout.");
+                failedServerlessTasks.add("Serverless task (forcefully cancelled due to timeout)");
+            }
+        }
+    }
+
+    /**
+     * Collects successful results from serverless task futures and orders them according to the scheduled process.
+     * Failed tasks are logged but excluded from the returned list.
+     *
+     * @param scheduledProcess the process containing task ordering information
+     * @param serverlessFutures list of futures representing asynchronous serverless tasks
+     * @return ordered list of successful task results
+     */
+    private List<CurationTaskResult> getSuccessfulAndOrderedTaskResult(ScheduledProcess scheduledProcess,
+                                                        List<CompletableFuture<CurationTaskResult>> serverlessFutures) {
+        List<CurationTaskResult> successfulResults = new ArrayList<>();
+        for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
+            try {
+                CurationTaskResult result = future.get();
+                if (result.successful()) {
+                    successfulResults.add(result);
+                }
+            } catch (Exception e) {
+                handler.logError("Error during finalization of serverless task.", e);
+            }
+        }
+        orderTasks(successfulResults, scheduledProcess);
+        return successfulResults;
+    }
+
+    private void orderTasks(List<CurationTaskResult> successfulResults, ScheduledProcess scheduledProcess) {
+        List<ScheduledCurationTask> files = scheduledProcess.files();
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+
+        // Create a map to store the position of each bitstream
+        Map<UUID, Integer> positionMap = new HashMap<>();
+        for (int i = 0; i < files.size(); i++) {
+            positionMap.put(files.get(i).uuid(), i);
+        }
+
+        // Sort the successfulResults based on their position in the scheduled process
+        successfulResults.sort(Comparator.comparingInt(result -> {
+            UUID bitstreamId = result.originBitstream();
+            Integer position = positionMap.get(bitstreamId);
+            if (position == null) {
+                handler.logError("Result for bitstream " + bitstreamId +
+                                 " not found in scheduled process, ordering at end");
+                return Integer.MAX_VALUE;
+            }
+            return position;
+        }));
     }
 
     private void remomoveCurationTaksRelatedBundle(Item item) throws IOException, SQLException, AuthorizeException {
@@ -266,20 +333,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         }
     }
 
-    private void launchFinalizationTasks(List<CompletableFuture<CurationTaskResult>> serverlessFutures, Item item) {
-        log.info("There are {} serverless tasks to finalize.", serverlessFutures.size());
-        for (CompletableFuture<CurationTaskResult> future : serverlessFutures) {
+    private void launchFinalizationTasks(List<CurationTaskResult> orderedSuccessfulCurationTaskResults, Item item) {
+        log.info("There are {} successful serverless tasks to finalize.", orderedSuccessfulCurationTaskResults.size());
+        for (CurationTaskResult curationTaskResult : orderedSuccessfulCurationTaskResults) {
             try {
-                CurationTaskResult result = future.get();
-                if (!result.successful()) {
-                    continue;
-                }
-                ResolvedTask resolvedTask = getResolvedTasks(result.curationTask());
+                ResolvedTask resolvedTask = getResolvedTasks(curationTaskResult.curationTask());
                 if (resolvedTask.getcTask() instanceof ServerlessCurationTask serverlessTask) {
-                    serverlessTask.finalizeTask(context, item, result);
+                    serverlessTask.finalizeTask(context, item, curationTaskResult);
                 }
-            } catch (Exception e) {
-                handler.logError("Error during finalization of serverless task", e.getCause());
+            } catch (IOException | SQLException e) {
+                handler.logError("Error during finalization of serverless task:" + curationTaskResult.curationTask(),e);
+            } catch (AuthorizeException e) {
+                handler.logError("Authorization error during finalization of serverless task:" +
+                       curationTaskResult.curationTask() + " and bitstream " + curationTaskResult.originBitstream(), e);
             }
         }
         log.info("Finalization of serverless tasks completed.");
@@ -577,11 +643,9 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private String failedMessage(CurationTaskResult result) {
-        String bitstreamId = result.originBitstream().toString();
         var error = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
-        var message =
-            "FAILED Execution of curation-task: %s, with error: %s for bitstream: %s";
-        return String.format(message, result.curationTask(), error, bitstreamId, result.originBitstream());
+        var message = "FAILED Execution of curation-task %s for bitstream %s with error: %s ";
+        return String.format(message, result.curationTask(), result.originBitstream(), error);
     }
 
     private String successMessage(CurationTaskResult result) {
@@ -592,8 +656,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                     .filter(StringUtils::isNotEmpty)
                                     .reduce((a, b) -> a + ", " + b)
                                     .orElse("");
-        var  message =
-            "SUCCESSFULLY Executed curation-task %s for bitstream: %s. Generated the following bitstreams: %s";
+        var message = "SUCCESSFULLY Executed curation-task %s for bitstream %s. Generated the following bitstreams: %s";
         return String.format(message, result.curationTask(), result.originBitstream(), bitstreamsId);
     }
 

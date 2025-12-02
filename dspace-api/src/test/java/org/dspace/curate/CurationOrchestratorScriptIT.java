@@ -206,8 +206,6 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Verify that the PDFA bundle contains one bitstream
         List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
         assertEquals(1, convertedPDF.size());
-        // Verify that the new bitstream has been created with the expected SequenceID
-        assertEquals(bitstream.getSequenceID(), convertedPDF.get(0).getSequenceID());
         // Verify that the new bitstream has been created with the expected name
         assertEquals(bitstream.getName(), convertedPDF.get(0).getName());
     }
@@ -304,10 +302,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Verify that the PDFA bundle contains one bitstream
         List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
         assertEquals(2, convertedPDF.size());
-        // Verify that the new bitstreams has been created with the expected SequenceID
-        assertEquals(bitstream1.getSequenceID(), convertedPDF.get(0).getSequenceID());
-        assertEquals(bitstream2.getSequenceID(), convertedPDF.get(1).getSequenceID());
-        // Verify that the new bitstreams has been created with the expected name
+        // Verify that the new bitstreams has been created with the expected name and order
         assertEquals(bitstream1.getName(), convertedPDF.get(0).getName());
         assertEquals(bitstream2.getName(), convertedPDF.get(1).getName());
     }
@@ -371,11 +366,8 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
             List<String> errors = testDSpaceRunnableHandler.getErrorMessages();
             assertEquals(2, errors.size());
             var expectedError =
-                String.format(
-                    "FAILED Execution of curation-task: pdfATransformer, with error: Validation error: file is not " +
-                        "PDF/A compliant for bitstream: %s",
-                    bitstream1.getID()
-                );
+                String.format("FAILED Execution of curation-task pdfATransformer for bitstream %s with error: " +
+                              "Validation error: file is not PDF/A compliant ", bitstream1.getID());
             assertEquals(expectedError, errors.get(0));
             assertEquals("RuntimeException: Some curation tasks failed. Check logs for details.", errors.get(1));
         }
