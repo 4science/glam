@@ -351,4 +351,11 @@
         <scope_note></scope_note>
     </dc-type>
 
+    <dc-type>
+        <schema>cris</schema>
+        <element>curation</element>
+        <qualifier>task</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
 </dspace-dc-types>
