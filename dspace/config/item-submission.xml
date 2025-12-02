@@ -311,6 +311,7 @@
       <step id="unpaywall" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="publication-edit">
       <step id="extractionstep" />
@@ -347,6 +348,7 @@
       <step id="detect-duplicate" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="event-edit">
       <step id="event" />
@@ -374,6 +376,7 @@
       <step id="detect-duplicate" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="patent-edit">
       <step id="extractionstep" />
@@ -389,6 +392,7 @@
       <step id="detect-duplicate" />
       <step id="upload" />
       <step id="license" />
+      <step id="curation"/>
     </submission-process>
     <submission-process name="funding-edit">
       <step id="funding" />
