@@ -4243,9 +4243,6 @@ it, please enter the types and the actual numbers or codes.</hint>
         <stored-value>personal picture</stored-value>
       </pair>
     </value-pairs>
-        <stored-value>pdfATransformer</stored-value>
-      </pair>
-    </value-pairs>
     <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
       <pair>
         <displayed-value>Crea PDF/A</displayed-value>
