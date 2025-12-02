@@ -47,6 +47,18 @@
           <hint />
         </field>
       </row>
+      <row>
+          <dc-schema>bitstream</dc-schema>
+        <field>
+          <dc-qualifier>exclude</dc-qualifier>
+          <dc-element>curation</dc-element>
+          <label>Escludi i curation task</label>
+          <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
+          <required />
+          <repeatable>true</repeatable>
+          <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
+        </field>
+      </row>
     </form>
     <form name="publication-dc-contributor-author">
       <row>
