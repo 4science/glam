@@ -103,6 +103,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     // Services
     private AmazonS3 s3Client;
     private S3FileChecker s3FileChecker;
+    private CurationTaskResolverService curationTaskResolverService;
     private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
     private HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
     private BundleService bundleService = ContentServiceFactory.getInstance().getBundleService();
@@ -118,7 +119,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private List<String> tasks;
     private String processRundomId;
     private ExecutorService executorService;
-    private TaskResolver resolver = new TaskResolver();
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<ResolvedTask> allResolvedTasks = new ArrayList<>();
 
@@ -154,8 +154,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
      */
     @Override
     public void setup() throws ParseException {
-        ServiceManager serviceManager = new DSpace().getServiceManager();
-        this.s3FileChecker = serviceManager.getServiceByName(S3FileChecker.class.getName(), S3FileChecker.class);
+        ServiceManager sm = new DSpace().getServiceManager();
+        this.s3FileChecker = sm.getServiceByName(S3FileChecker.class.getName(), S3FileChecker.class);
+        this.curationTaskResolverService = sm.getServiceByName(CurationTaskResolverServiceImpl.class.getName(),
+                                                               CurationTaskResolverServiceImpl.class);
         if (hasInvalidParameters()) {
             return;
         }
@@ -482,9 +484,15 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                          .orElse(null);
         if (resolvedTask == null) {
             log.info("Resolving task:{} .", task);
-            resolvedTask = resolver.resolveTask(task);
-            resolvedTask.init(this.curator);
-            allResolvedTasks.add(resolvedTask);
+            resolvedTask = curationTaskResolverService.resolveTask(task, this.curator);
+            if (resolvedTask == null) {
+                var errorMessage = String.format("Curation task %s could not be resolved", task);
+                handler.logInfo(errorMessage);
+                throw new IllegalArgumentException(errorMessage);
+            } else {
+                log.info("Task:{} resolved successfully.", task);
+                allResolvedTasks.add(resolvedTask);
+            }
         }
         return resolvedTask;
     }

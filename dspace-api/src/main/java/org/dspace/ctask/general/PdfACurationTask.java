@@ -61,6 +61,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     private static final String SUPPORTED_MIME_TYPE = "application/pdf";
 
     private static final String PDFA_BUNDLE_NAME = "PDFA";
+    private static final String PDFA_TASK_NAME = "pdfATransformer";
     private static final String JSON_SUCCESS_STATUS = "success";
 
     @Override
@@ -173,6 +174,11 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
     @Override
     public String getRelatedBundle() {
         return PDFA_BUNDLE_NAME;
+    }
+
+    @Override
+    public String getTaskName() {
+        return PDFA_TASK_NAME;
     }
 
     private boolean isPDF(Context context, Bitstream currentBitstream) {

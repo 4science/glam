@@ -32,4 +32,6 @@ public interface ServerlessCurationTask extends CurationTask {
 
     List<Bitstream> getProcessableBitstreams(Context context, Item item) throws SQLException;
 
+    String getTaskName();
+
 }
