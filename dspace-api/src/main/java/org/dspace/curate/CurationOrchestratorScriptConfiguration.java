@@ -7,6 +7,9 @@
  */
 package org.dspace.curate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.cli.Options;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
@@ -17,9 +20,32 @@ import org.dspace.scripts.configuration.ScriptConfiguration;
  * @author Vincenzo Mecca (vins01-4science - vincenzo.mecca at 4science.com)
  **/
 public class CurationOrchestratorScriptConfiguration<T extends CurationOrchestratorScript>
-    extends ScriptConfiguration<T> {
+        extends ScriptConfiguration<T> {
 
     private Class<T> dspaceRunnableClass;
+    private List<ServerlessCurationTask> serverlessCurationTasks;
+
+    @Override
+    public Options getOptions() {
+        if (options == null) {
+            Options options = new Options();
+            options.addOption("id","identifier", true, "item identifier (handle or uuid)");
+
+            var taskDescription = "curation task to execute, allowed multiple values! Possible values are: ";
+            options.addOption("t", "task", true, taskDescription + getTaskOtions());
+
+            var forceDescription = "force execution of the curation task even if it was already executed";
+            options.addOption("f", "force", false, forceDescription);
+            super.options = options;
+        }
+        return options;
+    }
+
+    private List<String> getTaskOtions() {
+        List<String> taskOptions  = new ArrayList<>();
+        serverlessCurationTasks.forEach(task -> taskOptions.add(task.getTaskName()));
+        return taskOptions;
+    }
 
     @Override
     public Class<T> getDspaceRunnableClass() {
@@ -31,18 +57,8 @@ public class CurationOrchestratorScriptConfiguration<T extends CurationOrchestra
         this.dspaceRunnableClass = dspaceRunnableClass;
     }
 
-    @Override
-    public Options getOptions() {
-        if (options == null) {
-            Options options = new Options();
-            options.addOption("id","identifier", true, "item identifier (handle or uuid)");
-            options.addOption("t", "task", true, "curation task to execute, allowed multiple values");
-
-            var maessage = "force execution of the curation task even if it was already executed";
-            options.addOption("f", "force", false, maessage);
-            super.options = options;
-        }
-        return options;
+    public void setServerlessCurationTasks(List<ServerlessCurationTask> serverlessCurationTasks) {
+        this.serverlessCurationTasks = serverlessCurationTasks;
     }
 
 }
