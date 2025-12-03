@@ -501,7 +501,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         try {
             return Optional.ofNullable(this.itemService.find(context, UUID.fromString(identifier)));
         } catch (IllegalArgumentException | SQLException e) {
-            handler.logError("Cannot convert identifier " + identifier + " as uuid.", e);
+            log.error("Cannot convert identifier:{} as UUID.", identifier);
             return Optional.empty();
         }
     }
