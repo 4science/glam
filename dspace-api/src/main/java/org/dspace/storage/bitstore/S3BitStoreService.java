@@ -48,12 +48,17 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 
 /**
@@ -118,6 +123,7 @@ public class S3BitStoreService extends BaseBitStoreService {
     private S3AsyncClient s3AsyncClient;
 
     private AWSS3ClientBuilder builder;
+    private S3Presigner presigner;
 
     private static final ConfigurationService configurationService =
         DSpaceServicesFactory.getInstance().getConfigurationService();
@@ -160,9 +166,14 @@ public class S3BitStoreService extends BaseBitStoreService {
                 );
             }
 
+            S3Presigner.Builder presignerBuilder = S3Presigner.builder();
             if (s3AsyncClient == null) {
+                presignerBuilder
+                    .credentialsProvider(builder.credentialsProvider.get())
+                    .region(builder.region);
                 s3AsyncClient = builder.asyncClient();
             }
+            presigner = presignerBuilder.build();
 
             // bucket name
             if (StringUtils.isEmpty(bucketName)) {
@@ -513,6 +524,52 @@ public class S3BitStoreService extends BaseBitStoreService {
             IOUtils.copy(get(bitstream), out);
         }
         return tempFile.getAbsolutePath();
+    }
+
+    @Override
+    public String getPresignedUrl(Bitstream bitstream) throws IOException {
+        if (!isInitialized()) {
+            throw new IOException("S3BitStoreService not initialized");
+        }
+
+        String key = getFullKey(bitstream.getInternalId());
+
+        if (isRegisteredBitstream(key)) {
+            key = key.substring(REGISTERED_FLAG.length());
+        }
+
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                                                                .bucket(bucketName)
+                                                                .key(key)
+                                                                .build();
+
+            PresignedGetObjectRequest presignedGetObjectRequest =
+                presigner.presignGetObject(
+                    builder -> builder.signatureDuration(presignDuration())
+                                             .getObjectRequest(getObjectRequest)
+                );
+
+            String presignedUrl = presignedGetObjectRequest.url().toString();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Generated presigned URL for bitstream {} (key: {}): {}",
+                          bitstream.getID(), key, presignedUrl);
+            }
+
+            return presignedUrl;
+        } catch (S3Exception | SdkClientException e) {
+            log.error("Error generating presigned URL for key: {}", key, e);
+            throw new IOException("Failed to generate presigned URL", e);
+        }
+    }
+
+
+    protected Duration presignDuration() {
+        return Duration.ofSeconds(
+            configurationService
+                .getLongProperty("assetstore.s3.presigned.url.expiration.seconds", DEFAULT_EXPIRATION)
+        );
     }
 
 }
