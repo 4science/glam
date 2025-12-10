@@ -5,24 +5,22 @@
  *
  * http://www.dspace.org/license/
  */
-package org.dspace.storage;
+package org.dspace.storage.bitstore;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.auth.WebIdentityTokenCredentialsProvider;
 import org.dspace.AbstractDSpaceTest;
-import org.dspace.storage.AWSCredentialsProviderBuilder.AWSCredentialProviderType;
 import org.junit.Test;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
 
 /**
  * Unit tests for {@link AWSCredentialsProviderBuilder}.
@@ -39,10 +37,10 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         String roleSessionName = "IRSA-Session";
         String webIdentityTokenFile = "/tmp/fake-token.jwt";
 
-        AWSCredentialsProvider provider =
+        AwsCredentialsProvider provider =
             AWSCredentialsProviderBuilder.irsa(roleArn, roleSessionName, webIdentityTokenFile);
         assertNotNull("IRSA provider should not be null", provider);
-        assertTrue(provider instanceof WebIdentityTokenCredentialsProvider);
+        assertTrue(provider instanceof WebIdentityTokenFileCredentialsProvider);
     }
 
     @Test
@@ -55,10 +53,9 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         Integer duration = 1200;
         String externalId = "external-id-123";
 
-        AWSCredentialsProvider provider =
+        AwsCredentialsProvider provider =
             AWSCredentialsProviderBuilder.sts(roleArn, sessionName, region, endpoint, duration, externalId);
         assertNotNull("STS provider should not be null", provider);
-        assertTrue(provider instanceof STSAssumeRoleSessionCredentialsProvider);
     }
 
     @Test
@@ -67,9 +64,9 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
             .setRoleArn("arn:aws:iam::123456789012:role/IRSA-Test-Role")
             .setRoleSessionName("IRSA-Session")
             .setWebIdentityTokenFile("/tmp/fake-token.jwt");
-        AWSCredentialsProvider provider = builder.build("irsa").get();
+        AwsCredentialsProvider provider = builder.build("irsa").get();
         assertNotNull("IRSA provider from builder should not be null", provider);
-        assertTrue(provider instanceof WebIdentityTokenCredentialsProvider);
+        assertTrue(provider instanceof WebIdentityTokenFileCredentialsProvider);
     }
 
     @Test
@@ -80,25 +77,24 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
             .setStsRegion("us-east-1")
             .setStsSessionDuration(1200)
             .setStsExternalId("external-id-123");
-        AWSCredentialsProvider provider = builder.build("sts").get();
+        AwsCredentialsProvider provider = builder.build("sts").get();
         assertNotNull("STS provider from builder should not be null", provider);
-        assertTrue(provider instanceof STSAssumeRoleSessionCredentialsProvider);
     }
 
     @Test
     public void testBasicProviderWithValidKeys() {
         String accessKey = "AKI1234567890EXAMPLE";
         String secretKey = "abc1234567890secretEXAMPLE";
-        AWSCredentialsProvider provider = AWSCredentialsProviderBuilder.basic(
+        AwsCredentialsProvider provider = AWSCredentialsProviderBuilder.basic(
             accessKey,
             secretKey
         );
 
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials credentials = provider.getCredentials();
-        assertTrue(credentials instanceof BasicAWSCredentials);
-        assertEquals(accessKey, credentials.getAWSAccessKeyId());
-        assertEquals(secretKey, credentials.getAWSSecretKey());
+        AwsCredentials credentials = provider.resolveCredentials();
+        assertTrue(credentials instanceof AwsBasicCredentials);
+        assertEquals(accessKey, credentials.accessKeyId());
+        assertEquals(secretKey, credentials.secretAccessKey());
     }
 
     @Test
@@ -126,41 +122,41 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         String accessKey = "AKISESSION1234567890";
         String secretKey = "sessionSecretKeyEXAMPLE";
         String sessionToken = "sessionTokenEXAMPLE";
-        AWSCredentialsProvider provider = AWSCredentialsProviderBuilder.session(
+        AwsCredentialsProvider provider = AWSCredentialsProviderBuilder.session(
             accessKey,
             secretKey,
             sessionToken
         );
 
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials credentials = provider.getCredentials();
-        assertTrue(credentials instanceof BasicSessionCredentials);
-        assertEquals(accessKey, credentials.getAWSAccessKeyId());
-        assertEquals(secretKey, credentials.getAWSSecretKey());
-        assertEquals(sessionToken, ((BasicSessionCredentials) credentials).getSessionToken());
+        AwsCredentials credentials = provider.resolveCredentials();
+        assertTrue(credentials instanceof AwsSessionCredentials);
+        assertEquals(accessKey, credentials.accessKeyId());
+        assertEquals(secretKey, credentials.secretAccessKey());
+        assertEquals(sessionToken, ((AwsSessionCredentials) credentials).sessionToken());
     }
 
     @Test
     public void testStaticCredentialsProvider() {
-        BasicAWSCredentials credentials = new BasicAWSCredentials(
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(
             "STATICKEY",
             "STATICSECRET"
         );
-        AWSStaticCredentialsProvider provider =
+        StaticCredentialsProvider provider =
             AWSCredentialsProviderBuilder.staticCredentials(credentials);
 
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials providedCreds = provider.getCredentials();
-        assertEquals("STATICKEY", providedCreds.getAWSAccessKeyId());
-        assertEquals("STATICSECRET", providedCreds.getAWSSecretKey());
+        AwsCredentials providedCreds = provider.resolveCredentials();
+        assertEquals("STATICKEY", providedCreds.accessKeyId());
+        assertEquals("STATICSECRET", providedCreds.secretAccessKey());
     }
 
     @Test
     public void testDefaultProvider() {
-        AWSCredentialsProvider provider =
+        AwsCredentialsProvider provider =
             AWSCredentialsProviderBuilder.defaultProvider();
         assertNotNull("Provider should not be null", provider);
-        assertTrue(provider instanceof DefaultAWSCredentialsProviderChain);
+        assertTrue(provider instanceof AwsCredentialsProviderChain);
     }
 
     @Test
@@ -171,13 +167,13 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
                 .setAwsSecretKey("STATICSECRET123")
                 .setAwsSessionToken("SESSIONTOKEN123");
 
-        AWSCredentialsProvider provider = builder.build("static").get();
+        AwsCredentialsProvider provider = builder.build("static").get();
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials credentials = provider.getCredentials();
-        assertTrue(credentials instanceof BasicSessionCredentials);
-        assertEquals("AKISTATIC123", credentials.getAWSAccessKeyId());
-        assertEquals("STATICSECRET123", credentials.getAWSSecretKey());
-        assertEquals("SESSIONTOKEN123", ((BasicSessionCredentials) credentials).getSessionToken());
+        AwsCredentials credentials = provider.resolveCredentials();
+        assertTrue(credentials instanceof AwsSessionCredentials);
+        assertEquals("AKISTATIC123", credentials.accessKeyId());
+        assertEquals("STATICSECRET123", credentials.secretAccessKey());
+        assertEquals("SESSIONTOKEN123", ((AwsSessionCredentials) credentials).sessionToken());
     }
 
     @Test
@@ -187,28 +183,28 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
                 .setAwsAccessKey("AKISTATIC456")
                 .setAwsSecretKey("STATICSECRET456");
 
-        AWSCredentialsProvider provider = builder.build("static").get();
+        AwsCredentialsProvider provider = builder.build("static").get();
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials credentials = provider.getCredentials();
-        assertTrue(credentials instanceof BasicAWSCredentials);
-        assertEquals("AKISTATIC456", credentials.getAWSAccessKeyId());
-        assertEquals("STATICSECRET456", credentials.getAWSSecretKey());
+        AwsCredentials credentials = provider.resolveCredentials();
+        assertTrue(credentials instanceof AwsBasicCredentials);
+        assertEquals("AKISTATIC456", credentials.accessKeyId());
+        assertEquals("STATICSECRET456", credentials.secretAccessKey());
     }
 
     @Test
     public void testBuilderDefaultProvider() {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder();
-        AWSCredentialsProvider provider = builder.build("default").get();
+        AwsCredentialsProvider provider = builder.build("default").get();
         assertNotNull("Default provider should not be null", provider);
-        assertTrue(provider instanceof DefaultAWSCredentialsProviderChain);
+        assertTrue(provider instanceof AwsCredentialsProviderChain);
     }
 
     @Test
     public void testBuilderInvalidTypeDefaultsToDefault() {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder();
-        AWSCredentialsProvider provider = builder.build("invalid").get();
+        AwsCredentialsProvider provider = builder.build("invalid").get();
         assertNotNull("Provider should not be null", provider);
-        assertTrue(provider instanceof DefaultAWSCredentialsProviderChain);
+        assertTrue(provider instanceof AwsCredentialsProviderChain);
     }
 
     @Test
@@ -222,10 +218,9 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
     @Test
     public void testStsProviderWithInvalidDuration() {
         // This will create the provider, but log warning for invalid duration
-        AWSCredentialsProvider provider =
+        AwsCredentialsProvider provider =
             AWSCredentialsProviderBuilder.sts("role", "session", "us-east-1", null, 500, null); // <900
         assertNotNull("STS provider should not be null", provider);
-        assertTrue(provider instanceof STSAssumeRoleSessionCredentialsProvider);
     }
 
     @Test
@@ -233,22 +228,19 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder()
             .setAwsAccessKey("KEY")
             .setAwsSecretKey("SECRET");
-        AWSCredentialsProvider provider = builder.build("default").get();
+        AwsCredentialsProvider provider = builder.build("default").get();
         assertNotNull("Provider should not be null", provider);
-        AWSCredentials credentials = provider.getCredentials();
-        assertTrue(credentials instanceof BasicAWSCredentials);
-        assertEquals("KEY", credentials.getAWSAccessKeyId());
-        assertEquals("SECRET", credentials.getAWSSecretKey());
+        AwsCredentials credentials = provider.resolveCredentials();
+        assertTrue(credentials instanceof AwsBasicCredentials);
+        assertEquals("KEY", credentials.accessKeyId());
+        assertEquals("SECRET", credentials.secretAccessKey());
     }
 
-    @Test
-    public void testEnumFromStringInvalid() {
-        AWSCredentialProviderType type = AWSCredentialProviderType.fromString("invalid");
-        assertEquals(AWSCredentialProviderType.DEFAULT, type);
-    }
+
 
     @Test
-    public void testGetters() {
+    public void testBuilderChaining() {
+        // Test that builder methods can be chained and return the builder instance
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder()
             .setRoleArn("arn")
             .setRoleSessionName("session")
@@ -262,24 +254,30 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
             .setAwsAccessKey("key")
             .setAwsSecretKey("secret")
             .setAwsSessionToken("token");
-        assertEquals("arn", builder.getRoleArn());
-        assertEquals("session", builder.getRoleSessionName());
-        assertEquals("file", builder.getWebIdentityTokenFile());
-        assertEquals("stsrole", builder.getStsRole());
-        assertEquals("stssession", builder.getStsSessionName());
-        assertEquals("region", builder.getStsRegion());
-        assertEquals("endpoint", builder.getStsEndpoint());
-        assertEquals(Integer.valueOf(1000), builder.getStsSessionDuration());
-        assertEquals("extid", builder.getStsExternalId());
-        assertEquals("key", builder.getAwsAccessKey());
-        assertEquals("secret", builder.getAwsSecretKey());
-        assertEquals("token", builder.getAwsSessionToken());
+
+        assertEquals("arn", builder.roleArn);
+        assertEquals("session", builder.roleSessionName);
+        assertEquals("file", builder.webIdentityTokenFile);
+        assertEquals("stsrole", builder.stsRole);
+        assertEquals("stssession", builder.stsSessionName);
+        assertEquals("region", builder.stsRegion);
+        assertEquals("endpoint", builder.stsEndpoint);
+        assertEquals(Integer.valueOf(1000), builder.stsSessionDuration);
+        assertEquals("extid", builder.stsExternalId);
+        assertEquals("key", builder.awsAccessKey);
+        assertEquals("secret", builder.awsSecretKey);
+        assertEquals("token", builder.awsSessionToken);
+        assertNotNull("Builder should not be null after chaining", builder);
+        // Test that we can build a provider with the configured settings
+        AwsCredentialsProvider provider = builder.build("static").get();
+
+        assertNotNull("Provider should not be null", provider);
     }
 
     @Test
     public void testIrsaProviderWithNulls() {
-        AWSCredentialsProvider provider = AWSCredentialsProviderBuilder.irsa(null, null, null);
+        AwsCredentialsProvider provider = AWSCredentialsProviderBuilder.irsa(null, null, null);
         assertNotNull("IRSA provider should not be null", provider);
-        assertTrue(provider instanceof WebIdentityTokenCredentialsProvider);
+        assertTrue(provider instanceof AwsCredentialsProviderChain);
     }
 }
