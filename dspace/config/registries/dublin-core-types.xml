@@ -1601,7 +1601,7 @@
   <dc-type>
     <schema>dc</schema>
     <element>relation</element>
-    <qualifier>annotation</qualifier>
+    <qualifier>webannotation</qualifier>
     <scope_note></scope_note>
   </dc-type>
 
@@ -1623,6 +1623,13 @@
     <schema>dc</schema>
     <element>relation</element>
     <qualifier>haspartofpath</qualifier>
+    <scope_note></scope_note>
+  </dc-type>
+
+  <dc-type>
+    <schema>dc</schema>
+    <element>relation</element>
+    <qualifier>annotation</qualifier>
     <scope_note></scope_note>
   </dc-type>
 
