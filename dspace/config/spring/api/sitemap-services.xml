@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"
+       default-lazy-init="true">
+
+    <!-- Sitemap Storage Service Configuration -->
+    <!-- 
+         This bean defines the storage backend for sitemap generation.
+         The FileSystemSitemapStorageService is the default implementation that
+         stores sitemaps in the local file system, maintaining compatibility with
+         the original behavior.
+         
+         To use a different storage backend (e.g., cloud storage), replace the 
+         class attribute with your custom implementation of SitemapStorageService.
+         
+         The AbstractGenerator class will automatically discover and use this service
+         via ServiceManager when generating sitemaps.
+    -->
+    <bean id="sitemapStorageService" class="org.dspace.app.sitemap.FileSystemSitemapStorageService">
+        <!-- Storage service is automatically configured via @Autowired ConfigurationService -->
+        <!-- Configuration properties used:
+             - sitemap.dir: Directory where sitemap files are stored
+             - dspace.ui.url: Base URL for generating sitemap access URLs
+             - sitemap.path: Path segment for sitemap access (defaults to "sitemaps")
+        -->
+    </bean>
+
+    <!-- Sitemap Service Configuration -->
+    <!--
+         This bean provides the main business logic for sitemap generation,
+         orchestrating data collection, generator initialization, and storage operations.
+
+         The service uses the configured SitemapStorageService for file operations
+         and handles all DSpace data querying and processing.
+    -->
+    <bean id="sitemapService" class="org.dspace.app.sitemap.SitemapServiceImpl">
+        <!-- Service dependencies are automatically injected via @Autowired -->
+        <!-- Requires:
+             - ConfigurationService: for accessing DSpace configuration
+             - SitemapStorageService: for file storage operations
+        -->
+    </bean>
+
+</beans>
