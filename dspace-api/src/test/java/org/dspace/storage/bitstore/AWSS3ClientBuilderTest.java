@@ -19,9 +19,9 @@ import org.dspace.AbstractDSpaceTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
@@ -215,7 +215,8 @@ public class AWSS3ClientBuilderTest extends AbstractDSpaceTest {
         AWSS3ClientBuilder result = builder.setCredentialsProvider(mockCredentialsProvider);
 
         assertEquals("Builder should return itself for method chaining", builder, result);
-        assertEquals("Credentials provider should be set correctly", mockCredentialsProvider, builder.credentialsProvider);
+        assertEquals("Credentials provider should be set correctly", mockCredentialsProvider,
+                     builder.credentialsProvider);
     }
 
     @Test

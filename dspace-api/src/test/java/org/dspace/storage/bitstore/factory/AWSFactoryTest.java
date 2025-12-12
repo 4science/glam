@@ -78,7 +78,8 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
     @Test
     public void testProvideCredentialsWithSTSRole() {
         // Setup mock configuration for STS role authentication
-        when(mockConfigurationService.getProperty("assetstore.s3.stsRole")).thenReturn("arn:aws:iam::123456789012:role/TestRole");
+        when(mockConfigurationService.getProperty("assetstore.s3.stsRole")).thenReturn(
+            "arn:aws:iam::123456789012:role/TestRole");
         when(mockConfigurationService.getProperty("assetstore.s3.stsSessionName")).thenReturn("TestSession");
         when(mockConfigurationService.getProperty("assetstore.s3.stsRegion")).thenReturn("us-east-1");
         when(mockConfigurationService.getProperty("assetstore.s3.awsAuthenticationType")).thenReturn("sts");
@@ -96,7 +97,8 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
     @Test
     public void testProvideCredentialsWithIRSA() {
         // Setup mock configuration for IRSA authentication
-        when(mockConfigurationService.getProperty("assetstore.s3.irsa.role")).thenReturn("arn:aws:iam::123456789012:role/IRSARole");
+        when(mockConfigurationService.getProperty("assetstore.s3.irsa.role")).thenReturn(
+            "arn:aws:iam::123456789012:role/IRSARole");
         when(mockConfigurationService.getProperty("assetstore.s3.irsa.session")).thenReturn("IRSASession");
         when(mockConfigurationService.getProperty("assetstore.s3.irsa.tokenfile")).thenReturn("/tmp/token");
         when(mockConfigurationService.getProperty("assetstore.s3.awsAuthenticationType")).thenReturn("irsa");
@@ -302,9 +304,12 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         // Test scenario where multiple authentication methods are partially configured
         when(mockConfigurationService.getProperty("assetstore.s3.awsAccessKey")).thenReturn("partialKey");
         when(mockConfigurationService.getProperty("assetstore.s3.awsSecretKey")).thenReturn(null); // Missing secret
-        when(mockConfigurationService.getProperty("assetstore.s3.stsRole")).thenReturn("arn:aws:iam::123456789012:role/PartialRole");
-        when(mockConfigurationService.getProperty("assetstore.s3.stsSessionName")).thenReturn("DefaultSession"); // Provide a default session name
-        when(mockConfigurationService.getProperty("assetstore.s3.stsRegion")).thenReturn("us-east-1"); // Required for STS client
+        when(mockConfigurationService.getProperty("assetstore.s3.stsRole")).thenReturn(
+            "arn:aws:iam::123456789012:role/PartialRole");
+        when(mockConfigurationService.getProperty("assetstore.s3.stsSessionName")).thenReturn(
+            "DefaultSession"); // Provide a default session name
+        when(mockConfigurationService.getProperty("assetstore.s3.stsRegion")).thenReturn(
+            "us-east-1"); // Required for STS client
         when(mockConfigurationService.getProperty("assetstore.s3.awsAuthenticationType")).thenReturn("sts");
 
         // Mock remaining properties
@@ -322,12 +327,15 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         String storeSuffix = "complex";
 
         // Setup complex configuration with all possible settings
-        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsRole")).thenReturn("arn:aws:iam::999888777666:role/ComplexRole");
+        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsRole")).thenReturn(
+            "arn:aws:iam::999888777666:role/ComplexRole");
         when(mockConfigurationService.getProperty("assetstore.s3.complex.stsSessionName")).thenReturn("ComplexSession");
         when(mockConfigurationService.getProperty("assetstore.s3.complex.stsRegion")).thenReturn("eu-central-1");
-        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsExternalId")).thenReturn("complex-external-id");
+        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsExternalId")).thenReturn(
+            "complex-external-id");
         when(mockConfigurationService.getIntProperty("assetstore.s3.complex.stsSessionDuration")).thenReturn(7200);
-        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsEndpoint")).thenReturn("https://sts.eu-central-1.amazonaws.com");
+        when(mockConfigurationService.getProperty("assetstore.s3.complex.stsEndpoint")).thenReturn(
+            "https://sts.eu-central-1.amazonaws.com");
         when(mockConfigurationService.getProperty("assetstore.s3.complex.awsAuthenticationType")).thenReturn("sts");
 
         // Mock other properties as null for this test
@@ -350,10 +358,14 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         String storeSuffix = "integration";
 
         // Setup authentication
-        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsAccessKey")).thenReturn("integrationKey");
-        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsSecretKey")).thenReturn("integrationSecret");
-        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsSessionToken")).thenReturn("integrationToken");
-        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsAuthenticationType")).thenReturn("static");
+        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsAccessKey")).thenReturn(
+            "integrationKey");
+        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsSecretKey")).thenReturn(
+            "integrationSecret");
+        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsSessionToken")).thenReturn(
+            "integrationToken");
+        when(mockConfigurationService.getProperty("assetstore.s3.integration.awsAuthenticationType")).thenReturn(
+            "static");
         when(mockConfigurationService.getIntProperty("assetstore.s3.integration.stsSessionDuration")).thenReturn(14400);
 
         // Mock other properties as null
