@@ -8,6 +8,7 @@
 package org.dspace.storage.bitstore;
 
 import static org.dspace.storage.bitstore.AWSCredentialsProviderBuilder.AWSCredentialProviderType.IRSA;
+import static org.dspace.storage.bitstore.AWSCredentialsProviderBuilder.AWSCredentialProviderType.PROFILE;
 import static org.dspace.storage.bitstore.AWSCredentialsProviderBuilder.AWSCredentialProviderType.STATIC;
 import static org.dspace.storage.bitstore.AWSCredentialsProviderBuilder.AWSCredentialProviderType.STS;
 
@@ -25,8 +26,10 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
+import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.StsClientBuilder;
@@ -55,6 +58,9 @@ public class AWSCredentialsProviderBuilder {
     protected String stsEndpoint;
     protected Integer stsSessionDuration;
     protected String stsExternalId;
+
+    protected String profileName;
+    protected String profileFile;
 
     protected String awsAccessKey;
     protected String awsSecretKey;
@@ -150,6 +156,7 @@ public class AWSCredentialsProviderBuilder {
         return StsAssumeRoleCredentialsProvider.builder()
                                                .stsClient(client)
                                                .refreshRequest(request)
+                                               .asyncCredentialUpdateEnabled(true)
                                                .build();
     }
 
@@ -169,6 +176,30 @@ public class AWSCredentialsProviderBuilder {
             credentials.secretAccessKey().replaceFirst(REGEX_SECRET, "$1***$3"),
             credentials.sessionToken().replaceFirst(REGEX_SECRET, "$1***$3"));
         return StaticCredentialsProvider.create(credentials);
+    }
+
+    public static AwsCredentialsProvider profile(String profileName, String profileFile) {
+        ProfileCredentialsProvider.Builder builder = ProfileCredentialsProvider.builder();
+        if (StringUtils.isBlank(profileName)) {
+            log.error("AWS Access ProfileName necessary when using profile authentication type");
+            log.info("Using the 'default' profile!");
+        } else {
+            builder.profileName(profileName);
+        }
+
+        if (StringUtils.isNotBlank(profileFile)) {
+            builder.profileFile(
+                ProfileFile
+                    .builder()
+                    .type(ProfileFile.Type.CONFIGURATION)
+                    .content(Path.of(profileFile))
+                    .build()
+            );
+        }
+
+        ProfileCredentialsProvider credentialsProvider = builder.build();
+        log.info("ProfileCredentialsProvider configured - {}", credentialsProvider);
+        return credentialsProvider;
     }
 
     public static AwsCredentialsProvider basic(
@@ -255,6 +286,16 @@ public class AWSCredentialsProviderBuilder {
         return this;
     }
 
+    public AWSCredentialsProviderBuilder setProfileName(String profileName) {
+        this.profileName = profileName;
+        return this;
+    }
+
+    public AWSCredentialsProviderBuilder setProfileFile(String profileFile) {
+        this.profileFile = profileFile;
+        return this;
+    }
+
     public Supplier<AwsCredentialsProvider> build(String type) {
         AWSCredentialProviderType providerType = AWSCredentialProviderType.fromString(type);
         if (IRSA.equals(providerType)) {
@@ -263,6 +304,9 @@ public class AWSCredentialsProviderBuilder {
         } else if (STS.equals(providerType)) {
             log.info("Using STS (Security Token Service) credentials for S3 authentication with role assumption.");
             return () -> sts(stsRole, stsSessionName, stsRegion, stsEndpoint, stsSessionDuration, stsExternalId);
+        } else if (PROFILE.equals(providerType)) {
+            log.info("Using AWS Profile credentials for S3 authentication.");
+            return () -> profile(profileName, profileFile);
         } else if (isStaticProvider(providerType)) {
             if (StringUtils.isNotBlank(awsSessionToken)) {
                 log.warn("Using static S3 credentials with session token (not recommended for production)");
@@ -288,6 +332,7 @@ public class AWSCredentialsProviderBuilder {
         DEFAULT("default"),
         IRSA("irsa"),
         STS("sts"),
+        PROFILE("profile"),
         STATIC("static");
 
         final String type;

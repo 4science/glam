@@ -60,6 +60,8 @@ public class AWSFactory {
             .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty("awsAccessKey")))
             .setAwsSecretKey(configurationService.getProperty(getAssetstoreProperty("awsSecretKey")))
             .setAwsSessionToken(configurationService.getProperty(getAssetstoreProperty("awsSessionToken")))
+            .setProfileName(configurationService.getProperty(getAssetstoreProperty("profile.name")))
+            .setProfileFile(configurationService.getProperty(getAssetstoreProperty("profile.file")))
             .build(configurationService.getProperty(getAssetstoreProperty("awsAuthenticationType")));
     }
 
@@ -81,6 +83,8 @@ public class AWSFactory {
             .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsAccessKey")))
             .setAwsSecretKey(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsSecretKey")))
             .setAwsSessionToken(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsSessionToken")))
+            .setProfileName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "profile.name")))
+            .setProfileFile(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "profile.file")))
             .build(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsAuthenticationType")));
     }
 
