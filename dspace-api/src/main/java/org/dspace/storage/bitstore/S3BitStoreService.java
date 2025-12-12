@@ -453,6 +453,10 @@ public class S3BitStoreService extends BaseBitStoreService {
         this.s3ChecksumAlgorithm = s3ChecksumAlgorithm;
     }
 
+    public void setBuilder(AWSS3ClientBuilder builder) {
+        this.builder = builder;
+    }
+
     /**
      * Contains a command-line testing tool. Expects arguments:
      * -a accessKey -s secretKey -f assetFileName

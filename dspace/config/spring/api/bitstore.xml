@@ -15,6 +15,7 @@
             <map>
                 <entry key="0" value-ref="localStore"/>
                 <entry key="1" value-ref="s3Store"/>
+                <entry key="10" value-ref="s3TempStore"/>
             </map>
         </property>
     </bean>
@@ -59,18 +60,17 @@
     <bean name="awsCredentialsFactory"
           class="org.dspace.storage.bitstore.factory.AWSFactory"/>
 
+    <!-- Default client builder -->
     <bean name="defaultClientBuilder"
           factory-bean="awsCredentialsFactory"
           factory-method="clientBuilder"/>
 
-    <!-- Client example with different settings; uncomment to use -->
-    <!--
+    <!-- Temp client builder -->
     <bean name="tempClientBuilder"
           factory-bean="awsCredentialsFactory"
           factory-method="clientBuilder">
         <constructor-arg name="storeSuffix" value="temp"/>
     </bean>
-    -->
 
     <!-- <bean name="localStore2 ... -->
     <!-- <bean name="s3Store2 ... -->

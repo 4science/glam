@@ -48,38 +48,39 @@ public class AWSFactory {
     public Supplier<AwsCredentialsProvider> provideCredentials() {
         return AWSCredentialsProviderBuilder
             .builder()
-            .setStsRole(configurationService.getProperty(getStoreProperty("stsRole")))
-            .setStsSessionName(configurationService.getProperty(getStoreProperty("stsSessionName")))
-            .setStsRegion(configurationService.getProperty(getStoreProperty("stsRegion")))
-            .setStsExternalId(configurationService.getProperty(getStoreProperty("stsExternalId")))
-            .setStsSessionDuration(configurationService.getIntProperty(getStoreProperty("stsSessionDuration")))
-            .setStsEndpoint(configurationService.getProperty(getStoreProperty("stsEndpoint")))
-            .setRoleArn(configurationService.getProperty(getStoreProperty("irsa.role")))
-            .setRoleSessionName(configurationService.getProperty(getStoreProperty("irsa.session")))
-            .setWebIdentityTokenFile(configurationService.getProperty(getStoreProperty("irsa.tokenfile")))
-            .setAwsAccessKey(configurationService.getProperty(getStoreProperty("awsAccessKey")))
-            .setAwsSecretKey(configurationService.getProperty(getStoreProperty("awsSecretKey")))
-            .setAwsSessionToken(configurationService.getProperty(getStoreProperty("awsSessionToken")))
-            .build(configurationService.getProperty(getStoreProperty("awsAuthenticationType")));
+            .setStsRole(configurationService.getProperty(getAssetstoreProperty("stsRole")))
+            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty("stsSessionName")))
+            .setStsRegion(configurationService.getProperty(getAssetstoreProperty("stsRegion")))
+            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty("stsExternalId")))
+            .setStsSessionDuration(getPropertyAsType("stsSessionDuration", null))
+            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty("stsEndpoint")))
+            .setRoleArn(configurationService.getProperty(getAssetstoreProperty("irsa.role")))
+            .setRoleSessionName(configurationService.getProperty(getAssetstoreProperty("irsa.session")))
+            .setWebIdentityTokenFile(configurationService.getProperty(getAssetstoreProperty("irsa.tokenfile")))
+            .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty("awsAccessKey")))
+            .setAwsSecretKey(configurationService.getProperty(getAssetstoreProperty("awsSecretKey")))
+            .setAwsSessionToken(configurationService.getProperty(getAssetstoreProperty("awsSessionToken")))
+            .build(configurationService.getProperty(getAssetstoreProperty("awsAuthenticationType")));
     }
 
     public Supplier<AwsCredentialsProvider> provideCredentials(String storeSuffix) {
         return AWSCredentialsProviderBuilder
             .builder()
-            .setStsRole(configurationService.getProperty(getStoreProperty(storeSuffix, "stsRole")))
-            .setStsSessionName(configurationService.getProperty(getStoreProperty(storeSuffix, "stsSessionName")))
-            .setStsRegion(configurationService.getProperty(getStoreProperty(storeSuffix, "stsRegion")))
-            .setStsExternalId(configurationService.getProperty(getStoreProperty(storeSuffix, "stsExternalId")))
+            .setStsRole(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsRole")))
+            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsSessionName")))
+            .setStsRegion(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsRegion")))
+            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsExternalId")))
             .setStsSessionDuration(
-                configurationService.getIntProperty(getStoreProperty(storeSuffix, "stsSessionDuration")))
-            .setStsEndpoint(configurationService.getProperty(getStoreProperty(storeSuffix, "stsEndpoint")))
-            .setRoleArn(configurationService.getProperty(getStoreProperty(storeSuffix, "irsa.role")))
-            .setRoleSessionName(configurationService.getProperty(getStoreProperty(storeSuffix, "irsa.session")))
-            .setWebIdentityTokenFile(configurationService.getProperty(getStoreProperty(storeSuffix, "irsa.tokenfile")))
-            .setAwsAccessKey(configurationService.getProperty(getStoreProperty(storeSuffix, "awsAccessKey")))
-            .setAwsSecretKey(configurationService.getProperty(getStoreProperty(storeSuffix, "awsSecretKey")))
-            .setAwsSessionToken(configurationService.getProperty(getStoreProperty(storeSuffix, "awsSessionToken")))
-            .build(configurationService.getProperty(getStoreProperty(storeSuffix, "awsAuthenticationType")));
+                configurationService.getIntProperty(getAssetstoreProperty(storeSuffix, "stsSessionDuration")))
+            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsEndpoint")))
+            .setRoleArn(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.role")))
+            .setRoleSessionName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.session")))
+            .setWebIdentityTokenFile(configurationService.getProperty(
+                getAssetstoreProperty(storeSuffix, "irsa.tokenfile")))
+            .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsAccessKey")))
+            .setAwsSecretKey(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsSecretKey")))
+            .setAwsSessionToken(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsSessionToken")))
+            .build(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsAuthenticationType")));
     }
 
     public AWSS3ClientBuilder clientBuilder() {
@@ -96,31 +97,31 @@ public class AWSFactory {
         return AWSS3ClientBuilder.builder()
                                  .setEndpoint(
                                      configurationService.getPropertyAsType(
-                                         getStoreProperty(storeSuffix, "endpoint"),
+                                         getAssetstoreProperty(storeSuffix, "endpoint"),
                                          getDefaultEndpoint()
                                      )
                                  )
                                  .setMaxConcurrency(
                                      configurationService.getPropertyAsType(
-                                         getStoreProperty(storeSuffix, "maxConcurrency"),
+                                         getAssetstoreProperty(storeSuffix, "maxConcurrency"),
                                          getDefaultMaxConcurrency()
                                      )
                                  )
                                  .setMinPartSize(
                                      configurationService.getPropertyAsType(
-                                         getStoreProperty(storeSuffix, "minPartSize"),
+                                         getAssetstoreProperty(storeSuffix, "minPartSize"),
                                          getDefaultMinPartSize()
                                      )
                                  )
                                  .setRegion(
                                      configurationService.getPropertyAsType(
-                                         getStoreProperty(storeSuffix, "awsRegionName"),
+                                         getAssetstoreProperty(storeSuffix, "awsRegionName"),
                                          getDefaultRegion()
                                      )
                                  )
                                  .setTargetThroughput(
                                      configurationService.getPropertyAsType(
-                                         getStoreProperty(storeSuffix, "targetThroughput"),
+                                         getAssetstoreProperty(storeSuffix, "targetThroughput"),
                                          10.0
                                      )
                                  )
@@ -129,46 +130,81 @@ public class AWSFactory {
                                  );
     }
 
+    private <T> T getPropertyAsType(String propertyName, T value) {
+
+        String property = configurationService.getProperty(propertyName);
+
+        if (StringUtils.isBlank(property)) {
+            return value;
+        }
+
+        return configurationService.getPropertyAsType(propertyName, value);
+
+    }
+
     private Double getDefaultThroughput() {
         return configurationService.getPropertyAsType(
-            getStoreProperty("targetThroughput"), 10.0);
+            getAssetstoreProperty("targetThroughput"), 10.0);
     }
 
     private Region getDefaultRegion() {
-        return Region.of(
+        String awsRegionName =
             configurationService.getProperty(
-                getStoreProperty("awsRegionName"),
-                "us-east-1"
-            )
-        );
+                getAssetstoreProperty("awsRegionName")
+            );
+
+        if (StringUtils.isEmpty(awsRegionName)) {
+            return null;
+        }
+
+        return Region.of(awsRegionName);
     }
 
-    private long getDefaultMinPartSize() {
-        return configurationService.getLongProperty(
-            getStoreProperty("minPartSize"),
-            8L * 1024L * 1024L
-        );
+    private Long getDefaultMinPartSize() {
+        String minPartSize = configurationService.getProperty(getAssetstoreProperty("minPartSize"));
+        long defaultMinPart = 8L * 1024L * 1024L;
+        if (StringUtils.isBlank(minPartSize)) {
+            return defaultMinPart;
+        }
+        long l = defaultMinPart;
+        try {
+            l = Long.parseLong(minPartSize);
+        } catch (Exception e) {
+            // ignore
+        }
+        return l;
     }
 
-    private int getDefaultMaxConcurrency() {
-        return configurationService.getIntProperty(
-            getStoreProperty("maxConcurrency")
-        );
+    private Integer getDefaultMaxConcurrency() {
+
+        String maxConcurrency = configurationService.getProperty(getAssetstoreProperty("maxConcurrency"));
+        int defaultConcurrency = 10;
+        if (StringUtils.isBlank(maxConcurrency)) {
+            return defaultConcurrency;
+        }
+
+        int i = defaultConcurrency;
+        try {
+            i = Integer.parseInt(maxConcurrency);
+        } catch (Exception e) {
+            // ignore
+        }
+        return i;
     }
 
     private String getDefaultEndpoint() {
         return configurationService.getProperty(
-            getStoreProperty("endpoint"),
+            getAssetstoreProperty("endpoint"),
             null
         );
     }
 
-    private String getStoreProperty(String storeSuffix, String propertyName) {
+    private String getAssetstoreProperty(String storeSuffix, String propertyName) {
         String storePrefix = getStorePrefix(storeSuffix);
         return storePrefix + propertyName;
     }
 
-    private String getStoreProperty(String propertyName) {
+    private String getAssetstoreProperty(String propertyName) {
         String storePrefix = getStorePrefix(null);
         return storePrefix + propertyName;
     }

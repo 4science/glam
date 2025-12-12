@@ -23,8 +23,8 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -65,7 +65,7 @@ public class AWSCredentialsProviderBuilder {
     }
 
     public static AwsCredentialsProvider defaultProvider() {
-        return AwsCredentialsProviderChain.builder().build();
+        return DefaultCredentialsProvider.builder().build();
     }
 
     public static AwsCredentialsProvider irsa(
