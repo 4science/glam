@@ -19,6 +19,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
 
@@ -156,7 +157,7 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         AwsCredentialsProvider provider =
             AWSCredentialsProviderBuilder.defaultProvider();
         assertNotNull("Provider should not be null", provider);
-        assertTrue(provider instanceof AwsCredentialsProviderChain);
+        assertTrue(provider instanceof DefaultCredentialsProvider);
     }
 
     @Test
@@ -196,7 +197,7 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder();
         AwsCredentialsProvider provider = builder.build("default").get();
         assertNotNull("Default provider should not be null", provider);
-        assertTrue(provider instanceof AwsCredentialsProviderChain);
+        assertTrue(provider instanceof DefaultCredentialsProvider);
     }
 
     @Test
@@ -204,7 +205,7 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder();
         AwsCredentialsProvider provider = builder.build("invalid").get();
         assertNotNull("Provider should not be null", provider);
-        assertTrue(provider instanceof AwsCredentialsProviderChain);
+        assertTrue(provider instanceof DefaultCredentialsProvider);
     }
 
     @Test
@@ -278,6 +279,6 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
     public void testIrsaProviderWithNulls() {
         AwsCredentialsProvider provider = AWSCredentialsProviderBuilder.irsa(null, null, null);
         assertNotNull("IRSA provider should not be null", provider);
-        assertTrue(provider instanceof AwsCredentialsProviderChain);
+        assertTrue(provider instanceof WebIdentityTokenFileCredentialsProvider);
     }
 }
