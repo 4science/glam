@@ -61,8 +61,8 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
     @Test
     public void testBuilderIrsaProvider() {
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder()
-            .setRoleArn("arn:aws:iam::123456789012:role/IRSA-Test-Role")
-            .setRoleSessionName("IRSA-Session")
+            .setIrsaRole("arn:aws:iam::123456789012:role/IRSA-Test-Role")
+            .setIrsaRoleSessionName("IRSA-Session")
             .setWebIdentityTokenFile("/tmp/fake-token.jwt");
         AwsCredentialsProvider provider = builder.build("irsa").get();
         assertNotNull("IRSA provider from builder should not be null", provider);
@@ -242,8 +242,8 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
     public void testBuilderChaining() {
         // Test that builder methods can be chained and return the builder instance
         AWSCredentialsProviderBuilder builder = AWSCredentialsProviderBuilder.builder()
-            .setRoleArn("arn")
-            .setRoleSessionName("session")
+            .setIrsaRole("arn")
+            .setIrsaRoleSessionName("session")
             .setWebIdentityTokenFile("file")
             .setStsRole("stsrole")
             .setStsSessionName("stssession")
@@ -255,8 +255,8 @@ public class AWSCredentialsProviderBuilderTest extends AbstractDSpaceTest {
             .setAwsSecretKey("secret")
             .setAwsSessionToken("token");
 
-        assertEquals("arn", builder.roleArn);
-        assertEquals("session", builder.roleSessionName);
+        assertEquals("arn", builder.irsaRole);
+        assertEquals("session", builder.irsaRoleSessionName);
         assertEquals("file", builder.webIdentityTokenFile);
         assertEquals("stsrole", builder.stsRole);
         assertEquals("stssession", builder.stsSessionName);

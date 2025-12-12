@@ -48,14 +48,14 @@ public class AWSFactory {
     public Supplier<AwsCredentialsProvider> provideCredentials() {
         return AWSCredentialsProviderBuilder
             .builder()
-            .setStsRole(configurationService.getProperty(getAssetstoreProperty("stsRole")))
-            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty("stsSessionName")))
-            .setStsRegion(configurationService.getProperty(getAssetstoreProperty("stsRegion")))
-            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty("stsExternalId")))
-            .setStsSessionDuration(getPropertyAsType("stsSessionDuration", null))
-            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty("stsEndpoint")))
-            .setRoleArn(configurationService.getProperty(getAssetstoreProperty("irsa.role")))
-            .setRoleSessionName(configurationService.getProperty(getAssetstoreProperty("irsa.session")))
+            .setStsRole(configurationService.getProperty(getAssetstoreProperty("sts.role")))
+            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty("sts.sessionname")))
+            .setStsRegion(configurationService.getProperty(getAssetstoreProperty("sts.region")))
+            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty("sts.externalid")))
+            .setStsSessionDuration(getPropertyAsType("sts.sessionduration", null))
+            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty("sts.endpoint")))
+            .setIrsaRole(configurationService.getProperty(getAssetstoreProperty("irsa.role")))
+            .setIrsaRoleSessionName(configurationService.getProperty(getAssetstoreProperty("irsa.session")))
             .setWebIdentityTokenFile(configurationService.getProperty(getAssetstoreProperty("irsa.tokenfile")))
             .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty("awsAccessKey")))
             .setAwsSecretKey(configurationService.getProperty(getAssetstoreProperty("awsSecretKey")))
@@ -66,15 +66,16 @@ public class AWSFactory {
     public Supplier<AwsCredentialsProvider> provideCredentials(String storeSuffix) {
         return AWSCredentialsProviderBuilder
             .builder()
-            .setStsRole(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsRole")))
-            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsSessionName")))
-            .setStsRegion(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsRegion")))
-            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsExternalId")))
+            .setStsRole(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "sts.role")))
+            .setStsSessionName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "sts.sessionname")))
+            .setStsRegion(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "sts.region")))
+            .setStsExternalId(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "sts.externalid")))
             .setStsSessionDuration(
-                configurationService.getIntProperty(getAssetstoreProperty(storeSuffix, "stsSessionDuration")))
-            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "stsEndpoint")))
-            .setRoleArn(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.role")))
-            .setRoleSessionName(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.session")))
+                configurationService.getIntProperty(getAssetstoreProperty(storeSuffix, "sts.sessionduration")))
+            .setStsEndpoint(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "sts.endpoint")))
+            .setIrsaRole(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.role")))
+            .setIrsaRoleSessionName(
+                configurationService.getProperty(getAssetstoreProperty(storeSuffix, "irsa.session")))
             .setWebIdentityTokenFile(configurationService.getProperty(
                 getAssetstoreProperty(storeSuffix, "irsa.tokenfile")))
             .setAwsAccessKey(configurationService.getProperty(getAssetstoreProperty(storeSuffix, "awsAccessKey")))

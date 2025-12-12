@@ -78,14 +78,14 @@
     <!-- Custom credentialsProvider; uncomment to use -->
     <!--
     <bean name="credentialsProvider" class="org.dspace.storage.bitstore.AWSCredentialsProviderBuilder" scope="singleton">
-        <property name="stsRole" value="${assetstore.s3.stsRoleArn}"/>
-        <property name="stsSessionName" value="${assetstore.s3.stsSessionName}"/>
-        <property name="stsRegion" value="${assetstore.s3.stsRegion}"/>
-        <property name="stsExternalId" value="${assetstore.s3.stsExternalId}"/>
-        <property name="stsSessionDuration" value="${assetstore.s3.stsSessionDuration}"/>
-        <property name="stsEndpoint" value="${assetstore.s3.stsEndpoint}"/>
-        <property name="roleArn" value="${assetstore.s3.irsa.role}"/>
-        <property name="roleSessionName" value="${assetstore.s3.irsa.session}"/>
+        <property name="stsRole" value="${assetstore.s3.sts.role}"/>
+        <property name="stsSessionName" value="${assetstore.s3.sts.sessionname}"/>
+        <property name="stsRegion" value="${assetstore.s3.sts.region}"/>
+        <property name="stsExternalId" value="${assetstore.s3.sts.externalid}"/>
+        <property name="stsSessionDuration" value="${assetstore.s3.sts.sessionduration}"/>
+        <property name="stsEndpoint" value="${assetstore.s3.sts.endpoint}"/>
+        <property name="irsaRole" value="${assetstore.s3.irsa.role}"/>
+        <property name="irsaRoleSessionName" value="${assetstore.s3.irsa.session}"/>
         <property name="webIdentityTokenFile" value="${assetstore.s3.irsa.tokenfile}"/>
         <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
         <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>

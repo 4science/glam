@@ -45,8 +45,8 @@ public class AWSCredentialsProviderBuilder {
 
     private static final Logger log = LogManager.getLogger(AWSCredentialsProviderBuilder.class);
 
-    protected String roleArn;
-    protected String roleSessionName;
+    protected String irsaRole;
+    protected String irsaRoleSessionName;
     protected String webIdentityTokenFile;
 
     protected String stsRole;
@@ -69,12 +69,12 @@ public class AWSCredentialsProviderBuilder {
     }
 
     public static AwsCredentialsProvider irsa(
-        @Nullable String roleArn,
-        @Nullable String roleSessionName,
+        @Nullable String irsaRole,
+        @Nullable String irsaRoleSessionName,
         @Nullable String webIdentityTokenFile) {
         return WebIdentityTokenFileCredentialsProvider.builder()
-                                                      .roleArn(roleArn)
-                                                      .roleSessionName(roleSessionName)
+                                                      .roleArn(irsaRole)
+                                                      .roleSessionName(irsaRoleSessionName)
                                                       .webIdentityTokenFile(webIdentityTokenFile != null
                                                                                 ? Path.of(webIdentityTokenFile) : null)
                                                       .build();
@@ -195,13 +195,13 @@ public class AWSCredentialsProviderBuilder {
         return StaticCredentialsProvider.create(credentials);
     }
 
-    public AWSCredentialsProviderBuilder setRoleArn(String roleArn) {
-        this.roleArn = roleArn;
+    public AWSCredentialsProviderBuilder setIrsaRole(String irsaRole) {
+        this.irsaRole = irsaRole;
         return this;
     }
 
-    public AWSCredentialsProviderBuilder setRoleSessionName(String roleSessionName) {
-        this.roleSessionName = roleSessionName;
+    public AWSCredentialsProviderBuilder setIrsaRoleSessionName(String irsaRoleSessionName) {
+        this.irsaRoleSessionName = irsaRoleSessionName;
         return this;
     }
 
@@ -259,7 +259,7 @@ public class AWSCredentialsProviderBuilder {
         AWSCredentialProviderType providerType = AWSCredentialProviderType.fromString(type);
         if (IRSA.equals(providerType)) {
             log.info("Using IRSA (IAM Roles for Service Accounts) credentials for S3 authentication.");
-            return () -> irsa(roleArn, roleSessionName, webIdentityTokenFile);
+            return () -> irsa(irsaRole, irsaRoleSessionName, webIdentityTokenFile);
         } else if (STS.equals(providerType)) {
             log.info("Using STS (Security Token Service) credentials for S3 authentication with role assumption.");
             return () -> sts(stsRole, stsSessionName, stsRegion, stsEndpoint, stsSessionDuration, stsExternalId);

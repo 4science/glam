@@ -306,22 +306,22 @@ orcid.webhook.registration-token =
 
 # ARN of the IAM role to assume (REQUIRED for STS authentication)
 # Example: arn:aws:iam::123456789012:role/DSpaceS3CrossAccountRole
-#assetstore.s3.stsRoleArn =
+#assetstore.s3.sts.role =
 
 # Session name for the assumed role session (optional, defaults to "DSpace-S3-Session")
-#assetstore.s3.stsSessionName =
+#assetstore.s3.sts.sessionname =
 
 # Duration of the assumed role session in seconds (optional, 900-43200 seconds)
-#assetstore.s3.stsSessionDuration =
+#assetstore.s3.sts.sessionduration =
 
 # External ID for role assumption (optional, used for cross-account access)
-#assetstore.s3.stsExternalId =
+#assetstore.s3.sts.externalid =
 
 # Custom STS endpoint (optional)
-#assetstore.s3.stsEndpoint =
+#assetstore.s3.sts.endpoint =
 
 # STS-specific region (optional, defaults to S3 region)
-#assetstore.s3.stsRegion =
+#assetstore.s3.sts.region =
 
 # Static AWS credentials (not recommended for production)
 # Please don't use root credentials in production but rely on the aws credentials
@@ -331,9 +331,6 @@ assetstore.s3.awsSecretKey =
 
 # to force the use of a specific region
 assetstore.s3.awsRegionName =
-
-# session token (for temporary credentials)
-#assetstore.s3.awsToken =
 
 #GeoIP dbfile configuration for usage statistics
 usage-statistics.dbfile=/var/lib/GeoIP/GeoLite2-City.mmdb
