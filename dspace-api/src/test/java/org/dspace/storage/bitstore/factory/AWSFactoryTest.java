@@ -329,7 +329,8 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         // Setup complex configuration with all possible settings
         when(mockConfigurationService.getProperty("assetstore.s3.complex.sts.role")).thenReturn(
             "arn:aws:iam::999888777666:role/ComplexRole");
-        when(mockConfigurationService.getProperty("assetstore.s3.complex.sts.sessionname")).thenReturn("ComplexSession");
+        when(mockConfigurationService.getProperty("assetstore.s3.complex.sts.sessionname")).thenReturn(
+            "ComplexSession");
         when(mockConfigurationService.getProperty("assetstore.s3.complex.sts.region")).thenReturn("eu-central-1");
         when(mockConfigurationService.getProperty("assetstore.s3.complex.sts.externalid")).thenReturn(
             "complex-external-id");
