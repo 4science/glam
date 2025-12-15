@@ -89,7 +89,7 @@
         <property name="webIdentityTokenFile" value="${assetstore.s3.irsa.tokenfile}"/>
         <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
         <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>
-        <property name="awsSessionToken" value="${assetstore.s3.awsSessionToken}"/>
+        <property name="awsSessionToken" value="${assetstore.s3.awsToken}"/>
     </bean
     >-->
 
