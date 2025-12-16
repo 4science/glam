@@ -121,7 +121,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAccessKey")).thenReturn("store1AccessKey");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsSecretKey")).thenReturn("store1SecretKey");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.store1.stsSessionDuration")).thenReturn(3600);
 
         // Mock other store-specific properties
         mockNullPropertiesForStore(storeSuffix);
@@ -151,7 +150,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAccessKey")).thenReturn("store1AccessKey");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsSecretKey")).thenReturn("store1SecretKey");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.store1.stsSessionDuration")).thenReturn(3600);
 
         // Mock other store properties to null
         mockNullPropertiesForStore(storeSuffix);
@@ -228,7 +226,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.custom.awsAccessKey")).thenReturn("customKey");
         when(mockConfigurationService.getProperty("assetstore.s3.custom.awsSecretKey")).thenReturn("customSecret");
         when(mockConfigurationService.getProperty("assetstore.s3.custom.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.custom.stsSessionDuration")).thenReturn(7200);
 
         mockNullPropertiesForStore(storeSuffix);
         mockDefaultClientConfiguration();
@@ -247,13 +244,11 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAccessKey")).thenReturn("store1Key");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsSecretKey")).thenReturn("store1Secret");
         when(mockConfigurationService.getProperty("assetstore.s3.store1.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.store1.stsSessionDuration")).thenReturn(1800);
 
         // Setup store2
         when(mockConfigurationService.getProperty("assetstore.s3.store2.awsAccessKey")).thenReturn("store2Key");
         when(mockConfigurationService.getProperty("assetstore.s3.store2.awsSecretKey")).thenReturn("store2Secret");
         when(mockConfigurationService.getProperty("assetstore.s3.store2.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.store2.stsSessionDuration")).thenReturn(3600);
 
         mockNullPropertiesForStore(store1);
         mockNullPropertiesForStore(store2);
@@ -288,7 +283,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.awsAccessKey")).thenReturn("emptyKey");
         when(mockConfigurationService.getProperty("assetstore.s3.awsSecretKey")).thenReturn("emptySecret");
         when(mockConfigurationService.getProperty("assetstore.s3.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.sts.sessionduration")).thenReturn(1800);
 
         mockNullProperties();
 
@@ -367,7 +361,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
             "integrationToken");
         when(mockConfigurationService.getProperty("assetstore.s3.integration.awsAuthenticationType")).thenReturn(
             "static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.integration.stsSessionDuration")).thenReturn(14400);
 
         // Mock other properties as null
         mockNullPropertiesForStore(storeSuffix);
@@ -479,7 +472,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty("assetstore.s3.override.awsAccessKey")).thenReturn("overrideKey");
         when(mockConfigurationService.getProperty("assetstore.s3.override.awsSecretKey")).thenReturn("overrideSecret");
         when(mockConfigurationService.getProperty("assetstore.s3.override.awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty("assetstore.s3.override.stsSessionDuration")).thenReturn(7200);
 
         mockNullPropertiesForStore(storeSuffix);
 
@@ -560,7 +552,6 @@ public class AWSFactoryTest extends AbstractDSpaceTest {
         when(mockConfigurationService.getProperty(prefix + "awsAccessKey")).thenReturn(accessKey);
         when(mockConfigurationService.getProperty(prefix + "awsSecretKey")).thenReturn(secretKey);
         when(mockConfigurationService.getProperty(prefix + "awsAuthenticationType")).thenReturn("static");
-        when(mockConfigurationService.getIntProperty(prefix + "stsSessionDuration")).thenReturn(3600);
 
         // Mock all other properties as null for this store
         mockNullPropertiesForStore(storeSuffix);
