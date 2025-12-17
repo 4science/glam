@@ -22,6 +22,7 @@
         <spring.version>6.2.8</spring.version>
         <spring-boot.version>3.5.3</spring-boot.version>
         <spring-security.version>6.5.1</spring-security.version> <!-- sync with version used by spring-boot-->
+        <spring-cloud-kubernetes.version>3.3.0</spring-cloud-kubernetes.version>
         <hibernate.version>6.4.8.Final</hibernate.version>
         <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
         <postgresql.driver.version>42.7.7</postgresql.driver.version>
@@ -62,6 +63,10 @@
         <!--=== OTHER MODULE-SPECIFIC DEPENDENCIES ===-->
         <!-- Jena is used by both RDF and SWORDv2 -->
         <jena.version>4.10.0</jena.version>
+
+        <s3mock-testcontainers.version>4.10.0</s3mock-testcontainers.version>
+        <software.amazon.awssdk.version>2.32.31</software.amazon.awssdk.version>
+        <software.amazon.awssdk.crt.version>0.38.12</software.amazon.awssdk.crt.version>
 
         <!--=== ADDON DEPENDENCIES ===-->
         <addons.version>[cris-2024.02.04-SNAPSHOT,cris-2024.02.04.9999-SNAPSHOT)</addons.version>
@@ -2194,6 +2199,12 @@
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.adobe.testing</groupId>
+                <artifactId>s3mock-testcontainers</artifactId>
+                <version>${s3mock-testcontainers.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
