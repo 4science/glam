@@ -7,13 +7,14 @@
  */
 package org.dspace.app.sitemap;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Date;
-import java.util.zip.GZIPOutputStream;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.dspace.utils.DSpace;
 
 /**
  * Base class for creating sitemaps of various kinds. A sitemap consists of one
@@ -37,6 +38,9 @@ import java.util.zip.GZIPOutputStream;
  * @author Robert Tansley
  */
 public abstract class AbstractGenerator {
+
+    private static final Logger log = LogManager.getLogger(AbstractGenerator.class);
+
     /**
      * Number of files written so far
      */
@@ -53,9 +57,10 @@ public abstract class AbstractGenerator {
     protected int urlsWritten;
 
     /**
-     * Directory files are written to
+     * Storage service for writing sitemap files
      */
-    protected File outputDir;
+    protected SitemapStorageService storageService = new DSpace().getServiceManager()
+                .getServiceByName("sitemapStorageService", SitemapStorageService.class);
 
     /**
      * Current output
@@ -63,21 +68,25 @@ public abstract class AbstractGenerator {
     protected PrintStream currentOutput;
 
     /**
+     * Current underlying output stream
+     */
+    protected OutputStream currentOutputStream;
+
+    /**
      * Size in bytes of trailing boilerplate
      */
-    private int trailingByteCount;
+    private final int trailingByteCount;
 
     /**
      * Initialize this generator to write to the given directory. This must be
      * called by any subclass constructor.
      *
-     * @param outputDirIn directory to write sitemap files to
      */
-    public AbstractGenerator(File outputDirIn) {
+    public AbstractGenerator() {
         fileCount = 0;
-        outputDir = outputDirIn;
         trailingByteCount = getTrailingBoilerPlate().length();
         currentOutput = null;
+        currentOutputStream = null;
     }
 
     /**
@@ -88,18 +97,46 @@ public abstract class AbstractGenerator {
      */
     protected void startNewFile() throws IOException {
         String lbp = getLeadingBoilerPlate();
+        String filename = getFilename(fileCount);
 
-        OutputStream fo = new FileOutputStream(new File(outputDir,
-                                                        getFilename(fileCount)));
+        log.debug("Starting new sitemap file: {} (file count: {})", filename, fileCount);
 
-        if (useCompression()) {
-            fo = new GZIPOutputStream(fo);
+        OutputStream tempOutputStream = null;
+        PrintStream tempOutput = null;
+        boolean success = false;
+
+        try {
+            tempOutputStream = storageService.createSitemapFile(filename, useCompression());
+            tempOutput = new PrintStream(tempOutputStream);
+            tempOutput.print(lbp);
+
+            // Mark as successful before transferring ownership
+            success = true;
+
+            // Only assign to instance variables after successful initialization
+            currentOutputStream = tempOutputStream;
+            currentOutput = tempOutput;
+            bytesWritten = lbp.length();
+            urlsWritten = 0;
+
+        } finally {
+            // If initialization failed, ensure streams are closed
+            if (!success) {
+                if (tempOutput != null) {
+                    try {
+                        tempOutput.close();
+                    } catch (Exception e) {
+                        log.error("Error closing PrintStream during cleanup", e);
+                    }
+                } else if (tempOutputStream != null) {
+                    try {
+                        tempOutputStream.close();
+                    } catch (IOException e) {
+                        log.error("Error closing OutputStream during cleanup", e);
+                    }
+                }
+            }
         }
-
-        currentOutput = new PrintStream(fo);
-        currentOutput.print(lbp);
-        bytesWritten = lbp.length();
-        urlsWritten = 0;
     }
 
     /**
@@ -111,22 +148,54 @@ public abstract class AbstractGenerator {
      *                     if an error occurs writing
      */
     public void addURL(String url, Date lastMod) throws IOException {
-        // Kick things off if this is the first call
-        if (currentOutput == null) {
-            startNewFile();
+        try {
+            // Kick things off if this is the first call
+            if (currentOutput == null) {
+                startNewFile();
+            }
+
+            String newURLText = getURLText(url, lastMod);
+
+            if (bytesWritten + newURLText.length() + trailingByteCount > getMaxSize()
+                || urlsWritten + 1 > getMaxURLs()) {
+                closeCurrentFile();
+                startNewFile();
+            }
+
+            currentOutput.print(newURLText);
+            bytesWritten += newURLText.length();
+            urlsWritten++;
+        } catch (IOException e) {
+            // Ensure streams are cleaned up if an error occurs
+            cleanup();
+            throw e;
+        }
+    }
+
+    /**
+     * Cleanup method to ensure all streams are properly closed.
+     * This method should be called in case of exceptions to prevent resource leaks.
+     */
+    public void cleanup() {
+        if (currentOutput != null) {
+            try {
+                currentOutput.close();
+            } finally {
+                currentOutput = null;
+            }
         }
 
-        String newURLText = getURLText(url, lastMod);
-
-        if (bytesWritten + newURLText.length() + trailingByteCount > getMaxSize()
-            || urlsWritten + 1 > getMaxURLs()) {
-            closeCurrentFile();
-            startNewFile();
+        if (currentOutputStream != null) {
+            try {
+                currentOutputStream.close();
+            } catch (IOException e) {
+                log.error("Error closing OutputStream during cleanup", e);
+            } finally {
+                currentOutputStream = null;
+            }
         }
 
-        currentOutput.print(newURLText);
-        bytesWritten += newURLText.length();
-        urlsWritten++;
+        log.debug("AbstractGenerator cleanup completed");
     }
 
     /**
@@ -136,9 +205,47 @@ public abstract class AbstractGenerator {
      *                     if an error occurs writing
      */
     protected void closeCurrentFile() throws IOException {
-        currentOutput.print(getTrailingBoilerPlate());
-        currentOutput.close();
-        fileCount++;
+        if (currentOutput != null) {
+            IOException writeException = null;
+            IOException underlyingStreamException = null;
+
+            try {
+                currentOutput.print(getTrailingBoilerPlate());
+            } catch (Exception e) {
+                writeException = new IOException("Error writing trailing boilerplate to sitemap file", e);
+                log.error("Error writing trailing boilerplate to sitemap file", e);
+            }
+
+            // Always attempt to close PrintStream
+            try {
+                currentOutput.close();
+            } finally {
+                currentOutput = null;
+            }
+
+            // Always attempt to close underlying OutputStream
+            if (currentOutputStream != null) {
+                try {
+                    currentOutputStream.close();
+                } catch (IOException e) {
+                    underlyingStreamException = e;
+                    log.error("Error closing underlying OutputStream", e);
+                } finally {
+                    currentOutputStream = null;
+                }
+            }
+
+            fileCount++;
+            log.debug("Closed sitemap file {} with {} URLs and {} bytes",
+                     getFilename(fileCount - 1), urlsWritten, bytesWritten);
+
+            // Throw the first exception that occurred, if any
+            if (writeException != null) {
+                throw writeException;
+            } else if (underlyingStreamException != null) {
+                throw underlyingStreamException;
+            }
+        }
     }
 
     /**
@@ -151,22 +258,28 @@ public abstract class AbstractGenerator {
      *                     if an error occurs writing
      */
     public int finish() throws IOException {
-        if (null != currentOutput) {
-            closeCurrentFile();
+        try {
+            // Close the current file if it's open
+            if (null != currentOutput) {
+                closeCurrentFile();
+            }
+
+            // Write the index file
+            String indexFilename = getIndexFilename();
+            log.debug("Writing sitemap index file: {} for {} sitemap files", indexFilename, fileCount);
+
+            try (OutputStream indexOutputStream = storageService.createIndexFile(indexFilename, useCompression());
+                 PrintStream out = new PrintStream(indexOutputStream)) {
+                writeIndex(out, fileCount);
+            }
+
+            log.info("Sitemap generation completed - {} files written, index: {}", fileCount, indexFilename);
+            return fileCount;
+        } catch (IOException e) {
+            // Ensure any remaining streams are closed in case of error
+            cleanup();
+            throw e;
         }
-
-        OutputStream fo = new FileOutputStream(new File(outputDir,
-                                                        getIndexFilename()));
-
-        if (useCompression()) {
-            fo = new GZIPOutputStream(fo);
-        }
-
-        PrintStream out = new PrintStream(fo);
-        writeIndex(out, fileCount);
-        out.close();
-
-        return fileCount;
     }
 
     /**
