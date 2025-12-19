@@ -16,22 +16,16 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.AnonymousAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dspace.AbstractIntegrationTestWithDatabase;
@@ -56,6 +50,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
  * Test class for the CurationOrchestratorScript class.
@@ -65,14 +65,12 @@ import org.mockito.Mockito;
 public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDatabase {
 
     private static final String S3_ENDPOINT = "http://127.0.0.1:8001";
-    public static final int MAX_CONNECTIONS = 5;
-    public static final int CONNECTION_TIMEOUT = 1000;
     public static final String BUCKET_OUTPUT = "test-bucket-output";
     public static final String BUCKET_INPUT = "test-bucket-input";
 
-    private S3Mock s3Mock;
+    private S3MockContainer s3Mock = new S3MockContainer("4.8.0");
     private File s3Directory;
-    private AmazonS3 amazonS3Client;
+    private S3AsyncClient s3AsyncClient;
     private S3BitStoreService s3BitStoreServiceMock;
     private MockedStatic<StorageServiceFactory> storageServiceFactoryMockedStatic;
 
@@ -87,12 +85,14 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         context.turnOffAuthorisationSystem();
 
         s3Directory = new File(System.getProperty("java.io.tmpdir"), "s3TestDir");
-        s3Mock = S3Mock.create(8001, s3Directory.getAbsolutePath());
+        s3Mock = new S3MockContainer("4.8.0");
         s3Mock.start();
 
-        amazonS3Client = createAmazonS3Client(S3_ENDPOINT);
-        amazonS3Client.createBucket(BUCKET_INPUT);
-        amazonS3Client.createBucket(BUCKET_OUTPUT);
+
+        s3AsyncClient = createAmazonS3Client("http://127.0.0.1:" + s3Mock.getHttpServerPort());
+        // Create buckets using S3Mock's API or skip since S3Mock handles this automatically
+        // s3AsyncClient.createBucket(BUCKET_INPUT);
+        // s3AsyncClient.createBucket(BUCKET_OUTPUT);
 
         storageServiceFactoryMockedStatic = Mockito.mockStatic(StorageServiceFactory.class);
         StorageServiceFactory storageServiceFactory = mock(StorageServiceFactory.class);
@@ -124,9 +124,6 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
     @After
     public void cleanUp() throws IOException {
-        if (s3Mock != null) {
-            s3Mock.shutdown();
-        }
         if (s3Directory != null && s3Directory.exists()) {
             FileUtils.deleteDirectory(s3Directory);
         }
@@ -167,16 +164,16 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
         InputStream jsonInputStream = generateOutputJSON(bitstream, "Test.pdf");
         String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream.getID());
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
 
         String keyForPDFA = "results/Test.pdf";
         InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content");
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA, pdfaInputStream, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA, pdfaInputStream);
 
         // Verify that the output JSON objects have been uploaded
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON));
         // The PDF/A file is uploaded to the "results/" folder inside the bucket
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForPDFA));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA));
 
         // Mock S3BitStoreService methods
         when(s3BitStoreServiceMock.getBucketName()).thenReturn("test-bucket-input");
@@ -194,9 +191,9 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
         ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
         when(handlerMock.getProcessId()).thenReturn(1);
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
-        curationOrchestratorScript.setS3Client(amazonS3Client);
+        curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
         curationOrchestratorScript.run();
 
         publication = context.reloadEntity(publication);
@@ -250,26 +247,26 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
         InputStream jsonInputStream = generateOutputJSON(bitstream1, "my-output-test.pdf");
         String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream1.getID());
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
 
         String keyForPDFA = "results/my-output-test.pdf";
         InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content 4 bitstream 1");
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA, pdfaInputStream, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA, pdfaInputStream);
 
         InputStream jsonInputStream2 = generateOutputJSON(bitstream2, "mySecondTest-output.pdf");
         String keyForJSON2 = String.format("1/%s-pdfATransformer.json", bitstream2.getID());
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON2, jsonInputStream2, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON2, jsonInputStream2);
 
         String keyForPDFA2 = "results/mySecondTest-output.pdf";
         InputStream pdfaInputStream2 = generatePDFA("This is a PDF/A file content 4 bitstream 2");
-        amazonS3Client.putObject(BUCKET_OUTPUT, keyForPDFA2, pdfaInputStream2, new ObjectMetadata());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA2, pdfaInputStream2);
 
         // Verify that the output JSON objects have been uploaded
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON2));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON2));
         // The PDF/A file is uploaded to the "results/" folder inside the bucket
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForPDFA));
-        assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForPDFA2));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA2));
 
         // Mock S3BitStoreService methods
         when(s3BitStoreServiceMock.getBucketName()).thenReturn("test-bucket-input", "test-bucket-input");
@@ -290,9 +287,9 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
         when(handlerMock.getProcessId()).thenReturn(1, 1);
 
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
-        curationOrchestratorScript.setS3Client(amazonS3Client);
+        curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
         curationOrchestratorScript.run();
 
         publication = context.reloadEntity(publication);
@@ -343,17 +340,17 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
 
         TestDSpaceRunnableHandler testDSpaceRunnableHandler = new TestDSpaceRunnableHandler();
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.amazonS3Client);
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
         curationOrchestratorScript.initialize(args, testDSpaceRunnableHandler, admin);
 
         String keyForJSON = String.format("%s/%s-pdfATransformer.json", curationOrchestratorScript.getProcessRandomId(),
                                                                         bitstream1.getID());
         try (InputStream jsonInputStream = generateFailedOutputJSON(bitstream1)) {
-            amazonS3Client.putObject(BUCKET_OUTPUT, keyForJSON, jsonInputStream, new ObjectMetadata());
+            uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
             // Verify that the output JSON objects have been uploaded
-            assertTrue(amazonS3Client.doesObjectExist(BUCKET_OUTPUT, keyForJSON));
+            assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON));
 
-            curationOrchestratorScript.setS3Client(amazonS3Client);
+            curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
             curationOrchestratorScript.run();
 
             publication = context.reloadEntity(publication);
@@ -397,22 +394,49 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         return new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
     }
 
-    private AmazonS3 createAmazonS3Client(String endpoint) {
-        return AmazonS3ClientBuilder.standard()
-                .withPathStyleAccessEnabled(true)
-                .withEndpointConfiguration(
-                    new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(
-                        endpoint, Regions.DEFAULT_REGION.getName()))
-                .withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
-                .withClientConfiguration(createClientConfiguration())
+    private void uploadObject(S3AsyncClient s3Client, String bucketName, String key, InputStream inputStream) {
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                                                                .bucket(bucketName)
+                                                                .key(key)
                 .build();
+            long available = (long) inputStream.available();
+            s3Client.putObject(
+                putObjectRequest,
+                AsyncRequestBody.fromInputStream(
+                    builder ->
+                        builder.inputStream(inputStream)
+                               .contentLength(available)
+                               .build()
+                )
+            ).join();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload object to S3: " + key, e);
+        }
     }
 
-    private ClientConfiguration createClientConfiguration() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setMaxConnections(MAX_CONNECTIONS);
-        clientConfiguration.setConnectionTimeout(CONNECTION_TIMEOUT);
-        return clientConfiguration;
+    private boolean objectExists(S3AsyncClient s3Client, String bucketName, String key) {
+        try {
+            HeadObjectRequest headObjectRequest =
+                HeadObjectRequest.builder()
+                                 .bucket(bucketName)
+                                 .key(key)
+                                 .build();
+            s3Client.headObject(headObjectRequest).join();
+            return true;
+        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to check object existence: " + key, e);
+        }
+    }
+
+    private S3AsyncClient createAmazonS3Client(String endpoint) {
+        return S3AsyncClient.crtBuilder()
+                            .endpointOverride(URI.create(endpoint))
+                            .credentialsProvider(AnonymousCredentialsProvider.create())
+                            .region(Region.US_EAST_1)
+                            .build();
     }
 
 }

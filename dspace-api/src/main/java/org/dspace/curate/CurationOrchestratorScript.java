@@ -26,11 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
 import org.apache.commons.cli.ParseException;
@@ -69,6 +64,14 @@ import org.dspace.storage.bitstore.S3BitStoreService;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
 import org.dspace.utils.DSpace;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.model.DirectoryUpload;
+import software.amazon.awssdk.transfer.s3.model.UploadDirectoryRequest;
 
 /**
  * Orchestrates curation tasks for a given DSpace Item.
@@ -104,7 +107,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     public static final String STATUS_FILE_PATTERN_NAME = "%s-%s.json";
 
     // Services
-    private AmazonS3 s3Client;
+    private S3AsyncClient s3AsyncClient;
     private S3FileChecker s3FileChecker;
     private CurationTaskResolverService curationTaskResolverService;
     private ItemService itemService = ContentServiceFactory.getInstance().getItemService();
@@ -130,22 +133,10 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private List<String> failedServerTasks = new ArrayList<>();
     private List<String> failedServerlessTasks = new ArrayList<>();
 
-    private static ClientConfiguration getProxyClientConfig(String proxyHost, String proxyPort, String ignoredHosts) {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        if (StringUtils.isNotBlank(proxyHost)) {
-            clientConfiguration.setProxyHost(proxyHost);
-        }
-        if (StringUtils.isNotBlank(proxyPort)) {
-            clientConfiguration.setProxyPort(Integer.parseInt(proxyPort));
-        }
-        if (StringUtils.isNotBlank(ignoredHosts)) {
-            clientConfiguration.setNonProxyHosts(ignoredHosts);
-        }
-        return clientConfiguration;
-    }
 
-    protected CurationOrchestratorScript(AmazonS3 s3Client) {
-        this.s3Client = s3Client;
+
+    protected CurationOrchestratorScript(S3AsyncClient s3AsyncClient) {
+        this.s3AsyncClient = s3AsyncClient;
     }
 
     public CurationOrchestratorScript() { }
@@ -224,7 +215,7 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             List<Future<Integer>> serverFutures = launchServerCurationTasks(item);
             List<CompletableFuture<CurationTaskResult>> serverlessFutures =
                                 this.s3FileChecker.checkOutputFilesAndLaunchServerlessTask(
-                                    this.context, this.getS3Client(), this.executorService, scheduledProcess,
+                                    this.context, this.getS3AsyncClient(), this.executorService, scheduledProcess,
                                     this.allResolvedTasks
                                 );
 
@@ -397,15 +388,19 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
                                                                 scheduledCurationTasks);
         String uploadBucket = getUploadBucket();
         checkBucket(uploadBucket);
-        TransferManager transferManager = null;
+        S3TransferManager transferManager = null;
         try {
-            transferManager = TransferManagerBuilder.standard().withS3Client(this.getS3Client()).build();
+            transferManager =
+                S3TransferManager
+                    .builder()
+                    .s3Client(this.getS3AsyncClient())
+                    .build();
             uploadFile(curationProcess, transferManager, uploadBucket);
         } catch (Exception e) {
             throw new CurationTaskException("Cannot upload the curation-task process: " + curationProcess, e);
         } finally {
             if (transferManager != null) {
-                transferManager.shutdownNow(false);
+                transferManager.close();
             }
         }
         return curationProcess;
@@ -426,14 +421,23 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     }
 
     private void checkBucket(String uploadBucket) {
-        if (!getS3Client().doesBucketExistV2(uploadBucket)) {
+        try {
+            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                .bucket(uploadBucket)
+                .build();
+            getS3AsyncClient().headBucket(headBucketRequest);
+            log.info("S3 bucket {} already exists", uploadBucket);
+        } catch (NoSuchBucketException e) {
             log.info("Creating S3 bucket {} for uploading curation tasks", uploadBucket);
-            getS3Client().createBucket(uploadBucket);
+            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
+                .bucket(uploadBucket)
+                .build();
+            getS3AsyncClient().createBucket(createBucketRequest);
         }
     }
 
-    private void uploadFile(ScheduledProcess curationProcess, TransferManager transferManager, String uploadBucket)
-            throws IOException, InterruptedException, SQLException, AuthorizeException {
+    private void uploadFile(ScheduledProcess curationProcess, S3TransferManager transferManager, String uploadBucket)
+            throws IOException, SQLException, AuthorizeException {
         File tempFile = null;
         try {
             File tempDir = getTempDir(curationProcess);
@@ -443,9 +447,16 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
 
             var directoryOnS3 = curationProcess.id() + "/";
             log.info("Uploading curation JSON with key:{} to S3!", directoryOnS3 + tempFile.getName());
-            var multipleFileUpload = transferManager.uploadDirectory(uploadBucket, directoryOnS3, tempDir, true);
-            multipleFileUpload.waitForCompletion();
-            log.info("Curation process upload state: {}", multipleFileUpload.getState());
+
+            UploadDirectoryRequest uploadDirectoryRequest = UploadDirectoryRequest.builder()
+                .source(tempDir.toPath())
+                .bucket(uploadBucket)
+                .s3Prefix(directoryOnS3)
+                .build();
+
+            DirectoryUpload directoryUpload = transferManager.uploadDirectory(uploadDirectoryRequest);
+            directoryUpload.completionFuture().join();
+
             log.info("Curation process file: {} uploaded successfully to S3 bucket!", tempFile.getName());
             handler.writeFilestream(context, tempFile.getName(), new FileInputStream(tempFile), "application/json");
         } finally {
@@ -772,21 +783,29 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
         return configurationService.getProperty("curation.s3.customer-id");
     }
 
-    public AmazonS3 getS3Client() {
-        if (this.s3Client == null) {
+    public S3AsyncClient getS3AsyncClient() {
+        if (this.s3AsyncClient == null) {
+            S3CrtAsyncClientBuilder builder = S3AsyncClient.crtBuilder();
+
+            // Configure proxy if needed
             String proxyHost = configurationService.getProperty("http.proxy.host");
             String proxyPort = configurationService.getProperty("http.proxy.port");
-            String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
-            this.s3Client =
-                AmazonS3Client.builder()
-                              .withClientConfiguration(getProxyClientConfig(proxyHost, proxyPort, ignoredHosts))
-                              .build();
+            if (StringUtils.isNotBlank(proxyHost) && StringUtils.isNotBlank(proxyPort)) {
+                System.setProperty("http.proxyHost", proxyHost);
+                System.setProperty("http.proxyPort", proxyPort);
+                String ignoredHosts = configurationService.getProperty("http.proxy.hosts-to-ignore");
+                if (StringUtils.isNotBlank(ignoredHosts)) {
+                    System.setProperty("http.nonProxyHosts", ignoredHosts);
+                }
+            }
+
+            this.s3AsyncClient = builder.build();
         }
-        return this.s3Client;
+        return this.s3AsyncClient;
     }
 
-    public void setS3Client(AmazonS3 s3Client) {
-        this.s3Client = s3Client;
+    public void setS3AsyncClient(S3AsyncClient s3AsyncClient) {
+        this.s3AsyncClient = s3AsyncClient;
     }
 
     public String getProcessRandomId() {

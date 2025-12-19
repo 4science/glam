@@ -17,8 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +27,10 @@ import org.dspace.curate.ScheduledProcess;
 import org.dspace.curate.ServerlessCurationTask;
 import org.dspace.services.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * Service to check the presence of files in an S3 bucket with retry mechanism.
@@ -59,7 +61,7 @@ public class S3FileChecker {
      * Uses a circular queue approach with time-based timeout to wait for files to appear.
      *
      * @param context the DSpace context
-     * @param s3Client the Amazon S3 client for file operations
+     * @param s3AsyncClient the Amazon S3 client for file operations
      * @param executorService the executor service for running tasks asynchronously
      * @param scheduledProcess the scheduled process containing task information
      * @param allResolvedTasks list of all resolved tasks available for execution
@@ -68,7 +70,7 @@ public class S3FileChecker {
      */
     public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(
         Context context,
-        AmazonS3 s3Client,
+        S3AsyncClient s3AsyncClient,
         ExecutorService executorService,
         ScheduledProcess scheduledProcess,
         List<ResolvedTask> allResolvedTasks
@@ -108,20 +110,26 @@ public class S3FileChecker {
                 String fileKey = scheduledProcess.process() + "/" + outputFileName;
                 log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
 
-                if (s3Client.doesObjectExist(bucketName, fileKey)) {
+                try {
+                    HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                                                                           .bucket(bucketName)
+                                                                           .key(fileKey)
+                                                                           .build();
+
+                    s3AsyncClient.headObject(headObjectRequest).join();
+
                     log.info("S3FileChecker: FILE:{} found!", fileKey);
                     attempts.remove(scheduledCurationTask);
 
                     // Launch ExecutorService to process the file just found
                     futures.add(
                         supplyAsyncCurationTask(
-                            context, s3Client, scheduledProcess, scheduledCurationTask,
+                            context, s3AsyncClient, scheduledProcess, scheduledCurationTask,
                             getResolvedTask(allResolvedTasks, scheduledCurationTask),
                             executorService
                         )
                     );
-                } else {
-
+                } catch (NoSuchKeyException e) {
                     remainingFiles.add(scheduledCurationTask);
 
                     Integer retryCount = attempts.compute(
@@ -135,10 +143,10 @@ public class S3FileChecker {
                             sleep(attempts.get(scheduledCurationTask));
                         }
                     }
-
                 }
-            } catch (SdkClientException e) {
-                log.error("S3FileChecker: Error while checking file:{} , due to:{} .", outputFileName, e.getMessage());
+            } catch (S3Exception e) {
+                log.error("S3FileChecker: Error while checking file:{} , due to:{} .", outputFileName,
+                          e.getMessage());
             }
         }
 
@@ -166,7 +174,7 @@ public class S3FileChecker {
 
     protected CompletableFuture<CurationTaskResult> supplyAsyncCurationTask(
         Context context,
-        AmazonS3 s3Client,
+        S3AsyncClient s3AsyncClient,
         ScheduledProcess scheduledProcess,
         ScheduledCurationTask scheduledCurationTask,
         ServerlessCurationTask serverlessTask,
@@ -174,7 +182,7 @@ public class S3FileChecker {
     ) {
         return CompletableFuture.supplyAsync(
             () -> asyncCurationTask(
-                context, s3Client, scheduledProcess, scheduledCurationTask, serverlessTask
+                context, s3AsyncClient, scheduledProcess, scheduledCurationTask, serverlessTask
             ),
             executorService
         );
@@ -182,7 +190,7 @@ public class S3FileChecker {
 
     protected CurationTaskResult asyncCurationTask(
         Context context,
-        AmazonS3 s3Client,
+        S3AsyncClient s3AsyncClient,
         ScheduledProcess scheduledProcess,
         ScheduledCurationTask scheduledCurationTask,
         ServerlessCurationTask serverlessTask
@@ -191,7 +199,7 @@ public class S3FileChecker {
         Context threadContext = createThreadContext(context);
         try {
             logStartInitPerform(scheduledCurationTask);
-            return serverlessTask.initPerform(threadContext, s3Client, scheduledCurationTask,
+            return serverlessTask.initPerform(threadContext, s3AsyncClient, scheduledCurationTask,
                                               scheduledProcess.process());
         } catch (Exception e) {
             log.error("S3FileChecker: Error during async curation task execution", e);
