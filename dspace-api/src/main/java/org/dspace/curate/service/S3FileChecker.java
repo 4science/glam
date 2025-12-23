@@ -103,39 +103,34 @@ public class S3FileChecker {
 
             var infoMessage = "S3FileChecker: Checking file: {} - Files remaining to be checked: {} ";
             log.info(infoMessage, outputFileName, remainingFiles.size() + 1);
+            String fileKey = scheduledProcess.process() + "/" + outputFileName;
+            log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
             try {
-                String fileKey = scheduledProcess.process() + "/" + outputFileName;
-                log.info("S3FileChecker: Checking for key:{} , into bucket:{} ", fileKey, bucketName);
-                try {
-                    HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
-                                                                           .bucket(bucketName)
-                                                                           .key(fileKey)
-                                                                           .build();
-                    s3AsyncClient.headObject(headObjectRequest).join();
-                    log.info("S3FileChecker: FILE:{} found!", fileKey);
-                    attempts.remove(scheduledCurationTask);
-                    // Launch ExecutorService to process the file just found
-                    futures.add(
-                        supplyAsyncCurationTask(
-                            context, s3AsyncClient, scheduledProcess, scheduledCurationTask,
-                            getResolvedTask(allResolvedTasks, scheduledCurationTask), executorService
-                        )
-                    );
-                } catch (CompletionException e) {
-                    if (e.getCause() instanceof NoSuchKeyException) {
-                        handleRetry(scheduledCurationTask, remainingFiles, attempts);
-                    } else if (e.getCause() instanceof S3Exception) {
-                        var error = "S3FileChecker: S3 error while checking file:{} , due to:{} .";
-                        log.error(error, fileKey, e.getCause().getMessage());
-                        remainingFiles.add(scheduledCurationTask);
-                    } else {
-                        log.error("S3FileChecker: Unexpected error while checking file:{}", fileKey, e.getCause());
-                        remainingFiles.add(scheduledCurationTask);
-                    }
+                HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                                                                       .bucket(bucketName)
+                                                                       .key(fileKey)
+                                                                       .build();
+                s3AsyncClient.headObject(headObjectRequest).join();
+                log.info("S3FileChecker: FILE:{} found!", fileKey);
+                attempts.remove(scheduledCurationTask);
+                // Launch ExecutorService to process the file just found
+                futures.add(
+                    supplyAsyncCurationTask(
+                        context, s3AsyncClient, scheduledProcess, scheduledCurationTask,
+                        getResolvedTask(allResolvedTasks, scheduledCurationTask), executorService
+                    )
+                );
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof NoSuchKeyException) {
+                    handleRetry(scheduledCurationTask, remainingFiles, attempts);
+                } else if (e.getCause() instanceof S3Exception) {
+                    var error = "S3FileChecker: S3 error while checking file:{} , due to:{} .";
+                    log.error(error, fileKey, e.getCause().getMessage());
+                    remainingFiles.add(scheduledCurationTask);
+                } else {
+                    log.error("S3FileChecker: Unexpected error while checking file:{}", fileKey, e.getCause());
+                    remainingFiles.add(scheduledCurationTask);
                 }
-            } catch (S3Exception e) {
-                var error = "S3FileChecker: Error while checking file:{} , due to:{} .";
-                log.error(error, outputFileName, e.getMessage());
             }
         }
 
