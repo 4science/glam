@@ -33,8 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.authorize.factory.AuthorizeServiceFactory;
-import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.DCDate;
@@ -116,7 +114,6 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
     private BitstreamStorageService bitstreamStorageService = StorageServiceFactory.getInstance()
                                                                                    .getBitstreamStorageService();
-    private AuthorizeService authorizeService = AuthorizeServiceFactory.getInstance().getAuthorizeService();
 
     // Parameters
     private boolean force;
@@ -423,8 +420,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
     private void checkBucket(String uploadBucket) {
         try {
             HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                .bucket(uploadBucket)
-                .build();
+                                                                   .bucket(uploadBucket)
+                                                                   .build();
             getS3AsyncClient().headBucket(headBucketRequest);
             log.info("S3 bucket {} already exists", uploadBucket);
         } catch (NoSuchBucketException e) {
