@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -55,6 +57,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -64,7 +67,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
  */
 public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String S3_ENDPOINT = "http://127.0.0.1:8001";
     public static final String BUCKET_OUTPUT = "test-bucket-output";
     public static final String BUCKET_INPUT = "test-bucket-input";
 
@@ -90,9 +92,8 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
 
         s3AsyncClient = createAmazonS3Client("http://127.0.0.1:" + s3Mock.getHttpServerPort());
-        // Create buckets using S3Mock's API or skip since S3Mock handles this automatically
-        // s3AsyncClient.createBucket(BUCKET_INPUT);
-        // s3AsyncClient.createBucket(BUCKET_OUTPUT);
+        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_INPUT)).join();
+        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_OUTPUT)).join();
 
         storageServiceFactoryMockedStatic = Mockito.mockStatic(StorageServiceFactory.class);
         StorageServiceFactory storageServiceFactory = mock(StorageServiceFactory.class);
@@ -193,7 +194,6 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         when(handlerMock.getProcessId()).thenReturn(1);
         CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
-        curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
         curationOrchestratorScript.run();
 
         publication = context.reloadEntity(publication);
@@ -399,32 +399,24 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                                                                 .bucket(bucketName)
                                                                 .key(key)
-                .build();
-            long available = (long) inputStream.available();
-            s3Client.putObject(
-                putObjectRequest,
-                AsyncRequestBody.fromInputStream(
-                    builder ->
-                        builder.inputStream(inputStream)
-                               .contentLength(available)
-                               .build()
-                )
-            ).join();
+                                                                .build();
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            AsyncRequestBody body = AsyncRequestBody.fromInputStream(inputStream, null, executor);
+            s3Client.putObject(putObjectRequest, body).join();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to upload object to S3: " + key, e);
+            throw new RuntimeException("Failed to upload object to S3: " + key + " caused by:" + e.getMessage(), e);
         }
     }
 
     private boolean objectExists(S3AsyncClient s3Client, String bucketName, String key) {
         try {
-            HeadObjectRequest headObjectRequest =
-                HeadObjectRequest.builder()
-                                 .bucket(bucketName)
-                                 .key(key)
-                                 .build();
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                                                                   .bucket(bucketName)
+                                                                   .key(key)
+                                                                   .build();
             s3Client.headObject(headObjectRequest).join();
             return true;
-        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException e) {
+        } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
             throw new RuntimeException("Failed to check object existence: " + key, e);

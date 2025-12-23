@@ -756,10 +756,8 @@ public class CurationOrchestratorScript extends DSpaceRunnable<CurationOrchestra
             String currentValue = existing.get(0).getValue();
             combinedValue = currentValue + "\n" + newHistoryEntry;
         }
-
         // Remove old metadata
         itemService.clearMetadata(context, item, "cris", "curation", "history", Item.ANY);
-
         // Add the new combined value
         itemService.addMetadata(context, item, "cris", "curation", "history", null, combinedValue);
     }
