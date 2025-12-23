@@ -2,7 +2,7 @@ image: maven:3.9.11-eclipse-temurin-17
 
 definitions:
   docker:
-    memory: 4096 #https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
+    memory: 6144 #https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
   caches:
     gradle-java17: ~/.gradle/caches
     gradlewrapper-java17: ~/.gradle/wrapper
