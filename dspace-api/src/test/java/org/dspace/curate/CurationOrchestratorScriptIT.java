@@ -48,7 +48,9 @@ import org.dspace.storage.bitstore.BitstreamStorageServiceImpl;
 import org.dspace.storage.bitstore.S3BitStoreService;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -70,15 +72,29 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
     public static final String BUCKET_OUTPUT = "test-bucket-output";
     public static final String BUCKET_INPUT = "test-bucket-input";
 
-    private S3MockContainer s3Mock = new S3MockContainer("4.8.0");
+    private static S3MockContainer s3Mock = new S3MockContainer("4.8.0");
     private File s3Directory;
-    private S3AsyncClient s3AsyncClient;
+    private static S3AsyncClient s3AsyncClient;
     private S3BitStoreService s3BitStoreServiceMock;
     private MockedStatic<StorageServiceFactory> storageServiceFactoryMockedStatic;
 
     private ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
 
     private Collection collection;
+
+    @BeforeClass
+    public static void setupS3() {
+        s3Mock.start();
+        s3AsyncClient = createAmazonS3Client("http://127.0.0.1:" + s3Mock.getHttpServerPort());
+        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_INPUT)).join();
+        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_OUTPUT)).join();
+    }
+
+    @AfterClass
+    public static void cleanupS3() {
+        s3Mock.close();
+        s3AsyncClient.close();
+    }
 
     @Before
     @Override
@@ -87,13 +103,6 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         context.turnOffAuthorisationSystem();
 
         s3Directory = new File(System.getProperty("java.io.tmpdir"), "s3TestDir");
-        s3Mock = new S3MockContainer("4.8.0");
-        s3Mock.start();
-
-
-        s3AsyncClient = createAmazonS3Client("http://127.0.0.1:" + s3Mock.getHttpServerPort());
-        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_INPUT)).join();
-        s3AsyncClient.createBucket(b -> b.bucket(BUCKET_OUTPUT)).join();
 
         storageServiceFactoryMockedStatic = Mockito.mockStatic(StorageServiceFactory.class);
         StorageServiceFactory storageServiceFactory = mock(StorageServiceFactory.class);
@@ -423,7 +432,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         }
     }
 
-    private S3AsyncClient createAmazonS3Client(String endpoint) {
+    private static S3AsyncClient createAmazonS3Client(String endpoint) {
         return S3AsyncClient.crtBuilder()
                             .endpointOverride(URI.create(endpoint))
                             .credentialsProvider(AnonymousCredentialsProvider.create())
