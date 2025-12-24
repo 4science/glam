@@ -2,7 +2,9 @@ image: maven:3.9.11-eclipse-temurin-17
 
 definitions:
   docker:
-    memory: 4096 #https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
+    memory: 1024 # Default memory for test execution (1GB) - https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
+  docker-build:
+    memory: 4096 # Higher memory for docker build steps (4GB)
   caches:
     gradle-java17: ~/.gradle/caches
     gradlewrapper-java17: ~/.gradle/wrapper
@@ -141,7 +143,7 @@ definitions:
         size: 1x
         image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
-          - docker
+          - docker: docker-build
         script:
           - apt-get update && apt-get install -y python3-pip
           - pip3 install awscli
@@ -166,7 +168,7 @@ definitions:
         size: 1x
         image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
-          - docker
+          - docker: docker-build
         script:
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | awk -F'/' '{if(NF==1)val=$1; else if(NF==2)val=$1"--"$2; else if(NF==3)val=$2; else if(NF==4)val=$2"--"$3; print tolower(val)}')
@@ -188,7 +190,7 @@ definitions:
         size: 1x
         image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
-          - docker
+          - docker: docker-build
         script:
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | awk -F'/' '{if(NF==1)val=$1; else if(NF==2)val=$1"--"$2; else if(NF==3)val=$2; else if(NF==4)val=$2"--"$3; print tolower(val)}')
