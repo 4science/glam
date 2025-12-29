@@ -1,11 +1,8 @@
 image: maven:3.9.11-eclipse-temurin-17
 
 definitions:
-  services:
-    docker:
-      memory: 1024 # Default memory for test execution (1GB) - https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
-      type: docker 
-      image: docker:latest
+  docker:
+    memory: 1024 # Default memory for test execution (1GB) - https://support.atlassian.com/bitbucket-cloud/kb/pipeline-build-failed-with-container-docker-exceeded-memory-limit-error/
   caches:
     gradle-java17: ~/.gradle/caches
     gradlewrapper-java17: ~/.gradle/wrapper
@@ -142,23 +139,17 @@ definitions:
           - arm64.group
         name: Build and Push Docker Image to ECR
         size: 1x
-        image: atlassian/default-image:5  # Default Bitbucket image with Docker support
+        image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
           - docker
         script:
-          # Download and install AWS CLI v2 directly in /tmp
-          - curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "/tmp/awscliv2.zip"
-          - unzip /tmp/awscliv2.zip -d /tmp/
-          - /tmp/aws/install
-          
-          # Clean up temporary files (optional)
-          - rm -rf /tmp/awscliv2.zip /tmp/aws
-
+          - apt-get update && apt-get install -y python3-pip
+          - pip3 install awscli
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
           - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 891377365430.dkr.ecr.eu-west-1.amazonaws.com
           - docker build -f Dockerfile.build -t dspace-cris:${BRANCH_NAME}-${HASH_COMMIT} -t dspace-cris:${BRANCH_NAME}-latest .
-          - pipe: atlassian/aws-ecr-push-image:2.5.0
+          - pipe: atlassian/aws-ecr-push-image:2.6.0
             variables:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
@@ -173,7 +164,7 @@ definitions:
           - arm64.group
         name: Build and Push SOLR8 Docker Image to ECR
         size: 1x
-        image: atlassian/default-image:5  # Default Bitbucket image with Docker support
+        image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
           - docker
         script:
@@ -195,7 +186,7 @@ definitions:
           - arm64.group
         name: Build and Push SOLR9 Docker Image to ECR
         size: 1x
-        image: atlassian/default-image:5  # Default Bitbucket image with Docker support
+        image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
           - docker
         script:
