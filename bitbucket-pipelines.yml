@@ -146,9 +146,14 @@ definitions:
         services:
           - docker
         script:
-          - python3 -m venv /tmp/venv
-          - /tmp/venv/bin/pip install awscli
-          - export PATH="/tmp/venv/bin:$PATH"
+          # Download and install AWS CLI v2 directly in /tmp
+          - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+          - unzip /tmp/awscliv2.zip -d /tmp/
+          - /tmp/aws/install
+          
+          # Clean up temporary files (optional)
+          - rm -rf /tmp/awscliv2.zip /tmp/aws
+
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
           - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 891377365430.dkr.ecr.eu-west-1.amazonaws.com
