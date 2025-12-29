@@ -146,7 +146,9 @@ definitions:
         services:
           - docker
         script:
-          - apt-get update && apt-get install -y awscli
+          - python3 -m venv /tmp/venv
+          - /tmp/venv/bin/pip install awscli
+          - export PATH="/tmp/venv/bin:$PATH"
           - export HASH_COMMIT=${BITBUCKET_COMMIT:0:8}
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
           - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 891377365430.dkr.ecr.eu-west-1.amazonaws.com
