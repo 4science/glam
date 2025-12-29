@@ -66,7 +66,6 @@ public class S3FileChecker {
      * @param scheduledProcess the scheduled process containing task information
      * @param allResolvedTasks list of all resolved tasks available for execution
      * @return list of CompletableFuture objects representing the launched serverless tasks
-     * @throws InterruptedException if the thread is interrupted while waiting
      */
     public List<CompletableFuture<CurationTaskResult>> checkOutputFilesAndLaunchServerlessTask(
         Context context,
@@ -74,7 +73,7 @@ public class S3FileChecker {
         ExecutorService executorService,
         ScheduledProcess scheduledProcess,
         List<ResolvedTask> allResolvedTasks
-    ) throws InterruptedException {
+    ) {
 
         if (scheduledProcess == null || scheduledProcess.files() == null || scheduledProcess.files().isEmpty()) {
             return List.of();
@@ -231,13 +230,12 @@ public class S3FileChecker {
      * @param scheduledCurationTask the task that failed and needs to be retried
      * @param remainingFiles the queue of tasks still waiting to be processed
      * @param attempts map tracking the number of retry attempts for each task
-     * @throws InterruptedException if the thread is interrupted during the sleep delay
      */
     private void handleRetry(
         ScheduledCurationTask scheduledCurationTask,
         Queue<ScheduledCurationTask> remainingFiles,
         Map<ScheduledCurationTask, Integer> attempts
-    ) throws InterruptedException {
+    ) {
         remainingFiles.add(scheduledCurationTask);
         Integer retryCount = attempts.compute(
             scheduledCurationTask,
@@ -254,7 +252,7 @@ public class S3FileChecker {
         }
     }
 
-    private void sleep(int attempt) throws InterruptedException {
+    private void sleep(int attempt) {
         long sleepTime = calculateSleepTime(attempt);
         var delayTime = delayTimeUnit.toString().toLowerCase();
         log.info("S3FileChecker: Wait {} {} before the next attempt.", sleepTime, delayTime);
@@ -262,7 +260,6 @@ public class S3FileChecker {
             delayTimeUnit.sleep(sleepTime);
         } catch (InterruptedException e) {
             log.error("S3FileChecker: Thread interrupted while waiting between attempts.", e);
-            throw new InterruptedException("Thread interrupted while waiting between attempts");
         }
     }
 
