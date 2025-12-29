@@ -2213,6 +2213,12 @@
                 <version>${s3mock-testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>com.adobe.testing</groupId>
+                <artifactId>s3mock-testcontainers</artifactId>
+                <version>${s3mock-testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
