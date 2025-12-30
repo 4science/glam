@@ -20,6 +20,7 @@ import org.dspace.core.Context;
  * @author richardrodgers
  */
 public class ResolvedTask {
+
     // wrapped objects
     private CurationTask cTask;
     private ScriptedTask sTask;
@@ -135,4 +136,9 @@ public class ResolvedTask {
     private boolean unscripted() {
         return sTask == null;
     }
+
+    public CurationTask getcTask() {
+        return cTask;
+    }
+
 }

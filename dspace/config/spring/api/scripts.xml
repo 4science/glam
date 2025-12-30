@@ -185,4 +185,10 @@
     <bean id="communityDeletionStrategy" class="org.dspace.deletion.process.strategies.CommunityDeletionStrategy" />
     <bean id="collectionDeletionStrategy" class="org.dspace.deletion.process.strategies.CollectionDeletionStrategy" />
 
+    <bean id="curateOrchestrator" class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
+        <property name="description" value="Orchestrator Curation tasks"/>
+        <property name="serverlessCurationTasks" ref="serverlessCurationTasks"/>
+        <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>
+    </bean>
+
 </beans>
