@@ -291,31 +291,50 @@ definitions:
           - git commit -am "Enable test environment for ${BRANCH_NAME}" || echo "No changes to commit"
           - git push
 
-pipelines:
-  branches:
-    'ux-plus-cris-2024_02_x':
-      - step: *install
-      - parallel: &parallel-pipeline
+    - step: &check-branch-name-allowed
+        name: Check allowed branch name
+        image: alpine:latest
+        script:
+          - |
+            if [[ "$BITBUCKET_BRANCH" = "ux-plus-cris" ]] || [[ "$BITBUCKET_BRANCH" == ux-plus-cris-20*_02_x ]] || [[ "$BITBUCKET_BRANCH" == prod/* ]] || [[ "$BITBUCKET_BRANCH" == test/* ]]; then
+              echo "Branch $BITBUCKET_BRANCH is allowed."
+            else
+              echo "This pipeline can only run on ux-plus-cris, ux-plus-cris-20*_02_x, prod/**, or test/**"
+              exit 1
+            fi
+
+    - parallel: &parallel-test-steps
+        steps:
           - step: *unit-test-code-checks
           - step: *integration-tests-with-test-jars
           - step: *integration-tests-slow
           - step: *integration-tests-dspace-api
-    'dspace-cris-2024_02_x':
+
+pipelines:
+  branches:
+    'ux-plus-cris':
+      - step: *check-branch-name-allowed
       - step: *install
-      - parallel: *parallel-pipeline
+      - parallel: *parallel-test-steps
+    'ux-plus-cris-20*_02_x':
+      - step: *check-branch-name-allowed
+      - step: *install
+      - parallel: *parallel-test-steps
       - step: *build-and-push
       - step: *deploy-on-dev
       - step: *deploy-on-staging
     'prod/**':
+      - step: *check-branch-name-allowed
       - step: *install
-      - parallel: *parallel-pipeline
+      - parallel: *parallel-test-steps
       - step: *build-and-push
       - step: *deploy-on-dev
       - step: *deploy-on-staging
       - step: *build-and-push-solr8
     'test/**':
+      - step: *check-branch-name-allowed
       - step: *install
-      - parallel: *parallel-pipeline
+      - parallel: *parallel-test-steps
       - step: *build-and-push
       - step: *deploy-on-test
       - step: *build-and-push-solr8
@@ -343,6 +362,11 @@ pipelines:
       - step: *install
       - step: *build-and-push
       - step: *deploy-on-dev
+    deploy-on-staging:
+      - step: *check-branch-name-allowed
+      - step: *install
+      - step: *build-and-push
+      - step: *deploy-on-staging
     e2e-test:
       - step: *install
       - step: *build-and-push
