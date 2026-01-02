@@ -903,6 +903,10 @@ public class ItemBuilder extends AbstractDSpaceObjectBuilder<Item> {
         return addMetadataValue(item, "dc", "identifier", "other", identifier);
     }
 
+    public ItemBuilder withCurationTask(String curationTask) {
+        return setMetadataSingleValue(item, "cris", "curation", "task", curationTask);
+    }
+
     /**
      * Assign the admin permission to the specified eperson
      *

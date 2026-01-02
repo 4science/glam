@@ -240,6 +240,11 @@
       <processing-class>org.dspace.app.rest.submit.step.ExternalUploadStep</processing-class>
       <type>external-upload</type>
     </step-definition>
+    <step-definition id="curation" mandatory="false">
+      <heading>submit.progressbar.describe.curation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
   </step-definitions>
   <submission-definitions>
     <submission-process name="product">
@@ -310,6 +315,7 @@
       <step id="external-upload" />
       <step id="unpaywall" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="publication-edit">
@@ -346,6 +352,7 @@
       <step id="correction" />
       <step id="detect-duplicate" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="event-edit">
@@ -373,6 +380,7 @@
       <step id="correction" />
       <step id="detect-duplicate" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="patent-edit">
@@ -388,6 +396,7 @@
       <step id="correction" />
       <step id="detect-duplicate" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="funding-edit">

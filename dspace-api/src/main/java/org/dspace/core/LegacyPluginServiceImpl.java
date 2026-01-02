@@ -385,8 +385,7 @@ public class LegacyPluginServiceImpl implements PluginService {
             String key = iname + SEP + name;
             return namedPluginClasses.get(key) != null;
         } catch (ClassNotFoundException e) {
-            throw new PluginInstantiationException("Cannot load plugin class: " +
-                                                       e.toString(), e);
+            throw new PluginInstantiationException("Cannot load plugin class: " + e.getMessage(), e);
         }
     }
 
