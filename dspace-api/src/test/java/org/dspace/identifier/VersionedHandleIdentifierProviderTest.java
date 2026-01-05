@@ -8,29 +8,30 @@
 package org.dspace.identifier;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.dspace.AbstractIntegrationTestWithDatabase;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.builder.CollectionBuilder;
 import org.dspace.builder.CommunityBuilder;
 import org.dspace.builder.ItemBuilder;
 import org.dspace.builder.VersionBuilder;
 import org.dspace.content.Collection;
-import org.dspace.content.Community;
 import org.dspace.content.Item;
-import org.dspace.content.MetadataValue;
-import org.dspace.content.factory.ContentServiceFactory;
+import org.dspace.kernel.ServiceManager;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VersionedHandleIdentifierProviderIT extends AbstractIdentifierProviderIT  {
+public class VersionedHandleIdentifierProviderTest extends AbstractIntegrationTestWithDatabase {
+    private ServiceManager serviceManager;
+    private IdentifierServiceImpl identifierService;
 
     private String firstHandle;
-    private String dspaceUrl;
 
     // Save original providers to restore them after test
     private List<IdentifierProvider> originalProviders;
@@ -46,7 +47,8 @@ public class VersionedHandleIdentifierProviderIT extends AbstractIdentifierProvi
         super.setUp();
         context.turnOffAuthorisationSystem();
 
-        dspaceUrl = DSpaceServicesFactory.getInstance().getConfigurationService().getProperty("dspace.ui.url");
+        serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
+        identifierService = serviceManager.getServicesByType(IdentifierServiceImpl.class).get((0));
 
         // Save original providers to restore them later
         originalProviders = new ArrayList<>(identifierService.getProviders());
@@ -55,8 +57,8 @@ public class VersionedHandleIdentifierProviderIT extends AbstractIdentifierProvi
         identifierService.setProviders(new ArrayList<>());
 
         parentCommunity = CommunityBuilder.createCommunity(context)
-                                          .withName("Parent Community")
-                                          .build();
+                .withName("Parent Community")
+                .build();
         collection = CollectionBuilder.createCollection(context, parentCommunity)
                 .withName("Collection")
                 .withEntityType("Publication")
@@ -70,6 +72,16 @@ public class VersionedHandleIdentifierProviderIT extends AbstractIdentifierProvi
         if (originalProviders != null && !originalProviders.isEmpty()) {
             identifierService.setProviders(originalProviders);
         }
+    }
+
+    private void registerProvider(Class type) {
+        // Register our new provider
+        serviceManager.registerServiceClass(type.getName(), type);
+        IdentifierProvider identifierProvider =
+                (IdentifierProvider) serviceManager.getServiceByName(type.getName(), type);
+
+        // Overwrite the identifier-service's providers with the new one to ensure only this provider is used
+        identifierService.setProviders(List.of(identifierProvider));
     }
 
     private void createVersions() throws SQLException, AuthorizeException {
@@ -98,38 +110,23 @@ public class VersionedHandleIdentifierProviderIT extends AbstractIdentifierProvi
     }
 
     @Test
-    public void testCollectionHandleMetadata() {
-        registerProvider(VersionedHandleIdentifierProvider.class);
+    public void testCanonicalVersionedHandleProvider() throws Exception {
+        registerProvider(VersionedHandleIdentifierProviderWithCanonicalHandles.class);
+        createVersions();
 
-        Community testCommunity = CommunityBuilder.createCommunity(context)
-                                                  .withName("Test community")
-                                                  .build();
-
-        Collection testCollection = CollectionBuilder.createCollection(context, testCommunity)
-                                                     .withName("Test Collection")
-                                                     .build();
-
-        List<MetadataValue> metadata = ContentServiceFactory.getInstance().getDSpaceObjectService(testCollection)
-                                                            .getMetadata(testCollection, "dc", "identifier", "uri",
-                                                                         Item.ANY);
-
-        assertEquals(1, metadata.size());
-        assertEquals(dspaceUrl + "/handle/" + testCollection.getHandle(), metadata.get(0).getValue());
+        // Confirm the original item only has a version handle
+        assertEquals(firstHandle + ".1", itemV1.getHandle());
+        assertEquals(1, itemV1.getHandles().size());
+        // Confirm the second item has the correct version handle
+        assertEquals(firstHandle + ".2", itemV2.getHandle());
+        assertEquals(1, itemV2.getHandles().size());
+        // Confirm the last item has both the correct version handle and the original handle
+        assertEquals(firstHandle, itemV3.getHandle());
+        assertEquals(2, itemV3.getHandles().size());
+        containsHandle(itemV3, firstHandle + ".3");
     }
 
-    @Test
-    public void testCommunityHandleMetadata() {
-        registerProvider(VersionedHandleIdentifierProvider.class);
-
-        Community testCommunity = CommunityBuilder.createCommunity(context)
-                                                  .withName("Test community")
-                                                  .build();
-
-        List<MetadataValue> metadata = ContentServiceFactory.getInstance().getDSpaceObjectService(testCommunity)
-                                                            .getMetadata(testCommunity, "dc", "identifier", "uri",
-                                                                         Item.ANY);
-
-        assertEquals(1, metadata.size());
-        assertEquals(dspaceUrl + "/handle/" + testCommunity.getHandle(), metadata.get(0).getValue());
+    private void containsHandle(Item item, String handle) {
+        assertTrue(item.getHandles().stream().anyMatch(h -> handle.equals(h.getHandle())));
     }
 }
