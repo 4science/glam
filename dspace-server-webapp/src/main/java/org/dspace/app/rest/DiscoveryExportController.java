@@ -105,7 +105,7 @@ public class DiscoveryExportController {
             limit);
 
         try {
-            RestDSpaceRunnableHandler restDSpaceRunnableHandler = new RestDSpaceRunnableHandler(
+            RestDSpaceRunnableHandler restDspaceRunnableHandler = new RestDSpaceRunnableHandler(
                 user,
                 scriptToExecute.getName(),
                 dSpaceCommandLineParameters,
@@ -113,7 +113,7 @@ public class DiscoveryExportController {
                 context.getCurrentLocale()
             );
             List<String> args = constructArgs(dSpaceCommandLineParameters);
-            Process process = runProcess(scriptToExecute, context, user, restDSpaceRunnableHandler, args);
+            Process process = runProcess(scriptToExecute, context, user, restDspaceRunnableHandler, args);
             if (ProcessStatus.FAILED.equals(process.getProcessStatus())) {
                 throw new RuntimeException("An error occurred during export");
             }
