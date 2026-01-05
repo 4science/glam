@@ -165,7 +165,11 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
         if (bf != null) {
             bitstream.setFormat(context, bf);
         }
+        return this;
+    }
 
+    public BitstreamBuilder withStoreNumber(int storeNumber) throws SQLException {
+        bitstream.setStoreNumber(storeNumber);
         return this;
     }
 
