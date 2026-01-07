@@ -26,7 +26,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.output.NullOutputStream;
 import org.dspace.app.util.DSpaceObjectUtilsImpl;
 import org.dspace.app.util.service.DSpaceObjectUtils;
-import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.DSpaceObject;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.core.Context;
@@ -149,7 +148,7 @@ public class Curation extends DSpaceRunnable<CurationScriptConfiguration> {
      * @param curator The curator
      * @return Time when queue started
      */
-    private long runQueue(TaskQueue queue, Curator curator) throws SQLException, AuthorizeException, IOException {
+    private long runQueue(TaskQueue queue, Curator curator) throws IOException {
         // use current time as our reader 'ticket'
         long ticket = System.currentTimeMillis();
         Iterator<TaskQueueEntry> entryIter = queue.dequeue(this.queue, ticket).iterator();
