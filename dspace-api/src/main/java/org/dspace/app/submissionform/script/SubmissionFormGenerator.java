@@ -12,6 +12,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +27,6 @@ import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,6 +43,8 @@ import org.dspace.eperson.EPerson;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.kernel.ServiceManager;
 import org.dspace.scripts.DSpaceRunnable;
+import org.dspace.services.ConfigurationService;
+import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.utils.DSpace;
 
 /**
@@ -54,23 +58,26 @@ public class SubmissionFormGenerator
     private final static Logger log = LogManager.getLogger(SubmissionFormGenerator.class);
 
     public static final String SUBMISSION_FORM_GENERATOR_SCRIPT_NAME = "generate-submission-forms";
-    private static final String ITEM_SUBMISSION_FILE_NAME = "item-submission.xml";
-    private static final String SUBMISSION_FORMS_FILE_NAME = "submission-forms";
-    private static final String OUTPUT_ZIP_FILE_NAME = "submission-forms.zip";
-    private static final String ZIP_TYPE = "application/zip";
-    private static final String XML_TYPE = ".xml";
+    public static final String ITEM_SUBMISSION_FILE_NAME = "item-submission";
+    public static final String SUBMISSION_FORMS_FILE_NAME = "submission-forms";
+    public static final String XML_TYPE = ".xml";
+    public static final String OUTPUT_ZIP_FILE_NAME = "submission-forms.zip";
+    public static final String XML_SUBMISSION_FORMS_FILE = SUBMISSION_FORMS_FILE_NAME + XML_TYPE;
+    public static final String XML_ITEM_SUBMISSION_FILE_NAME = ITEM_SUBMISSION_FILE_NAME + XML_TYPE;
+    public static final String ZIP_TYPE = "application/zip";
 
 
-    private Context context;
-    private String fileExcel;
-    private boolean forceUpload;
-    private String outputPath = "";
-    private String defaultDefinition;
+    protected Context context;
+    protected String fileExcel;
+    protected boolean forceUpload;
+    protected String outputPath = "";
+    protected String defaultDefinition;
 
     // Services
-    private SubmissionFormXmlGenerator xmlGenerator;
-    private List<ExcelSheetValidator> excelSheetValidators;
-    private SubmissionFormGeneratorI18nService i18nService;
+    protected SubmissionFormXmlGenerator xmlGenerator;
+    protected List<ExcelSheetValidator> excelSheetValidators;
+    protected SubmissionFormGeneratorI18nService i18nService;
+    protected ConfigurationService configurationService;
 
     @Override
     public void setup() throws ParseException {
@@ -79,6 +86,7 @@ public class SubmissionFormGenerator
         this.xmlGenerator = sm.getServiceByName("submissionFormXmlGenerator", SubmissionFormXmlGenerator.class);
         this.i18nService = sm.getServiceByName("submissionFormGeneratorI18nService",
                                                SubmissionFormGeneratorI18nService.class);
+        this.configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
         parseCommandLineOptions();
     }
 
@@ -95,16 +103,91 @@ public class SubmissionFormGenerator
     @Override
     public void internalRun() throws Exception {
         assignCurrentUserInContext();
-        assignSpecialGroupsInContext();
 
-        File xlsFile = getFile();
-        File itemSubmissionFile = generateFile(ITEM_SUBMISSION_FILE_NAME);
-        File submissionFormFile = generateFile(SUBMISSION_FORMS_FILE_NAME + XML_TYPE);
+        File xlsFile = null;
+        File tempZipFile = null;
+        File itemSubmissionFile = null;
+        File submissionFormFile = null;
+        try {
+            try {
+                xlsFile = loadXlsFile();
+            } catch (AuthorizeException e) {
+                log.error("Authorization error accessing the file: {}", fileExcel, e);
+                handler.logError("Authorization error accessing the file:" + fileExcel, e);
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                log.error("I/O error accessing the file: {}", fileExcel, e);
+                handler.logError("I/O error accessing the file" + fileExcel, e);
+                throw new RuntimeException(e);
+            }
 
-        context.turnOffAuthorisationSystem();
-        // Validate xls file
-        List<InputFormErrorBuilder> errors = validateFileXls(xlsFile);
+            try {
+                if (StringUtils.isBlank(defaultDefinition)) {
+                    this.defaultDefinition = getDefaultSubmissiondefinitionName(xlsFile);
+                }
+            } catch (BiffException e) {
+                log.error("Error reading Excel file: {}", fileExcel, e);
+                handler.logError("Error reading Excel file " + fileExcel, e);
+                throw new RuntimeException(e);
+            }
 
+            assignSpecialGroupsInContext();
+
+            handleErrors(validateFileXls(xlsFile));
+
+            itemSubmissionFile = Files.createTempFile(ITEM_SUBMISSION_FILE_NAME, XML_TYPE).toFile();
+            submissionFormFile = Files.createTempFile(SUBMISSION_FORMS_FILE_NAME, XML_TYPE).toFile();
+
+            generateXmlFiles(xlsFile, submissionFormFile, itemSubmissionFile, null);
+
+            Path tempZip = Files.createTempFile("submission-forms-", ".zip");
+
+            tempZipFile = tempZip.toFile();
+            tempZipFile.deleteOnExit();
+
+            try (ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(tempZipFile))) {
+                addFileToZip(zipOutputStream, submissionFormFile, XML_SUBMISSION_FORMS_FILE);
+                addFileToZip(zipOutputStream, itemSubmissionFile, XML_ITEM_SUBMISSION_FILE_NAME);
+
+                for (String extraLanguage : i18nService.getExtraLanguages()) {
+                    File submissionFormFileLocalized = null;
+                    try {
+                        String xmlFileExtra = SUBMISSION_FORMS_FILE_NAME + "_" + extraLanguage;
+                        submissionFormFileLocalized = Files.createTempFile(xmlFileExtra, XML_TYPE).toFile();
+                        log.info("Processing xml for extra language:{}", extraLanguage);
+                        generateXmlFiles(xlsFile, submissionFormFileLocalized, null, extraLanguage);
+                        addFileToZip(zipOutputStream, submissionFormFileLocalized,
+                                     SUBMISSION_FORMS_FILE_NAME + "_" + extraLanguage + XML_TYPE);
+                    } finally {
+                        if (submissionFormFileLocalized != null && submissionFormFileLocalized.exists()) {
+                            submissionFormFileLocalized.delete();
+                        }
+                    }
+                }
+            }
+
+            // Attach to process and copy to output path
+            attachZipToProcess(tempZip);
+            // copyZipToOutputPath(tempZip);
+
+        } finally {
+            if (tempZipFile != null && tempZipFile.exists()) {
+                tempZipFile.delete();
+            }
+            if (xlsFile != null && xlsFile.exists()) {
+                xlsFile.delete();
+            }
+            if (submissionFormFile != null && submissionFormFile.exists()) {
+                submissionFormFile.delete();
+            }
+            if (itemSubmissionFile != null && itemSubmissionFile.exists()) {
+                itemSubmissionFile.delete();
+            }
+        }
+
+    }
+
+    private void handleErrors(List<InputFormErrorBuilder> errors) throws SQLException, InputFormException {
         boolean hasNoErrors = errors.isEmpty();
         boolean hasBlockingErrors = hasBlockingErrors(errors);
 
@@ -113,46 +196,19 @@ public class SubmissionFormGenerator
             errors = tryFixWarnings(errors);
             hasBlockingErrors = hasBlockingErrors(errors);
         }
+
         logErrors(errors);
-        if (canProceedWithGeneration(hasNoErrors, hasBlockingErrors)) {
-            generateXmlFiles(xlsFile, submissionFormFile, itemSubmissionFile, null);
-        } else {
+
+        if (!canProceedWithGeneration(hasNoErrors, hasBlockingErrors)) {
+            handler.logError("Cannot proceed to XML generation due to errors in the input Excel file.");
             throw new InputFormException("Blocking errors found, cannot proceed to XML generation.");
         }
-
-        File zipFile = createTempZip();
-        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(zipFile))) {
-            addFileToZip(zipOutputStream, submissionFormFile);
-            addFileToZip(zipOutputStream, itemSubmissionFile);
-
-            for (String extraLanguage : i18nService.getExtraLanguages()) {
-                String xmlFileExtra = SUBMISSION_FORMS_FILE_NAME + "_" + extraLanguage + XML_TYPE;
-                File submissionFormFileLocalized = generateFile(xmlFileExtra);
-                log.info("Processing xml for extra language:{}", extraLanguage);
-                generateXmlFiles(xlsFile, submissionFormFileLocalized, null, extraLanguage);
-                addFileToZip(zipOutputStream, submissionFormFileLocalized);
-            }
-        }
-        attachZipToProcess(zipFile);
-        copyZipToOutputPath(zipFile);
-        context.restoreAuthSystemState();
     }
 
-    private File generateFile(String name) {
-        File file = new File(name);
-        file.deleteOnExit();
-        return file;
-    }
-
-    private File createTempZip() throws IOException {
-        File zipFile = File.createTempFile("submission-forms-", ".zip");
-        zipFile.deleteOnExit();
-        return zipFile;
-    }
-
-    private void addFileToZip(ZipOutputStream zipOutputStream, File file) throws IOException {
-        log.info("Adding file to zip:{}", file.getName());
-        ZipEntry zipEntry = new ZipEntry(file.getName());
+    private void addFileToZip(ZipOutputStream zipOutputStream, File file, String name) throws IOException {
+        log.info("Adding file to zip:{}", file.getAbsoluteFile());
+        handler.logInfo("Adding file to zip: " + file.getAbsoluteFile());
+        ZipEntry zipEntry = new ZipEntry(name);
         zipOutputStream.putNextEntry(zipEntry);
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
             fileInputStream.transferTo(zipOutputStream);
@@ -160,31 +216,38 @@ public class SubmissionFormGenerator
         zipOutputStream.closeEntry();
     }
 
-    private void attachZipToProcess(File zipFile) {
+
+    protected void attachZipToProcess(Path zipFile) {
         log.info("Attaching zip file to the process");
+        context.turnOffAuthorisationSystem();
         try {
-            handler.writeFilestream(context, OUTPUT_ZIP_FILE_NAME, new FileInputStream(zipFile), ZIP_TYPE);
+            handler.writeFilestream(context, OUTPUT_ZIP_FILE_NAME, Files.newInputStream(zipFile), ZIP_TYPE);
         } catch (IOException | SQLException | AuthorizeException e) {
             log.error("Error attaching zip file to the process", e);
             throw new RuntimeException(e);
+        } finally {
+            context.restoreAuthSystemState();
         }
     }
 
-    private void copyZipToOutputPath(File zipFile) throws IOException {
-        if (StringUtils.isNotBlank(this.outputPath)) {
-            log.info("Copying zip file to output path:{}", this.outputPath);
-            File newZip = new File(this.outputPath + OUTPUT_ZIP_FILE_NAME);
-            FileUtils.copyFile(zipFile, newZip);
-        }
-    }
+    private File loadXlsFile() throws AuthorizeException, IOException {
 
-    private File getFile() throws AuthorizeException, IOException {
-        var error = "Error reading file, the file couldn't be found for filename: " + fileExcel;
-        InputStream inputStream = handler.getFileStream(context, fileExcel)
-                                         .orElseThrow(() -> new IllegalArgumentException(error));
-        File xlsFile = File.createTempFile("submission-form-", ".xls");
-        try (inputStream; FileOutputStream out = new FileOutputStream(xlsFile)) {
-            inputStream.transferTo(out);
+        Path tempPath = Files.createTempFile("submission-form-", ".xls");
+        File xlsFile = tempPath.toFile();
+        xlsFile.deleteOnExit();
+
+        context.turnOffAuthorisationSystem();
+        try (InputStream inputStream = handler.getFileStream(context, fileExcel)
+                                              .orElseThrow(
+                                                  () -> new IllegalArgumentException(
+                                                      "Error reading file, the file couldn't be found for filename: "
+                                                          + fileExcel
+                                                  )
+                                              )) {
+            // Use NIO Files.copy which internally uses buffering for improved performance
+            Files.copy(inputStream, tempPath, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            context.restoreAuthSystemState();
         }
         return xlsFile;
     }
@@ -230,9 +293,6 @@ public class SubmissionFormGenerator
 
     private void generateXmlFiles(File xlsFile, File submissionFormFile, File itemSubmissionFile, String locale)
             throws SQLException, BiffException, IOException, InputFormException {
-        if (StringUtils.isBlank(defaultDefinition)) {
-            this.defaultDefinition = getDefaultSubmissiondefinitionName(xlsFile);
-        }
         if (itemSubmissionFile != null) {
             xmlGenerator.generateItemSubmissionXml(xlsFile, itemSubmissionFile, context, defaultDefinition);
             handler.logInfo("**********************************");
@@ -263,9 +323,9 @@ public class SubmissionFormGenerator
             handler.logInfo("####     Validation Success!!!    ####");
             handler.logInfo("######################################");
         } else {
-            handler.logInfo("######################################");
-            handler.logInfo("####     Validation Failed!!!    #####");
-            handler.logInfo("######################################");
+            handler.logWarning("######################################");
+            handler.logWarning("####     Validation Failed!!!    #####");
+            handler.logWarning("######################################");
         }
     }
 
@@ -287,12 +347,16 @@ public class SubmissionFormGenerator
 
 
     private void assignCurrentUserInContext() throws SQLException {
-        this.context = new Context();
+        initContext();
         UUID uuid = getEpersonIdentifier();
         if (uuid != null) {
             EPerson ePerson = EPersonServiceFactory.getInstance().getEPersonService().find(this.context, uuid);
             this.context.setCurrentUser(ePerson);
         }
+    }
+
+    protected void initContext() {
+        this.context = new Context();
     }
 
     private void assignSpecialGroupsInContext() {
@@ -306,5 +370,11 @@ public class SubmissionFormGenerator
         return serviceManager.getServiceByName(SUBMISSION_FORM_GENERATOR_SCRIPT_NAME,
                                                SubmissionFormGeneratorScriptConfiguration.class);
     }
+
+/*    public String getTempDir() {
+        return (configurationService.hasProperty("upload.temp.dir"))
+            ? configurationService.getProperty("upload.temp.dir")
+            : System.getProperty("java.io.tmpdir");
+    }*/
 
 }

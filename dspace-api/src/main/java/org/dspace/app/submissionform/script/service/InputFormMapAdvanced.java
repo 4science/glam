@@ -7,9 +7,9 @@
  */
 package org.dspace.app.submissionform.script.service;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.dspace.content.Collection;
@@ -26,7 +26,7 @@ public class InputFormMapAdvanced extends InputSubmissionMap {
     private static final Logger log = LoggerFactory.getLogger(InputFormMapAdvanced.class);
 
     /** Location of config file */
-    private static String configFilePath;
+    private static Path configFilePath;
     private static Properties crosswalkProps;
 
     /**
@@ -58,37 +58,28 @@ public class InputFormMapAdvanced extends InputSubmissionMap {
         }
     }
 
-    public static String getConfigFilePath() {
+    public static void loadConfigProps() {
         if (configFilePath == null) {
-            configFilePath = DSpaceServicesFactory.getInstance().getConfigurationService()
-                    .getProperty("dspace.dir")
-                    + File.separator + "config" + File.separator + "crosswalks"
-                    + File.separator + "formMap.properties";
+            configFilePath = Path.of(
+                DSpaceServicesFactory.getInstance().getConfigurationService().getProperty("dspace.dir"),
+                "config",
+                "crosswalks",
+                "formMap.properties"
+            );
 
             // Read in configuration
             crosswalkProps = new Properties();
-            FileInputStream fis = null;
-            try {
-                fis = new FileInputStream(configFilePath);
+            try (FileInputStream fis = new FileInputStream(configFilePath.toFile())) {
                 crosswalkProps.load(fis);
             } catch (IOException e) {
                 throw new IllegalArgumentException("InputFormMap configuration error", e);
-            } finally {
-                if (fis != null) {
-                    try {
-                        fis.close();
-                    } catch (IOException ioe) {
-                        log.error(ioe.getMessage(), ioe);
-                    }
-                }
             }
         }
-        return configFilePath;
     }
 
     public static Properties getCrosswalkProps() {
         if (configFilePath == null) {
-            getConfigFilePath();
+            loadConfigProps();
         }
         return crosswalkProps;
     }

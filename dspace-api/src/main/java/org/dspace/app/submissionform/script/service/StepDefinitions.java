@@ -22,14 +22,9 @@ import org.jdom2.Element;
 public class StepDefinitions extends InputFormExcel {
 
     public void create(Element stepDefinitions, File fileExcel) throws BiffException, IOException {
-        String formName;
-        String rowNumber;
 
         // DOM element for form, page, field and input type
         Element stepEl;
-        Element page;
-        Element field;
-        Element inputType;
 
         // Set encoding for workbook
         WorkbookSettings ws = new WorkbookSettings();
@@ -121,72 +116,32 @@ public class StepDefinitions extends InputFormExcel {
     }
 
     private String getProcessingClassByStepType(String stepType) {
-        String processingClass;
-        switch (stepType) {
-            case "collection":
-                processingClass = collectionStepClass;
-                break;
-            case "submission-form":
-                processingClass = formStepClass;
-                break;
-            case "upload":
-                processingClass = uploadStepClass;
-                break;
-            case "license":
-                processingClass = licenseStepClass;
-                break;
-            case "detect-duplicate":
-                processingClass = duplicateStepClass;
-                break;
-            case "extract":
-                processingClass = extractionStepClass;
-                break;
-            case "cclicense":
-                processingClass = cclicenseStepClass;
-                break;
-            case "accessCondition":
-                processingClass = accessesStepClass;
-                break;
-            case "custom-url":
-                processingClass = customUrlStepClass;
-                break;
-            case "correction":
-                processingClass = correctionStepClass;
-                break;
-            case "sherpaPolicy":
-                processingClass = sherpaStepClass;
-                break;
-            case "unpaywall":
-                processingClass = unpaywallStepClass;
-                break;
-            case "identifiers":
-                processingClass = identifiersStepClass;
-                break;
-            case "external-upload":
-                processingClass = externalUploadStepClass;
-                break;
-            default:
-                processingClass = "";
-        }
-        return processingClass;
+        return switch (stepType) {
+            case "collection" -> collectionStepClass;
+            case "submission-form" -> formStepClass;
+            case "upload" -> uploadStepClass;
+            case "license" -> licenseStepClass;
+            case "detect-duplicate" -> duplicateStepClass;
+            case "extract" -> extractionStepClass;
+            case "cclicense" -> cclicenseStepClass;
+            case "accessCondition" -> accessesStepClass;
+            case "custom-url" -> customUrlStepClass;
+            case "correction" -> correctionStepClass;
+            case "sherpaPolicy" -> sherpaStepClass;
+            case "unpaywall" -> unpaywallStepClass;
+            case "identifiers" -> identifiersStepClass;
+            case "external-upload" -> externalUploadStepClass;
+            default -> "";
+        };
     }
 
     private String getHeadingByStepTypeAndId(String stepType, String stepId) {
-        String heading;
-        switch (stepType) {
-            case "submission-form":
-                heading = stepHeadingPrefix + "describe." + stepId;
-                break;
-            case "extract":
-                heading = "submit.progressbar.ExtractMetadataStep";
-                break;
-            case "cclicense":
-                heading = "submit.progressbar.CClicense";
-                break;
-            default:
-                heading = stepHeadingPrefix + stepId;
-        }
-        return heading;
+        return switch (stepType) {
+            case "submission-form" -> stepHeadingPrefix + "describe." + stepId;
+            case "extract" -> "submit.progressbar.ExtractMetadataStep";
+            case "cclicense" -> "submit.progressbar.CClicense";
+            default -> stepHeadingPrefix + stepId;
+        };
     }
 
 }

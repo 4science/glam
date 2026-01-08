@@ -8,12 +8,8 @@
 package org.dspace.app.submissionform.script;
 
 import java.io.InputStream;
-import java.sql.SQLException;
-import java.util.List;
 
 import org.apache.commons.cli.Options;
-import org.dspace.core.Context;
-import org.dspace.scripts.DSpaceCommandLineParameter;
 import org.dspace.scripts.configuration.ScriptConfiguration;
 
 /**
@@ -27,15 +23,6 @@ public class SubmissionFormGeneratorScriptConfiguration<T extends SubmissionForm
     private Class<T> dspaceRunnableClass;
 
     @Override
-    public boolean isAllowedToExecute(Context context, List<DSpaceCommandLineParameter> commandLineParameters) {
-        try {
-            return authorizeService.isAdmin(context);
-        } catch (SQLException e) {
-            throw new RuntimeException("SQLException occurred when checking if the current user is an admin", e);
-        }
-    }
-
-    @Override
     public Options getOptions() {
         if (options == null) {
             Options options = new Options();
@@ -43,11 +30,6 @@ public class SubmissionFormGeneratorScriptConfiguration<T extends SubmissionForm
             options.addOption("e", "excel", true, "Input file excel");
             options.getOption("e").setType(InputStream.class);
             options.getOption("e").setRequired(true);
-
-            options.addOption("p", "output-path", true,
-                    "Directory path where the generated submission-forms.zip file will be copied");
-            options.getOption("p").setType(String.class);
-            options.getOption("p").setRequired(false);
 
             options.addOption("f", "force", false,
                     "Proceed with XML generation even if validation produces warnings (attempts to auto-fix warnings)");
