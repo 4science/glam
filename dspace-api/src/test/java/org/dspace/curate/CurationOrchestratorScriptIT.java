@@ -388,6 +388,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
     @Test
     public void bitstreamWithExcludeMetadataIsNotProcessedTest() throws Exception {
+        configurationService.setProperty("curation.s3.customer-id", "test-dspace-999");
         context.turnOffAuthorisationSystem();
         Item publication = ItemBuilder.createItem(context, collection)
                                       .withTitle("Publication Item test")
@@ -466,7 +467,7 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         curationOrchestratorScript.run();
 
         // Verify that the JSON uploaded to S3 contains only bitstream1 (not bitstream2)
-        String jsonKey = findJSONFileInBucket(s3AsyncClient, BUCKET_INPUT, "test-dspace-id");
+        String jsonKey = findJSONFileInBucket(s3AsyncClient, BUCKET_INPUT, "test-dspace-999");
         assertTrue("JSON file should be uploaded to S3", jsonKey != null && !jsonKey.isEmpty());
 
         ScheduledProcess scheduledProcess = downloadAndParseJSON(s3AsyncClient, BUCKET_INPUT, jsonKey);
