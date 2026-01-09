@@ -143,11 +143,11 @@ public class BundleServiceImpl extends DSpaceObjectServiceImpl<Bundle> implement
 
         // First check that the bitstream isn't already in the list
         List<Bitstream> bitstreams = bundle.getBitstreams();
-        int topOrder = 0;
         // First check that the bitstream isn't already in the list
         for (Bitstream bs : bitstreams) {
             if (bitstream.getID().equals(bs.getID())) {
                 // Bitstream is already there; no change
+                log.info("Bitstream:{} is already in bundle:{} not adding it again", bitstream.getID(), bundle.getID());
                 return;
             }
         }

@@ -20,6 +20,15 @@
         <property name="name" value="crisref"/>
         <property name="fieldType" value="METADATA||METADATAGROUP"/>
         <property name="subTypeValidationRule" value="ALLOWED"/>
+        <property name="subTypes" ref="crisrefSubTypes" />
+    </bean>
+
+    <bean id="crisrefSubTypes" class="org.dspace.layout.script.supplier.SimpleListSupplier">
+        <constructor-arg>
+        <list>
+            <value>email</value>
+        </list>
+        </constructor-arg>
     </bean>
 
     <bean id="dateRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
@@ -175,6 +184,18 @@
         <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
     </bean>
 
+    <bean id="cclicensefullRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
+        <property name="name" value="cclicensefull"/>
+        <property name="fieldType" value="METADATAGROUP"/>
+        <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
+    </bean>
+
+    <bean id="cclicensesmallRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
+        <property name="name" value="cclicense"/>
+        <property name="fieldType" value="METADATAGROUP"/>
+        <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
+    </bean>
+
     <bean id="browseRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
         <property name="name" value="browse"/>
         <property name="fieldType" value="METADATA"/>
@@ -214,6 +235,5 @@
         <property name="fieldType" value="BITSTREAM"/>
         <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
     </bean>
-
 </beans>
 

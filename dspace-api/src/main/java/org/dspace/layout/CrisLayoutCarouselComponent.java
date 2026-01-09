@@ -47,6 +47,8 @@ public class CrisLayoutCarouselComponent implements CrisLayoutSectionComponent {
 
     private String bundle;
 
+    private boolean showBlurryBackdrop;
+
     /**
      * @return the discoveryConfigurationName
      */
@@ -279,5 +281,19 @@ public class CrisLayoutCarouselComponent implements CrisLayoutSectionComponent {
      */
     public void setBundle(String bundle) {
         this.bundle = bundle;
+    }
+
+    /**
+     * @return isShowBlurryBackdrop
+     */
+    public boolean isShowBlurryBackdrop() {
+        return showBlurryBackdrop;
+    }
+
+    /**
+     * @param showBlurryBackdrop the showBlurryBackdrop to set
+     */
+    public void setShowBlurryBackdrop(boolean showBlurryBackdrop) {
+        this.showBlurryBackdrop = showBlurryBackdrop;
     }
 }
