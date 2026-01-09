@@ -55,12 +55,19 @@ import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * Test class for the CurationOrchestratorScript class.
@@ -379,6 +386,106 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
         }
     }
 
+    @Test
+    public void bitstreamWithExcludeMetadataIsNotProcessedTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+        Item publication = ItemBuilder.createItem(context, collection)
+                                      .withTitle("Publication Item test")
+                                      .withAuthor("Andrea, Boldrin")
+                                      .withCurationTask("pdfATransformer")
+                                      .withType("content")
+                                      .build();
+
+        String pdfContent = "PDF 1 test-content";
+        String pdfContent2 = "PDF 2 Test";
+        String pdfContent3 = "PDF 3 Test";
+
+        Bitstream bitstream1;
+        Bitstream bitstream2;
+        Bitstream bitstream3;
+        try (InputStream is1 = IOUtils.toInputStream(pdfContent, "UTF-8");
+             InputStream is2 = IOUtils.toInputStream(pdfContent2, "UTF-8");
+             InputStream is3 = IOUtils.toInputStream(pdfContent3, "UTF-8")) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, publication, is1)
+                                         .withName("my-test.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withStoreNumber(4)
+                                         .build();
+            bitstream2 = BitstreamBuilder.createBitstream(context, publication, is2)
+                                         .withName("mySecondTest.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withMetadata("bitstream", "curation", "exclude", "pdfATransformer")
+                                         .withStoreNumber(4)
+                                         .build();
+            bitstream3 = BitstreamBuilder.createBitstream(context, publication, is3)
+                                         .withName("myThirdTest.pdf")
+                                         .withMimeType("application/pdf")
+                                         .withMetadata("bitstream", "curation", "exclude", "all")
+                                         .withStoreNumber(4)
+                                         .build();
+        }
+        context.commit();
+
+        // Mock S3BitStoreService methods
+        when(s3BitStoreServiceMock.getBucketName()).thenReturn("test-bucket-input");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream1.getInternalId())).thenReturn("relative-path/my-test");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream2.getInternalId())).thenReturn("relative-path/my-2-test");
+        when(s3BitStoreServiceMock.getRelativePath(bitstream3.getInternalId())).thenReturn("relative-path/my-3-test");
+
+        context.restoreAuthSystemState();
+
+        // Ensure no PDFA bundle exists before running the script
+        List<Bundle> pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(0, pdfaBudles.size());
+
+        // Run the Curation Orchestrator Script
+        String scriptName = "curateOrchestrator";
+        String[] args = new String[] { scriptName, "-t", "pdfATransformer", "-id", publication.getID().toString() };
+
+        ProcessDSpaceRunnableHandler handlerMock = mock(ProcessDSpaceRunnableHandler.class);
+        when(handlerMock.getProcessId()).thenReturn(1);
+
+        // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
+        // Only for bitstream1 since bitstream2 should not be processed
+        InputStream jsonInputStream = generateOutputJSON(bitstream1, "my-output-test.pdf");
+        String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream1.getID());
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
+
+        String keyForPDFA = "results/my-output-test.pdf";
+        InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content 4 bitstream 1");
+        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA, pdfaInputStream);
+
+        // Verify that the output JSON objects have been uploaded
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON));
+        assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA));
+
+        // Run the Curation Orchestrator Script - it will upload the input JSON and process the output
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
+        curationOrchestratorScript.initialize(args, handlerMock, admin);
+        curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
+        curationOrchestratorScript.run();
+
+        // Verify that the JSON uploaded to S3 contains only bitstream1 (not bitstream2)
+        String jsonKey = findJSONFileInBucket(s3AsyncClient, BUCKET_INPUT, "test-dspace-id");
+        assertTrue("JSON file should be uploaded to S3", jsonKey != null && !jsonKey.isEmpty());
+
+        ScheduledProcess scheduledProcess = downloadAndParseJSON(s3AsyncClient, BUCKET_INPUT, jsonKey);
+        assertEquals("Should contain only 1 bitstream (bitstream2 and bitstream3 should be excluded)",
+                     1, scheduledProcess.files().size());
+        assertEquals("Only bitstream1 should be in the JSON",
+                     bitstream1.getID(), scheduledProcess.files().get(0).uuid());
+
+        publication = context.reloadEntity(publication);
+        // Verify that the PDFA bundle has been created
+        pdfaBudles = publication.getBundles("PDFA");
+        assertEquals(1, pdfaBudles.size());
+        // Verify that the PDFA bundle contains only one bitstream (bitstream1, not bitstream2)
+        List<Bitstream> convertedPDF = pdfaBudles.get(0).getBitstreams();
+        assertEquals(1, convertedPDF.size());
+        // Verify that only bitstream1 has been processed
+        assertEquals(bitstream1.getName(), convertedPDF.get(0).getName());
+    }
+
     private InputStream generateOutputJSON(Bitstream bitstream, String name) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode json = mapper.createObjectNode();
@@ -429,6 +536,43 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
             return false;
         } catch (Exception e) {
             throw new RuntimeException("Failed to check object existence: " + key, e);
+        }
+    }
+
+    private String findJSONFileInBucket(S3AsyncClient s3Client, String bucketName, String prefix) {
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                                                                   .bucket(bucketName)
+                                                                   .prefix(prefix)
+                                                                   .build();
+            ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest).join();
+            return listResponse.contents()
+                               .stream()
+                               .filter(obj -> obj.key().endsWith(".json"))
+                               .map(S3Object::key)
+                               .findFirst()
+                               .orElse(null);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to find JSON file in S3 bucket: " + bucketName +
+                                       " with prefix: " + prefix, e);
+        }
+    }
+
+    private ScheduledProcess downloadAndParseJSON(S3AsyncClient s3Client, String bucketName, String key) {
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                                                                 .bucket(bucketName)
+                                                                 .key(key)
+                                                                 .build();
+            ResponseBytes<GetObjectResponse> jsonBytes = s3Client.getObject(
+                getObjectRequest,
+                AsyncResponseTransformer.toBytes()
+            ).join();
+            String jsonContent = jsonBytes.asUtf8String();
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(jsonContent, ScheduledProcess.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to download and parse JSON from S3: " + key, e);
         }
     }
 
