@@ -14,16 +14,12 @@ import java.util.Properties;
 
 import org.dspace.content.Collection;
 import org.dspace.services.factory.DSpaceServicesFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Advanced implementation of InputSubmissionMap to manage the form mapping
  * based on the collection name.
  */
 public class InputFormMapAdvanced extends InputSubmissionMap {
-
-    private static final Logger log = LoggerFactory.getLogger(InputFormMapAdvanced.class);
 
     /** Location of config file */
     private static Path configFilePath;

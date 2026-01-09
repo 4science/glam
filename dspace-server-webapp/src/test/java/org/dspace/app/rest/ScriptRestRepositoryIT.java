@@ -332,11 +332,9 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
     @Test
     public void findAllScriptsGenericLoggedInUserTest() throws Exception {
         String token = getAuthToken(eperson.getEmail(), password);
-
         getClient(token).perform(get("/api/system/scripts"))
                         .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.page",
-                                            is(PageMatcher.pageEntryWithTotalPagesAndElements(0, 20, 1, 2))));
+                        .andExpect(jsonPath("$.page", is(PageMatcher.pageEntryWithTotalPagesAndElements(0, 20, 1, 3))));
     }
 
     @Test
@@ -779,7 +777,7 @@ public class ScriptRestRepositoryIT extends AbstractControllerIntegrationTest {
     public void findOneScriptByNameTestAccessDenied() throws Exception {
         String[] excludedScripts = new String[] {"curate", "bulk-import",
                 "item-export", "bulk-item-export", "bulk-access-control",
-                "collection-export"};
+                "collection-export", "generate-submission-forms" };
 
         String token = getAuthToken(eperson.getEmail(), password);
         scriptConfigurations.stream().filter(scriptConfiguration ->
