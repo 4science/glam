@@ -475,17 +475,26 @@ public abstract class AbstractCurationTask implements CurationTask {
         }
     }
 
-    protected boolean skipBitstream(Bitstream bitstream) {
-        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition");
+    /**
+     * Determines whether a bitstream should be skipped for the specified curation task.
+     * Checks bitstream metadata to see if the task is excluded.
+     *
+     * @param task the name of the curation task
+     * @param bitstream the bitstream to check
+     * @return true if the bitstream should be skipped for this task, false otherwise
+     */
+    protected boolean skipBitstreamForCurrentTask(String task, Bitstream bitstream) {
+        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition",
+                                                             "bitstream.curation.exclude");
         if (StringUtils.isEmpty(curationMetadata)) {
             return false;
         }
-
         List<MetadataValue> metadata = this.bitstreamService.getMetadataByMetadataString(bitstream, curationMetadata);
         if (metadata.isEmpty()) {
             return false;
         }
-        return StringUtils.equals("true", metadata.get(0).getValue());
+        var curationTaskToExclude = metadata.get(0).getValue();
+        return StringUtils.equals("all", curationTaskToExclude) || StringUtils.equals(task, curationTaskToExclude);
     }
 
 }
