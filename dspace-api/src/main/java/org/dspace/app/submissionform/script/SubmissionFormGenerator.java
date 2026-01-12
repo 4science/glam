@@ -66,7 +66,6 @@ public class SubmissionFormGenerator
     public static final String XML_ITEM_SUBMISSION_FILE_NAME = ITEM_SUBMISSION_FILE_NAME + XML_TYPE;
     public static final String ZIP_TYPE = "application/zip";
 
-
     protected Context context;
     protected String fileExcel;
     protected boolean forceUpload;
@@ -228,11 +227,9 @@ public class SubmissionFormGenerator
     }
 
     private File loadXlsFile() throws AuthorizeException, IOException {
-
         Path tempPath = Files.createTempFile("submission-form-", ".xls");
         File xlsFile = tempPath.toFile();
         xlsFile.deleteOnExit();
-
         context.turnOffAuthorisationSystem();
         try (InputStream inputStream = handler.getFileStream(context, fileExcel)
                                               .orElseThrow(
@@ -342,7 +339,6 @@ public class SubmissionFormGenerator
             workbook.close();
         }
     }
-
 
     private void assignCurrentUserInContext() throws SQLException {
         initContext();
