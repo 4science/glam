@@ -448,20 +448,23 @@ public class CurationOrchestratorScriptIT extends AbstractIntegrationTestWithDat
 
         // Simulate the output of the serverless function by uploading the expected JSON and PDF/A files to S3
         // Only for bitstream1 since bitstream2 should not be processed
-        InputStream jsonInputStream = generateOutputJSON(bitstream1, "my-output-test.pdf");
-        String keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream1.getID());
-        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
+        String keyForJSON;
+        try (InputStream jsonInputStream = generateOutputJSON(bitstream1, "my-output-test.pdf")) {
+            keyForJSON = String.format("1/%s-pdfATransformer.json", bitstream1.getID());
+            uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForJSON, jsonInputStream);
+        }
 
         String keyForPDFA = "results/my-output-test.pdf";
-        InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content 4 bitstream 1");
-        uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA, pdfaInputStream);
+        try (InputStream pdfaInputStream = generatePDFA("This is a PDF/A file content 4 bitstream 1")) {
+            uploadObject(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA, pdfaInputStream);
+        }
 
         // Verify that the output JSON objects have been uploaded
         assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForJSON));
         assertTrue(objectExists(s3AsyncClient, BUCKET_OUTPUT, keyForPDFA));
 
         // Run the Curation Orchestrator Script - it will upload the input JSON and process the output
-        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(this.s3AsyncClient);
+        CurationOrchestratorScript curationOrchestratorScript = new CurationOrchestratorScript(s3AsyncClient);
         curationOrchestratorScript.initialize(args, handlerMock, admin);
         curationOrchestratorScript.setS3AsyncClient(s3AsyncClient);
         curationOrchestratorScript.run();

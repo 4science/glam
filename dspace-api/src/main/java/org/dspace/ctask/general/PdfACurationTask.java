@@ -148,13 +148,12 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
      * Only includes PDF bitstreams that are stored in S3.
      *
      * @param context the DSpace context
-     * @param task    the task name
      * @param item    the item to analyze
      * @return        list of bitstreams eligible for PDF/A conversion
      * @throws SQLException if database operations fail
      */
     @Override
-    public List<Bitstream> getProcessableBitstreams(Context context, String task, Item item)
+    public List<Bitstream> getProcessableBitstreams(Context context, Item item)
             throws CurationTaskException {
         List<Bitstream> processableBitstreams = new ArrayList<>();
         Iterator<Bitstream> bitstreams;
@@ -177,7 +176,7 @@ public class PdfACurationTask extends AbstractCurationTask implements Serverless
                 log.info(message, currentBitstream.getID());
                 continue;
             }
-            if (skipBitstreamForCurrentTask(task, currentBitstream)) {
+            if (skipBitstreamForCurrentTask(currentBitstream)) {
                 var message = "PdfACurationTask: Skipping bitstream {} was required during submission!";
                 log.info(message, currentBitstream.getID());
                 continue;

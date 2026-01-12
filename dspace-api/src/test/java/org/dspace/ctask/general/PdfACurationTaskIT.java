@@ -97,7 +97,7 @@ public class PdfACurationTaskIT extends AbstractIntegrationTestWithDatabase {
         task.init(null, "pdfATransformer");
         task.setBitstreamStorageService(bitstreamStorageServiceMock);
 
-        List<Bitstream> processableBitstreams = task.getProcessableBitstreams(context, "pdfATransformer", item);
+        List<Bitstream> processableBitstreams = task.getProcessableBitstreams(context, item);
         assertEquals(1, processableBitstreams.size());
     }
 
@@ -168,7 +168,7 @@ public class PdfACurationTaskIT extends AbstractIntegrationTestWithDatabase {
         PdfACurationTask task = new PdfACurationTask();
         task.init(null, "pdfATransformer");
 
-        List<Bitstream> processableBitstreams = task.getProcessableBitstreams(context, "pdfATransformer", emptyItem);
+        List<Bitstream> processableBitstreams = task.getProcessableBitstreams(context, emptyItem);
         assertEquals(0, processableBitstreams.size());
     }
 

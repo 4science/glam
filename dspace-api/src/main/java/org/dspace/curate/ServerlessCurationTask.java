@@ -29,7 +29,7 @@ public interface ServerlessCurationTask extends CurationTask {
     void finalizeTask(Context context, Item item, CurationTaskResult CurationTaskResult)
          throws CurationTaskException;
 
-    List<Bitstream> getProcessableBitstreams(Context context, String task, Item item) throws CurationTaskException;
+    List<Bitstream> getProcessableBitstreams(Context context, Item item) throws CurationTaskException;
 
     String getTaskName();
 
