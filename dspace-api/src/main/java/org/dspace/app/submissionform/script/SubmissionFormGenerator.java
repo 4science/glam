@@ -103,6 +103,7 @@ public class SubmissionFormGenerator
     @Override
     public void internalRun() throws Exception {
         assignCurrentUserInContext();
+        assignSpecialGroupsInContext();
 
         File xlsFile = null;
         File tempZipFile = null;
@@ -130,8 +131,6 @@ public class SubmissionFormGenerator
                 handler.logError("Error reading Excel file " + fileExcel, e);
                 throw new RuntimeException(e);
             }
-
-            assignSpecialGroupsInContext();
 
             handleErrors(validateFileXls(xlsFile));
 
@@ -165,11 +164,8 @@ public class SubmissionFormGenerator
                     }
                 }
             }
-
             // Attach to process and copy to output path
             attachZipToProcess(tempZip);
-            // copyZipToOutputPath(tempZip);
-
         } finally {
             if (tempZipFile != null && tempZipFile.exists()) {
                 tempZipFile.delete();
@@ -200,8 +196,9 @@ public class SubmissionFormGenerator
         logErrors(errors);
 
         if (!canProceedWithGeneration(hasNoErrors, hasBlockingErrors)) {
-            handler.logError("Cannot proceed to XML generation due to errors in the input Excel file.");
-            throw new InputFormException("Blocking errors found, cannot proceed to XML generation.");
+            var errorMessage = "Cannot proceed to XML generation due to errors in the input Excel file.";
+            handler.logError(errorMessage);
+            throw new InputFormException(errorMessage);
         }
     }
 
@@ -296,13 +293,14 @@ public class SubmissionFormGenerator
         if (itemSubmissionFile != null) {
             xmlGenerator.generateItemSubmissionXml(xlsFile, itemSubmissionFile, context, defaultDefinition);
             handler.logInfo("**********************************");
-            handler.logInfo("** Created: " + itemSubmissionFile.getName() + " **");
+            handler.logInfo("** Created: item-submission.xml **");
             handler.logInfo("**********************************");
         }
         if (submissionFormFile != null) {
             xmlGenerator.generateSubmissionFormXml(xlsFile, submissionFormFile, locale);
             handler.logInfo("***********************************");
-            handler.logInfo("** Created: " + submissionFormFile.getName() + " **");
+            String localeInfo = StringUtils.isNotBlank(locale) ? "_" + locale : "";
+            handler.logInfo("** Created: submission-forms" + localeInfo + ".xml **");
             handler.logInfo("***********************************");
         }
     }
@@ -370,11 +368,5 @@ public class SubmissionFormGenerator
         return serviceManager.getServiceByName(SUBMISSION_FORM_GENERATOR_SCRIPT_NAME,
                                                SubmissionFormGeneratorScriptConfiguration.class);
     }
-
-/*    public String getTempDir() {
-        return (configurationService.hasProperty("upload.temp.dir"))
-            ? configurationService.getProperty("upload.temp.dir")
-            : System.getProperty("java.io.tmpdir");
-    }*/
 
 }

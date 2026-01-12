@@ -41,10 +41,8 @@ public class SubmissionFormGeneratorCLIScriptConfiguration<T extends SubmissionF
             options.getOption("p").setType(String.class);
             options.getOption("p").setRequired(false);
 
-            options.addOption(
-                "f", "force", false,
-                "Proceed with XML generation even if validation produces warnings (attempts to auto-fix warnings)"
-            );
+            options.addOption("f", "force", false,
+                    "Proceed with XML generation even if validation produces warnings (attempts to auto-fix warnings)");
             options.getOption("f").setRequired(false);
 
             options.addOption("d", "submission-name", true, "Submission definition name to use " +

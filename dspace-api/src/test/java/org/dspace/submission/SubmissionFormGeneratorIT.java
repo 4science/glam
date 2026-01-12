@@ -14,6 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -57,7 +58,7 @@ import org.junit.Test;
  */
 public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDatabase {
 
-    private static final String BASE_XLS_DIR_PATH = "./target/testing/dspace/assetstore/submission/script";
+    private static final String BASE_XLS_DIR_PATH = "assetstore/submission/script";
 
     private ConfigurationService configurationService;
     private SubmissionFormGeneratorI18nService i18nService;
@@ -158,8 +159,8 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
                                                                               "-d", "publication" };
         TestDSpaceRunnableHandler handler = new TestDSpaceRunnableHandler();
         handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
-        assertThat(handler.getInfoMessages().size(), is(3));
-        assertThat(handler.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handler.getWarningMessages().size(), is(3));
+        assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
         assertThat(handler.getErrorMessages().size(), is(5));
         assertThat(handler.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.source.test"));
@@ -170,8 +171,8 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages().get(3),
            is("LEVEL:ERROR ERROR:The item : publication:dc.relation.fonds has Vocabulary fondsTree not found!!"));
         assertThat(handler.getErrorMessages().get(4),
-                is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
-        assertThat(handler.getWarningMessages(), empty());
+                is("Cannot proceed to XML generation due to errors in the input Excel file."));
+        assertThat(handler.getInfoMessages(), empty());
 
         // Verify that the ZIP file was NOT generated
         assertFalse(handler.getFileStream(context, "submission-forms.zip").isPresent());
@@ -185,16 +186,16 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
 
         handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
 
-        assertThat(handler.getInfoMessages().size(), is(3));
-        assertThat(handler.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handler.getWarningMessages().size(), is(3));
+        assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
         assertThat(handler.getErrorMessages().size(), is(3));
         assertThat(handler.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.source.content"));
         assertThat(handler.getErrorMessages().get(1),
                 is("LEVEL:WARN ERROR:You have to add the element dc.relation.ispublishedin"));
         assertThat(handler.getErrorMessages().get(2),
-                is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
-        assertThat(handler.getWarningMessages(), empty());
+                is("Cannot proceed to XML generation due to errors in the input Excel file."));
+        assertThat(handler.getInfoMessages(), empty());
         // Verify that the ZIP file was NOT generated
         assertFalse(handler.getFileStream(context, "submission-forms.zip").isPresent());
     }
@@ -210,10 +211,10 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         handleScript(argsWithoutForce, ScriptLauncher.getConfig(kernelImpl), handlerWithoutForce, kernelImpl, admin);
 
         // Verify that validation failed
-        assertThat(handlerWithoutForce.getInfoMessages().size(), is(3));
-        assertThat(handlerWithoutForce.getInfoMessages().get(0), is("######################################"));
-        assertThat(handlerWithoutForce.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handlerWithoutForce.getInfoMessages().get(2), is("######################################"));
+        assertThat(handlerWithoutForce.getWarningMessages().size(), is(3));
+        assertThat(handlerWithoutForce.getWarningMessages().get(0), is("######################################"));
+        assertThat(handlerWithoutForce.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handlerWithoutForce.getWarningMessages().get(2), is("######################################"));
 
         // Verify that there are validation errors (warnings)
         assertThat(handlerWithoutForce.getErrorMessages().size(), is(3));
@@ -222,7 +223,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handlerWithoutForce.getErrorMessages().get(1),
                 is("LEVEL:WARN ERROR:You have to add the element dc.content.ispublishedin"));
         assertThat(handlerWithoutForce.getErrorMessages().get(2),
-                is("InputFormException: Blocking errors found, cannot proceed to XML generation."));
+                is("Cannot proceed to XML generation due to errors in the input Excel file."));
 
         // Verify that the ZIP file was NOT generated
         assertFalse(handlerWithoutForce.getFileStream(context, "submission-forms.zip").isPresent());
@@ -235,21 +236,24 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         handleScript(argsWithForce, ScriptLauncher.getConfig(kernelImpl), handlerWithForce, kernelImpl, admin);
 
         // With -f and only WARNING (no ERROR), the process should continue
-        // Verify that validation failed initially (has warnings) but process continued
-        assertThat(handlerWithForce.getInfoMessages().size(), is(9));
-        assertThat(handlerWithForce.getInfoMessages().get(0), is("######################################"));
-        assertThat(handlerWithForce.getInfoMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handlerWithForce.getInfoMessages().get(2), is("######################################"));
-        assertThat(handlerWithForce.getInfoMessages().get(3), is("**********************************"));
-        assertThat(handlerWithForce.getInfoMessages().get(4), is("** Created: item-submission.xml **"));
-        assertThat(handlerWithForce.getInfoMessages().get(5), is("**********************************"));
-        assertThat(handlerWithForce.getInfoMessages().get(6), is("***********************************"));
-        assertThat(handlerWithForce.getInfoMessages().get(7), is("** Created: submission-forms.xml **"));
-        assertThat(handlerWithForce.getInfoMessages().get(8), is("***********************************"));
+        // to Verify that validation failed initially (has warnings) but process continued
+        assertThat(handlerWithForce.getWarningMessages().size(), is(3));
+        assertThat(handlerWithForce.getWarningMessages().get(0), is("######################################"));
+        assertThat(handlerWithForce.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
+        assertThat(handlerWithForce.getWarningMessages().get(2), is("######################################"));
+        // Verify info messages about created files
+        assertThat(handlerWithForce.getInfoMessages().size(), is(8));
+        assertThat(handlerWithForce.getInfoMessages().get(0), is("**********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(1), is("** Created: item-submission.xml **"));
+        assertThat(handlerWithForce.getInfoMessages().get(2), is("**********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(3), is("***********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(4), is("** Created: submission-forms.xml **"));
+        assertThat(handlerWithForce.getInfoMessages().get(5), is("***********************************"));
+        assertThat(handlerWithForce.getInfoMessages().get(6), startsWith("Adding file to zip: /tmp/submission-forms"));
+        assertThat(handlerWithForce.getInfoMessages().get(7), startsWith("Adding file to zip: /tmp/item-submission"));
 
         // Verify that there are NO validation errors now
         assertThat(handlerWithForce.getErrorMessages().size(), is(0));
-        assertThat(handlerWithForce.getWarningMessages().size(), is(0));
 
         // Verify that ZIP file was generated
         assertTrue(handlerWithForce.getFileStream(context, "submission-forms.zip").isPresent());
@@ -493,8 +497,13 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         }
     }
 
-    private String getXlsFilePath(String name) {
+    private String getXlsFilePathEX(String name) {
         return new File(BASE_XLS_DIR_PATH, name).getAbsolutePath();
+    }
+
+    private String getXlsFilePath(String filename) {
+        var dspaceDir = configurationService.getProperty("dspace.dir");
+        return String.format("%s/%s/%s", dspaceDir, BASE_XLS_DIR_PATH , filename);
     }
 
 }
