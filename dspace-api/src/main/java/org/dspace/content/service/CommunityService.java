@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.dspace.authorize.AuthorizeException;
-import org.dspace.browse.ItemCountException;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
@@ -160,6 +159,32 @@ public interface CommunityService extends DSpaceObjectService<Community>, DSpace
     public List<Community> getAllParents(Context context, Community community) throws SQLException;
 
     /**
+     * Return all ancestor communities of the given community organized as a path from root to immediate parent.
+     * The returned list contains ancestors in hierarchical order from root to the immediate parent.
+     * Uses a recursive database query to efficiently traverse the community hierarchy.
+     * 
+     * For example, if the hierarchy is:
+     * - Root
+     *   - Child1
+     *   - Child2
+     *     - MyComm
+     *   - Child3
+     * 
+     * Calling this method with MyComm will return a list containing:
+     * [Root, Child2]
+     * 
+     * This represents the path from the root to MyComm's immediate parent, allowing you to
+     * reconstruct the hierarchical path to the given community.
+     * 
+     * @param context   DSpace context object
+     * @param community the community whose ancestors should be fetched
+     * @return a list of ancestor communities ordered from root to immediate parent, or empty list if community is
+     * top-level
+     * @throws SQLException if database error
+     */
+    public List<Community> getAncestorTree(Context context, Community community) throws SQLException;
+
+    /**
      * Return an array of parent communities of this collection.
      *
      * @param context    The relevant DSpace Context.
@@ -297,9 +322,9 @@ public interface CommunityService extends DSpaceObjectService<Community>, DSpace
     /**
      * Returns total community archived items
      *
+     * @param context         DSpace context
      * @param community       Community
      * @return                total community archived items
-     * @throws ItemCountException
      */
-    int countArchivedItems(Community community) throws ItemCountException;
+    int countArchivedItems(Context context, Community community);
 }

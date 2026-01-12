@@ -181,6 +181,71 @@
       <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
       <type>submission-form</type>
     </step-definition>
+    <step-definition id="opera" mandatory="true">
+      <heading>submit.progressbar.describe.opera</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="coin" mandatory="true">
+      <heading>submit.progressbar.describe.coin</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="coin-glam-bibliography" mandatory="true">
+      <heading>submit.progressbar.describe.coin-glam-bibliography</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="artworks" mandatory="true">
+      <heading>submit.progressbar.describe.artworks</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="artworks-glam-bibliography" mandatory="true">
+      <heading>submit.progressbar.describe.artworks-glam-bibliography</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="artworks-dc-contributor-author" mandatory="true">
+      <heading>submit.progressbar.describe.artworks-dc-contributor-author</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="musical_librettos" mandatory="true">
+      <heading>submit.progressbar.describe.musical_librettos</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="scientific_materials" mandatory="true">
+      <heading>submit.progressbar.describe.scientific_materials</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="scientific_materials-glam-bibliography" mandatory="true">
+      <heading>submit.progressbar.describe.scientific_materials-glam-bibliography</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="scientific_materials-glam-inscription" mandatory="true">
+      <heading>submit.progressbar.describe.scientific_materials-glam-inscription</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="web_annotation" mandatory="true">
+      <heading>submit.progressbar.describe.web_annotation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="personal_annotation" mandatory="true">
+      <heading>submit.progressbar.describe.personal_annotation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="curation" mandatory="false">
+      <heading>submit.progressbar.describe.curation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
   </step-definitions>
   <submission-definitions>
     <submission-process name="archival_material">
@@ -189,6 +254,7 @@
       <step id="archival_material_indexing" />
       <step id="archival_material_references" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="archival_material-edit">
@@ -204,6 +270,7 @@
       <step id="publication_indexing" />
       <step id="publication_references" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="publication-edit">
@@ -266,6 +333,7 @@
       <step id="collection" />
       <step id="place" />
       <step id="upload" />
+      <step id="curation" />
     </submission-process>
     <submission-process name="place-edit">
       <step id="place" />
@@ -317,6 +385,7 @@
       <step id="collection" />
       <step id="journal_file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="journal_file-edit">
@@ -337,6 +406,7 @@
       <step id="collection" />
       <step id="picture" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="picture-edit">
@@ -348,12 +418,85 @@
       <step id="audiovideo" />
       <step id="audiovideo-file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="audiovideo-edit">
       <step id="audiovideo" />
       <step id="audiovideo-file" />
       <step id="upload" />
+    </submission-process>
+    <submission-process name="opera">
+      <step id="collection" />
+      <step id="opera" />
+      <step id="upload" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="opera-edit">
+      <step id="opera" />
+      <step id="upload" />
+    </submission-process>
+    <submission-process name="coin">
+      <step id="collection" />
+      <step id="coin" />
+      <step id="upload" />
+      <step id="curation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="coin-edit">
+      <step id="coin" />
+      <step id="upload" />
+    </submission-process>
+    <submission-process name="musical_librettos">
+      <step id="collection" />
+      <step id="musical_librettos" />
+      <step id="upload" />
+      <step id="curation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="musical_librettos-edit">
+      <step id="musical_librettos" />
+      <step id="upload" />
+    </submission-process>
+    <submission-process name="scientific_materials">
+      <step id="collection" />
+      <step id="scientific_materials" />
+      <step id="upload" />
+      <step id="curation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="scientific_materials-edit">
+      <step id="scientific_materials" />
+      <step id="upload" />
+    </submission-process>
+    <submission-process name="artworks">
+      <step id="collection" />
+      <step id="artworks" />
+      <step id="upload" />
+      <step id="curation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="artworks-edit">
+      <step id="artworks" />
+      <step id="upload" />
+    </submission-process>
+    <submission-process name="web_annotation">
+      <step id="collection" />
+      <step id="web_annotation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="web_annotation-edit">
+      <step id="web_annotation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="personal_annotation">
+      <step id="collection" />
+      <step id="personal_annotation" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="personal_annotation-edit">
+      <step id="personal_annotation" />
+      <step id="license" />
     </submission-process>
   </submission-definitions>
 </item-submission>

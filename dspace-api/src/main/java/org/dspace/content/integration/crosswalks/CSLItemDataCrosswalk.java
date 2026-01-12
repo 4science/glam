@@ -83,7 +83,9 @@ public class CSLItemDataCrosswalk implements ItemExportCrosswalk {
         }
 
         CSLResult result = cslGeneratorFactory.getCSLGenerator().generate(itemDataProvider, style, format);
-        print(out, result.getCitation());
+        if (result != null) {
+            print(out, result.getCitation());
+        }
 
     }
 
@@ -92,16 +94,21 @@ public class CSLItemDataCrosswalk implements ItemExportCrosswalk {
 
         DSpaceListItemDataProvider dSpaceListItemDataProvider = getDSpaceListItemDataProviderInstance();
 
+        int itemCount = 0;
         while (dsoIterator.hasNext()) {
             DSpaceObject dso = dsoIterator.next();
-
+            dSpaceListItemDataProvider.setCitationLanguage(
+                    itemService.getMetadataFirstValue((Item)dso, "dc", "language", "iso",
+                            Item.ANY));
             if (!canDisseminate(context, dso)) {
                 throw new CrosswalkObjectNotSupported("CSLItemDataCrosswalk can only crosswalk a Publication item.");
             }
-
+            itemCount++;
             dSpaceListItemDataProvider.processItem((Item) dso);
         }
-
+        if (itemCount > 1) {
+            dSpaceListItemDataProvider.setCitationLanguage(null);
+        }
         return dSpaceListItemDataProvider;
     }
 

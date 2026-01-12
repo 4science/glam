@@ -8,12 +8,14 @@
 package org.dspace.checker;
 
 import java.io.Serializable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.Table;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import org.dspace.core.ReloadableEntity;
 
 /**
  * Database entity representation of the checksum_results table
@@ -23,7 +25,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "checksum_results")
 public class ChecksumResult
-    implements Serializable {
+    implements Serializable, ReloadableEntity<ChecksumResultCode> {
     @Id
     @Column(name = "result_code")
     @Enumerated(EnumType.STRING)
@@ -45,5 +47,10 @@ public class ChecksumResult
 
     public String getResultDescription() {
         return resultDescription;
+    }
+
+    @Override
+    public ChecksumResultCode getID() {
+        return resultCode;
     }
 }

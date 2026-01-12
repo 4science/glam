@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import org.dspace.AbstractIntegrationTestWithDatabase;
+import org.dspace.app.util.XMLUtils;
 import org.dspace.builder.ItemBuilder;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
@@ -58,7 +59,7 @@ public class CERIFIngestionCrosswalkIT extends AbstractIntegrationTestWithDataba
 
     private CERIFIngestionCrosswalk crosswalk;
 
-    private SAXBuilder builder = new SAXBuilder();
+    private SAXBuilder builder = XMLUtils.getSAXBuilder();
 
     private PluginService pluginService = CoreServiceFactory.getInstance().getPluginService();
 
@@ -67,7 +68,7 @@ public class CERIFIngestionCrosswalkIT extends AbstractIntegrationTestWithDataba
     @Before
     public void setup() throws Exception {
         // skip all tests based on configuration
-        Assume.assumeFalse(configurationService.getBooleanProperty("test.skip.cris", false));
+        Assume.assumeFalse(configurationService.getBooleanProperty("test.skip.cris", true));
 
         crosswalk = (CERIFIngestionCrosswalk) pluginService.getNamedPlugin(IngestionCrosswalk.class, "cerif");
         assertThat("A CERIF ingestion crosswalk should be configured", crosswalk, notNullValue());

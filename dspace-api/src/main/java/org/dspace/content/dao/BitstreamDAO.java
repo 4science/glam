@@ -36,6 +36,9 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
 
     public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException;
 
+    List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, Integer offset, Integer limit)
+        throws SQLException;
+
     public Iterator<Bitstream> findByCommunity(Context context, Community community) throws SQLException;
 
     public Iterator<Bitstream> findByCollection(Context context, Collection collection) throws SQLException;
@@ -55,4 +58,21 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
     public List<Bitstream> getNotReferencedBitstreams(Context context) throws SQLException;
 
     public Iterator<Bitstream> findShowableByItem(Context context, UUID itemId, String bundleName) throws SQLException;
+
+    /**
+     * Find bitstreams with a specific metadata value within a given bundle of a specific item.
+     * This method searches for bitstreams that have a specific metadata field value
+     * and are contained within a bundle with the specified name, belonging to a specific item.
+     *
+     * @param context       The relevant DSpace Context
+     * @param itemId        The UUID of the item to search within
+     * @param bundleName    The name of the bundle to search within (e.g., "PDFA")
+     * @param metadataField The metadata field in format "schema.element.qualifier" (e.g., "bitstream.master")
+     * @param metadataValue The value to search for (e.g., a UUID string)
+     * @return Iterator of matching Bitstream objects
+     * @throws SQLException if database error occurs
+     */
+    public Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
+                                                           String metadataField, String metadataValue)
+        throws SQLException;
 }

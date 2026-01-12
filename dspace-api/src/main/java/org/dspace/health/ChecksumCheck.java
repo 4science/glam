@@ -36,7 +36,7 @@ public class ChecksumCheck extends Check {
             new SimpleDispatcher(context, process_start, false));
 
         md5_collector collector = new md5_collector();
-        checker.setCollector(collector);
+        checker.setCollectors(List.of(collector));
         checker.setReportVerbose(true);
         try {
             checker.process();

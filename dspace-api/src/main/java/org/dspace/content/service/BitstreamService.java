@@ -14,8 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 
+import jakarta.annotation.Nullable;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
 import org.dspace.content.BitstreamFormat;
@@ -208,11 +208,17 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
 
     public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException;
 
+    List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, int offset, int limit) throws SQLException;
+
     public Bitstream getBitstreamByName(Item item, String bundleName, String bitstreamName) throws SQLException;
+
+    List<Bitstream> getBitstreamByBundleName(Item item, String bundleName) throws SQLException;
 
     public Bitstream getFirstBitstream(Item item, String bundleName) throws SQLException;
 
     public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException;
+
+    public boolean isValidThumbnail(Context context, Bitstream thumbnail) throws SQLException;
 
     public BitstreamFormat getFormat(Context context, Bitstream bitstream) throws SQLException;
 
@@ -243,6 +249,21 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
 
     List<Bitstream> findByItemAndBundleAndMetadata(Context context, Item item, String bundleName,
         Map<String, String> filterMetadata);
+
+    /**
+     * Find bitstreams in a specific bundle of a specific item that have a specific metadata value.
+     *
+     * @param context       The database context
+     * @param itemId        The UUID of the item to search within
+     * @param bundleName    The name of the bundle to search in
+     * @param metadataField The metadata field to search (format: schema.element.qualifier or schema.element)
+     * @param metadataValue The metadata value to match
+     * @return Iterator of bitstreams matching the criteria
+     * @throws SQLException if database error
+     */
+    Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
+                                                    String metadataField, String metadataValue)
+        throws SQLException;
 
     boolean isOriginalBitstream(DSpaceObject dso) throws SQLException;
 

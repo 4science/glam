@@ -45,9 +45,9 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.bulkedit.MetadataDeletionCli"/>
     </bean>
 
-    <bean id="filter-media" class="org.dspace.app.mediafilter.MediaFilterScriptConfiguration">
+    <bean id="filter-media" class="org.dspace.app.mediafilter.MediaFilterCliScriptConfiguration">
         <property name="description" value="Perform the media filtering to extract full text from documents and to create thumbnails"/>
-        <property name="dspaceRunnableClass" value="org.dspace.app.mediafilter.MediaFilterScript"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.mediafilter.MediaFilterCliScript"/>
     </bean>
 
     <bean id="solr-database-resync" class="org.dspace.app.solrdatabaseresync.SolrDatabaseResyncCliScriptConfiguration">
@@ -103,6 +103,11 @@
     <bean id="orcid-bulk-push" class="org.dspace.orcid.script.OrcidBulkPushScriptConfiguration">
         <property name="description" value="Perform the bulk synchronization of all the BATCH configured ORCID entities placed in the ORCID queue"/>
         <property name="dspaceRunnableClass" value="org.dspace.orcid.script.OrcidBulkPush"/>
+    </bean>
+
+    <bean id="import-openaire-events" class="org.dspace.qaevent.script.OpenaireEventsImportCliScriptConfiguration" primary="true">
+        <property name="description" value="Import new openaire quality assurance broker events"/>
+        <property name="dspaceRunnableClass" value="org.dspace.qaevent.script.OpenaireEventsImportCli"/>
     </bean>
 
     <bean id="orcid-bulk-pull" class="org.dspace.orcid.script.OrcidBulkPullScriptConfiguration">
@@ -169,6 +174,39 @@
     <bean id="bulk-access-control" class="org.dspace.app.bulkaccesscontrol.BulkAccessControlCliScriptConfiguration" primary="true">
         <property name="description" value="Bulk access control"/>
         <property name="dspaceRunnableClass" value="org.dspace.app.bulkaccesscontrol.BulkAccessControlCli"/>
+    </bean>
+
+    <bean id="submission-xml-to-xls" class="org.dspace.app.submission.SubmissionXmlToXlsScriptConfigurationCLI" primary="true">
+        <property name="description" value="Generate XLS submission form from XML"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.submission.SubmissionXmlToXlsCLI"/>
+    </bean>
+
+    <bean id="metadata-update" class="org.dspace.app.metadataupdate.MetadataUpdateCliScriptConfiguration" primary="true">
+        <property name="description" value="update metadata values"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.metadataupdate.MetadataUpdateScriptCli"/>
+    </bean>
+
+    <bean id="dspace-object-deletion" class="org.dspace.deletion.process.DSpaceObjectDeletionProcessScriptConfiguration" primary="true">
+        <property name="description" value="DSpace object deletion process"/>
+        <property name="dspaceRunnableClass" value="org.dspace.deletion.process.DSpaceObjectDeletionProcess"/>
+    </bean>
+
+    <bean id="itemDeletionStrategy" class="org.dspace.deletion.process.strategies.ItemDeletionStrategy" />
+    <bean id="communityDeletionStrategy" class="org.dspace.deletion.process.strategies.CommunityDeletionStrategy" />
+    <bean id="collectionDeletionStrategy" class="org.dspace.deletion.process.strategies.CollectionDeletionStrategy" />
+
+    <bean id="import-xml-to-item" class="org.dspace.app.marcxml2item.XmlToItemImportScriptCliConfiguration" primary="true">
+        <property name="description" value="Script to import items from XML file"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.marcxml2item.XmlToItemImportScriptCli"/>
+    </bean>
+
+    <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerCliScriptConfiguration" primary="true">
+        <property name="description" value="Verifies the checksum of every item within DSpace"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerCliScript"/>
+    </bean>
+    <bean id="curateOrchestrator" class="org.dspace.curate.CurationOrchestratorScriptConfiguration">
+        <property name="description" value="Orchestrator Curation tasks"/>
+        <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>
     </bean>
 
 </beans>

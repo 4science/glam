@@ -29,6 +29,8 @@ import org.dspace.builder.GroupBuilder;
 import org.dspace.builder.ItemBuilder;
 import org.dspace.content.Collection;
 import org.dspace.content.Item;
+import org.dspace.content.authority.DCInputAuthority;
+import org.dspace.content.authority.ItemAuthority;
 import org.dspace.content.authority.service.ChoiceAuthorityService;
 import org.dspace.core.service.PluginService;
 import org.dspace.eperson.EPerson;
@@ -99,17 +101,20 @@ public class ItemAuthorityIT extends AbstractControllerIntegrationTest {
                 .withTitle("Author 1")
                 .withEntityType("person")
                 .withPersonMainAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
+                .withPersonAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
                 .build();
 
         Item author_2 = ItemBuilder.createItem(context, col1)
                 .withTitle("Author 2")
                 .withPersonMainAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
+                .withPersonAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
                 .withEntityType("person")
                 .build();
 
         Item author_3 = ItemBuilder.createItem(context, col1)
                 .withTitle("Author 3")
                 .withPersonMainAffiliation(orgUnit_2.getName(), orgUnit_2.getID().toString())
+                .withPersonAffiliation(orgUnit_2.getName(), orgUnit_2.getID().toString())
                 .withEntityType("person")
                 .build();
 
@@ -127,20 +132,88 @@ public class ItemAuthorityIT extends AbstractControllerIntegrationTest {
                                 Map.of("data-oairecerif_author_affiliation", "OrgUnit_1::"
                                     + orgUnit_1.getID(),
                                     "oairecerif_author_affiliation", "OrgUnit_1::"
-                                        + orgUnit_1.getID())),
+                                        + orgUnit_1.getID(), "handle", author_1.getHandle())),
                             ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_2.getID().toString(),
                                 "Author 2", "Author 2", "vocabularyEntry",
                                 Map.of("data-oairecerif_author_affiliation", "OrgUnit_1::"
                                     + orgUnit_1.getID(),
                                     "oairecerif_author_affiliation", "OrgUnit_1::"
-                                        + orgUnit_1.getID())),
+                                        + orgUnit_1.getID(), "handle", author_2.getHandle())),
                             ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_3.getID().toString(),
                                 "Author 3", "Author 3", "vocabularyEntry",
                                 Map.of("data-oairecerif_author_affiliation", "OrgUnit_2::"
                                     + orgUnit_2.getID(),
                                     "oairecerif_author_affiliation", "OrgUnit_2::"
-                                        + orgUnit_2.getID()))
+                                        + orgUnit_2.getID(), "handle", author_3.getHandle()))
                         )))
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(3)));
+    }
+
+    @Test
+    public void alternativeNamesAuthorityTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                .withName("Test collection")
+                .build();
+
+        Item orgUnit_1 = ItemBuilder.createItem(context, col1)
+                .withTitle("OrgUnit_1")
+                .withEntityType("orgunit")
+                .build();
+
+        Item author_1 = ItemBuilder.createItem(context, col1)
+                .withTitle("Author 1")
+                .withVariantName("Author Variant")
+                .withEntityType("person")
+                .withPersonMainAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
+                .build();
+
+        Item author_2 = ItemBuilder.createItem(context, col1)
+                .withTitle("Author 2")
+                .withVariantName("Author 2 Variant")
+                .withPersonMainAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
+                .withEntityType("person")
+                .build();
+
+        Item author_3 = ItemBuilder.createItem(context, col1)
+                .withTitle("Author 3")
+                .withPersonMainAffiliation(orgUnit_1.getName(), orgUnit_1.getID().toString())
+                .withEntityType("person")
+                .build();
+
+        context.restoreAuthSystemState();
+        String author1Alternatives = "Author 1::" + author_1.getID() + "|||Author Variant::" + author_1.getID();
+        Map<String,String> author1Extras = Map.of(
+                "data-oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                "oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                "alternative-names", author1Alternatives,
+                "handle", author_1.getHandle());
+        String author2Alternatives = "Author 2::" + author_2.getID() + "|||Author 2 Variant::" + author_2.getID();
+        Map<String,String> author2Extras = Map.of(
+                "data-oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                "oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                "alternative-names", author2Alternatives,
+                "handle", author_2.getHandle());
+        Map<String,String> author3Extras = Map.of(
+                    "data-oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                    "oairecerif_author_affiliation", "OrgUnit_1::" + orgUnit_1.getID(),
+                    "handle", author_3.getHandle());
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PersonAuthority/entries")
+                        .param("metadata", "dc.contributor.author")
+                        .param("collection", col1.getID().toString())
+                        .param("filter", "author"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$._embedded.entries", Matchers.containsInAnyOrder(
+                            ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_1.getID().toString(),
+                                "Author 1", "Author 1", "vocabularyEntry", author1Extras),
+                            ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_2.getID().toString(),
+                                "Author 2", "Author 2", "vocabularyEntry", author2Extras),
+                            ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_3.getID().toString(),
+                                "Author 3", "Author 3", "vocabularyEntry", author3Extras)
+                         )))
                         .andExpect(jsonPath("$.page.totalElements", Matchers.is(3)));
     }
 
@@ -245,7 +318,7 @@ public class ItemAuthorityIT extends AbstractControllerIntegrationTest {
                        .andExpect(jsonPath("$._embedded.entries", Matchers.contains(
                            ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_1.getID().toString(),
                                 "Author 1", "Author 1", "vocabularyEntry",
-                                Map.of("data-oairecerif_author_affiliation", "", "oairecerif_author_affiliation", ""))
+                                Map.of("handle", author_1.getHandle()))
                        )))
                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(1)));
     }
@@ -561,6 +634,7 @@ public class ItemAuthorityIT extends AbstractControllerIntegrationTest {
                         "Author 3", "Author 3", "vocabularyEntry"))));
 
     }
+
     @Test
     public void personAuthorityTests() throws Exception {
         context.turnOffAuthorisationSystem();
@@ -869,12 +943,245 @@ public class ItemAuthorityIT extends AbstractControllerIntegrationTest {
                 person4Id, "Cortese, Claudio", "Cortese, Claudio", "vocabularyEntry"))));
     }
 
-    @Override
-    @After
-    // We need to cleanup the authorities cache once than the configuration has been restored
-    public void destroy() throws Exception {
-        super.destroy();
+    @Test
+    public void itemAuthoritySourceReferenceTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        configurationService.setProperty("plugin.named.org.dspace.content.authority.ChoiceAuthority",
+            new String[] { "org.dspace.content.authority.ItemAuthority = PersonAuthority" });
+
+        configurationService.setProperty("choices.presentation.dc.contributor.author", "suggest");
+        configurationService.setProperty("authority.controlled.dc.contributor.author", "true");
+
+        configurationService.setProperty("cris.ItemAuthority.PersonAuthority.entityType", "EntityPerson");
+
+        // set authority source reference
+        configurationService.setProperty("cris.ItemAuthority.PersonAuthority.source", "ORCID");
+
+        // These clears have to happen so that the config is actually reloaded in those
+        // classes. This is needed for
+        // the properties that we're altering above and this is only used within the
+        // tests
         pluginService.clearNamedPluginClasses();
         choiceAuthorityService.clearCache();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity).build();
+
+        Item person1 = ItemBuilder.createItem(context, col1)
+                                  .withTitle("Person 1")
+                                  .withType("mytype")
+                                  .withEntityType("EntityPerson").build();
+
+        ItemBuilder.createItem(context, col1)
+                   .withTitle("Person 2")
+                   .withEntityType("EntityPerson")
+                   .build();
+
+        ItemBuilder.createItem(context, col1)
+                   .withTitle("Person 3")
+                   .withType("anotherType")
+                   .withEntityType("EntityPerson").build();
+
+        context.restoreAuthSystemState();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PersonAuthority/entries")
+                        .param("filter", "Person"))
+                        .andExpect(status().isOk()).andExpect(jsonPath("$.page.totalElements", Matchers.is(1)))
+                        .andExpect(jsonPath("$._embedded.entries", Matchers.containsInAnyOrder(
+                            ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(person1.getID().toString(),
+                            "Person 1", "Person 1", "vocabularyEntry",
+                                    Map.of("handle", person1.getHandle()), ItemAuthority.DEFAULT)
+                        )));
+    }
+
+    @Test
+    public void ignoreWithdrawnAndNonDiscoverableItemAuthorityTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        configurationService.setProperty("plugin.named.org.dspace.content.authority.ChoiceAuthority",
+                new String[] { "org.dspace.content.authority.ItemAuthority = PersonAuthority" });
+
+        configurationService.setProperty("cris.ItemAuthority.PersonAuthority.entityType", "Person");
+
+        pluginService.clearNamedPluginClasses();
+        choiceAuthorityService.clearCache();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity).build();
+
+        Item person1 = ItemBuilder.createItem(context, col1)
+                .withTitle("Author 1")
+                .withType("mytype")
+                .withEntityType("Person")
+                .build();
+
+        Item person2 = ItemBuilder.createItem(context, col1)
+                .withTitle("Author 2")
+                .withEntityType("Person")
+                .build();
+
+        ItemBuilder.createItem(context, col1)
+                .withTitle("Author 3")
+                .withType("anotherType")
+                .withEntityType("Person")
+                .makeUnDiscoverable()
+                .build();
+
+        ItemBuilder.createItem(context, col1)
+                .withTitle("Author 4")
+                .withEntityType("Person")
+                .withdrawn()
+                .build();
+
+        context.restoreAuthSystemState();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PersonAuthority/entries").param("filter", "Author"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.page.totalElements", Matchers.is(2)))
+                .andExpect(jsonPath("$._embedded.entries",
+                        Matchers.containsInAnyOrder(
+                                ItemAuthorityMatcher.matchItemAuthorityProperties(person1.getID().toString(),
+                                        "Author 1", "Author 1", "vocabularyEntry"),
+                                ItemAuthorityMatcher.matchItemAuthorityProperties(person2.getID().toString(),
+                                        "Author 2", "Author 2", "vocabularyEntry"))));
+    }
+
+    @Test
+    public void lookupByHandleItemAuthorityTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Test collection")
+                                           .build();
+
+        Item author_1 = ItemBuilder.createItem(context, col1)
+                                   .withTitle("Misha")
+                                   .withEntityType("Person")
+                                   .build();
+
+        ItemBuilder.createItem(context, col1)
+                   .withTitle("Vincenzo")
+                   .withEntityType("Person")
+                   .build();
+
+        context.restoreAuthSystemState();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PersonAuthority/entries")
+                        .param("filter", author_1.getHandle()))
+                        .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.entries", Matchers.containsInAnyOrder(
+                        ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_1.getID().toString(),
+                                "Misha", "Misha", "vocabularyEntry",
+                                Map.of( "handle", author_1.getHandle()))
+                        )))
+                .andExpect(jsonPath("$.page.totalElements", Matchers.is(1)));
+    }
+
+    @Test
+    public void lookupByUUIDItemAuthorityTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Test collection")
+                                           .build();
+
+        Item author_1 = ItemBuilder.createItem(context, col1)
+                                   .withTitle("Misha")
+                                   .withEntityType("Person")
+                                   .build();
+
+        Item author_2 = ItemBuilder.createItem(context, col1)
+                                   .withTitle("Vincenzo")
+                                   .withEntityType("Person")
+                                   .build();
+
+        context.restoreAuthSystemState();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PersonAuthority/entries")
+                        .param("filter", author_2.getID().toString()))
+                        .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.entries", Matchers.containsInAnyOrder(
+                        ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(author_2.getID().toString(),
+                                "Vincenzo", "Vincenzo", "vocabularyEntry",
+                                Map.of( "handle", author_2.getHandle()))
+                )))
+                .andExpect(jsonPath("$.page.totalElements", Matchers.is(1)));
+    }
+
+    @Test
+    public void publicationAuthorityCheckOtherInformationsTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        configurationService.setProperty("plugin.named.org.dspace.content.authority.ChoiceAuthority",
+                new String[] { "org.dspace.content.authority.ItemAuthority = PublicationAuthority" });
+
+        configurationService.setProperty("choices.presentation.dc.contributor.author", "suggest");
+        configurationService.setProperty("authority.controlled.dc.contributor.author", "true");
+
+        configurationService.setProperty("cris.ItemAuthority.PublicationAuthority.entityType", "Publication");
+
+        // These clears have to happen so that the config is actually reloaded in those
+        // classes. This is needed for
+        // the properties that we're altering above and this is only used within the
+        // tests
+        pluginService.clearNamedPluginClasses();
+        choiceAuthorityService.clearCache();
+
+        parentCommunity = CommunityBuilder.createCommunity(context).build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity).build();
+
+        Item publication1 = ItemBuilder.createItem(context, col1)
+                                       .withTitle("Science in Italy")
+                                       .withAuthor("Artur, Bianchi")
+                                       .withAuthor("Stefano, Moretti")
+                                       .withType("mytype")
+                                       .withEntityType("Publication")
+                                       .build();
+
+        Item publication2 = ItemBuilder.createItem(context, col1)
+                                       .withTitle("Live in Italy")
+                                       .withAuthor("Corrado")
+                                       .withAuthor("David")
+                                       .withEntityType("Publication")
+                                       .build();
+
+        Item publication3 = ItemBuilder.createItem(context, col1)
+                                       .withTitle("Test")
+                                       .withAuthor("Andrea, De Santis")
+                                       .withEntityType("Publication")
+                                       .build();
+
+        context.restoreAuthSystemState();
+
+        String token = getAuthToken(admin.getEmail(), password);
+        getClient(token).perform(get("/api/submission/vocabularies/PublicationAuthority/entries")
+                        .param("filter", "Italy"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.page.totalElements", Matchers.is(2)))
+                        .andExpect(jsonPath("$._embedded.entries", Matchers.containsInAnyOrder(
+                           ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(publication1.getID().toString(),
+                                    publication1.getName(), publication1.getName(), "vocabularyEntry",
+                                Map.of("handle", publication1.getHandle(),
+                                       "author", "Artur, Bianchi; Stefano, Moretti")),
+                           ItemAuthorityMatcher.matchItemAuthorityWithOtherInformations(publication2.getID().toString(),
+                                        publication2.getName(), publication2.getName(), "vocabularyEntry",
+                                        Map.of("handle", publication2.getHandle(),
+                                               "author", "Corrado; David"))
+                        )));
+    }
+
+    @Override
+    // We need to cleanup the authorities cache once than the configuration has been restored
+    public void destroy() throws Exception {
+        DCInputAuthority.reset();
+        pluginService.clearNamedPluginClasses();
+        choiceAuthorityService.clearCache();
+        super.destroy();
     }
 }

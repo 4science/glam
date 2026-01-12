@@ -15,9 +15,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.app.util.DSpaceObjectUtilsImpl;
+import org.dspace.app.util.service.DSpaceObjectUtils;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.DSpaceObject;
@@ -28,11 +31,11 @@ import org.dspace.content.service.CommunityService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
-import org.dspace.core.UUIDIterator;
 import org.dspace.core.factory.CoreServiceFactory;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
+import org.dspace.utils.DSpace;
 
 /**
  * Curator orchestrates and manages the application of a one or more curation
@@ -94,10 +97,12 @@ public class Curator {
     protected ItemService itemService;
     protected HandleService handleService;
     protected DSpaceRunnableHandler handler;
+    protected boolean force;
+    protected int modifiedSinceDays;
 
     /**
      * constructor that uses an handler for logging
-     * 
+     *
      * @param handler {@code DSpaceRunnableHandler} used to logs infos
      */
     public Curator(DSpaceRunnableHandler handler) {
@@ -113,6 +118,22 @@ public class Curator {
         itemService = ContentServiceFactory.getInstance().getItemService();
         handleService = HandleServiceFactory.getInstance().getHandleService();
         resolver = new TaskResolver();
+    }
+
+    public boolean isForce() {
+        return force;
+    }
+
+    public void setForce(boolean force) {
+        this.force = force;
+    }
+
+    public int getModifiedSinceDays() {
+        return modifiedSinceDays;
+    }
+
+    public void setModifiedSinceDays(int modifiedSinceDays) {
+        this.modifiedSinceDays = modifiedSinceDays;
     }
 
     /**
@@ -250,6 +271,9 @@ public class Curator {
             curationCtx.set(c);
 
             DSpaceObject dso = handleService.resolveToObject(c, id);
+            if (dso == null) {
+                dso = resolveByUUID(c, id);
+            }
             if (dso != null) {
                 curate(dso);
             } else {
@@ -269,6 +293,21 @@ public class Curator {
         } finally {
             curationCtx.remove();
         }
+    }
+
+    private DSpaceObject resolveByUUID(Context context, String id) throws SQLException {
+        UUID uuid = null;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException ex) {
+            // couldn't parse uuid
+        }
+        if (uuid != null) {
+            DSpaceObjectUtils dSpaceObjectUtils = new DSpace().getServiceManager()
+                                  .getServiceByName(DSpaceObjectUtilsImpl.class.getName(), DSpaceObjectUtilsImpl.class);
+            return dSpaceObjectUtils.findDSpaceObject(context, uuid);
+        }
+        return null;
     }
 
     /**
@@ -464,10 +503,10 @@ public class Curator {
 
             //Then, perform this task for all Top-Level Communities in the Site
             // (this will recursively perform task for all objects in DSpace)
-            Iterator<Community> iterator = new UUIDIterator<Community>(ctx, communityService.findAllTop(ctx),
-                Community.class);
-            while (iterator.hasNext()) {
-                if (!doCommunity(tr, iterator.next())) {
+            for (Community subcomm : communityService.findAllTop(ctx)) {
+                // force a reload of the community in case a commit was performed
+                subcomm = ctx.reloadEntity(subcomm);
+                if (!doCommunity(tr, subcomm)) {
                     return false;
                 }
             }
@@ -488,27 +527,26 @@ public class Curator {
      * @throws SQLException
      */
     protected boolean doCommunity(TaskRunner tr, Community comm) throws IOException, SQLException {
-        UUIDIterator<Community> subComIter = new UUIDIterator<Community>(curationContext(), comm.getSubcommunities(),
-            Community.class);
-        UUIDIterator<Collection> collectionsIter = new UUIDIterator<Collection>(curationContext(),
-            comm.getCollections(),
-            Collection.class);
-
         if (!tr.run(comm)) {
             return false;
         }
-
-        while (subComIter.hasNext()) {
-            if (!doCommunity(tr, subComIter.next())) {
+        Context context = curationContext();
+        // force a reload in case we are committing after each object
+        comm = context.reloadEntity(comm);
+        for (Community subcomm : comm.getSubcommunities()) {
+            if (!doCommunity(tr, subcomm)) {
                 return false;
             }
         }
-
-        while (collectionsIter.hasNext()) {
-            if (!doCollection(tr, collectionsIter.next())) {
+        // force a reload in case we are committing after each object
+        comm = context.reloadEntity(comm);
+        for (Collection coll : comm.getCollections()) {
+            context.reloadEntity(coll);
+            if (!doCollection(tr, coll)) {
                 return false;
             }
         }
+        context.uncacheEntity(comm);
         return true;
     }
 
@@ -535,6 +573,7 @@ public class Curator {
                     return false;
                 }
             }
+            context.uncacheEntity(coll);
         } catch (SQLException sqlE) {
             throw new IOException(sqlE.getMessage(), sqlE);
         }
@@ -648,7 +687,7 @@ public class Curator {
 
     /**
      * Proxt method for logging with WARN level
-     * 
+     *
      * @param message
      */
     protected void logWarning(String message) {
@@ -658,7 +697,7 @@ public class Curator {
     /**
      * Proxy method for logging with WARN level and a {@code Messageformatter}
      * that generates the final log.
-     * 
+     *
      * @param message Target message to format or print
      * @param object  Object to use inside the message, or null
      */
@@ -674,6 +713,60 @@ public class Curator {
                 handler.logWarning(MessageFormat.format(message, object));
             } else {
                 handler.logWarning(message);
+            }
+        }
+    }
+
+    /**
+     * Proxy method for logging with ERROR level and exception details.
+     *
+     * @param message The error message to log
+     * @param t       The throwable/exception to include in the log
+     */
+    protected void logError(String message, Throwable t) {
+        if (handler != null) {
+            if (t != null) {
+                handler.logError(message, t);
+            } else {
+                handler.logError(message);
+            }
+        } else {
+            if (t != null) {
+                log.error(message, t);
+            } else {
+                log.error(message);
+            }
+        }
+    }
+
+    /**
+     * Proxy method for logging with INFO level.
+     *
+     * @param message Message to log.
+     */
+    protected void logInfo(String message) {
+        logInfo(message, null);
+    }
+
+    /**
+     * Proxy method for logging with INFO level and a {@code MessageFormat}
+     * that generates the final log.
+     *
+     * @param message Target message to format or print
+     * @param object  Object to use inside the message, or null
+     */
+    protected void logInfo(String message, Object object) {
+        if (handler != null) {
+            if (object != null) {
+                handler.logInfo(MessageFormat.format(message, object));
+            } else {
+                handler.logInfo(message);
+            }
+        } else {
+            if (object != null) {
+                log.info(message, object);
+            } else {
+                log.info(message);
             }
         }
     }

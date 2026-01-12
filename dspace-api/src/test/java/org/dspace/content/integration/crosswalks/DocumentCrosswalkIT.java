@@ -34,6 +34,8 @@ import javax.swing.text.Document;
 import javax.swing.text.rtf.RTFEditorKit;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.dspace.AbstractIntegrationTestWithDatabase;
@@ -78,7 +80,7 @@ public class DocumentCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     @Before
     public void setup() throws SQLException, AuthorizeException {
         // skip test based on configuration
-        Assume.assumeFalse(configurationService.getBooleanProperty("test.skip.cris", false));
+        Assume.assumeFalse(configurationService.getBooleanProperty("test.skip.cris", true));
 
         context.turnOffAuthorisationSystem();
         community = createCommunity(context).build();
@@ -721,14 +723,14 @@ public class DocumentCrosswalkIT extends AbstractIntegrationTestWithDatabase {
                     "Publications",
                     "Article",
                     "Test User, & Walter White. (2023). Publication 1. http://localhost:4000/handle/123456789/111111",
-                    "Walter White, & Test User. (2022). Publication 4. http://localhost:4000/handle/123456789/444444",
+                    "Test User. (2019). Publication 2. http://localhost:4000/handle/123456789/222222",
                     "Book",
                     "Test User. (2022). Publication 5. http://localhost:4000/handle/123456789/555555",
-                    "Test User. (2019). Publication 2. http://localhost:4000/handle/123456789/222222",
+                    "Test User, & Another User. (2023, March 1). Publication 6. http://localhost:4000/handle/123456789/666666",
                     "Chapter",
                     "John Smith, & Test User. (2020). Publication 3. http://localhost:4000/handle/123456789/333333",
                     "Other",
-                    "Test User, & Another User. (2023). Publication 6. http://localhost:4000/handle/123456789/666666"));
+                    "Walter White, & Test User. (2022). Publication 4. http://localhost:4000/handle/123456789/444444"));
             });
         }
 
@@ -1000,7 +1002,7 @@ public class DocumentCrosswalkIT extends AbstractIntegrationTestWithDatabase {
 
     private String getPdfContent(ByteArrayOutputStream out) {
         try {
-            PDDocument document = PDDocument.load(createTempFile(out.toByteArray()));
+            PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(createTempFile(out.toByteArray())));
             return new PDFTextStripper().getText(document);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -5,6 +5,9 @@
            http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
     <bean id="dspaceRunnableThreadExecutor" class="org.springframework.core.task.SyncTaskExecutor"/>
+    <bean id="dspaceRunnableThreadPoolExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="5"/>
+    </bean>
 
     <!-- This primary attribute is present so that we can assure that in the REST layer we'll always use this
         bean if it is present-->
@@ -71,6 +74,11 @@
     <bean id="bulk-access-control" class="org.dspace.app.bulkaccesscontrol.BulkAccessControlScriptConfiguration" primary="true">
         <property name="description" value="Bulk access control"/>
         <property name="dspaceRunnableClass" value="org.dspace.app.bulkaccesscontrol.BulkAccessControl"/>
+    </bean>
+
+    <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerScriptConfiguration" primary="true">
+        <property name="description" value="Checksum checker"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerScript"/>
     </bean>
 
 </beans>

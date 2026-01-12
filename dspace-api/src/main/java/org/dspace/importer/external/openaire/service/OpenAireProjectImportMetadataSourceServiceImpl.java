@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.Charsets;
@@ -32,6 +33,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.app.util.XMLUtils;
 import org.dspace.content.Item;
 import org.dspace.importer.external.datamodel.ImportRecord;
 import org.dspace.importer.external.datamodel.Query;
@@ -57,6 +59,8 @@ public class OpenAireProjectImportMetadataSourceServiceImpl extends AbstractImpo
     private static final String ENDPOINT_SEARCH_OPENAIRE = "http://api.openaire.eu/search/projects";
 
     private int timeout = 1000;
+
+    private Supplier<HttpClientBuilder> httpClientBuilderSupplier = HttpClients::custom;
 
     @Autowired
     private ConfigurationService configurationService;
@@ -156,7 +160,7 @@ public class OpenAireProjectImportMetadataSourceServiceImpl extends AbstractImpo
             String proxyPort = configurationService.getProperty("http.proxy.port");
             HttpGet method = null;
             try {
-                HttpClientBuilder hcBuilder = HttpClients.custom();
+                HttpClientBuilder hcBuilder = httpClientBuilderSupplier.get();
                 Builder requestConfigBuilder = RequestConfig.custom();
                 requestConfigBuilder.setConnectionRequestTimeout(timeout);
 
@@ -213,7 +217,7 @@ public class OpenAireProjectImportMetadataSourceServiceImpl extends AbstractImpo
             String proxyPort = configurationService.getProperty("http.proxy.port");
             HttpGet method = null;
             try {
-                HttpClientBuilder hcBuilder = HttpClients.custom();
+                HttpClientBuilder hcBuilder = httpClientBuilderSupplier.get();
                 Builder requestConfigBuilder = RequestConfig.custom();
                 requestConfigBuilder.setConnectionRequestTimeout(timeout);
 
@@ -249,9 +253,13 @@ public class OpenAireProjectImportMetadataSourceServiceImpl extends AbstractImpo
         }
     }
 
+    public void setHttpClientBuilderSupplier(Supplier<HttpClientBuilder> httpClientBuilderSupplier) {
+        this.httpClientBuilderSupplier = httpClientBuilderSupplier;
+    }
+
     private List<Element> splitToRecords(String recordsSrc) {
         try {
-            SAXBuilder saxBuilder = new SAXBuilder();
+            SAXBuilder saxBuilder = XMLUtils.getSAXBuilder();
             Document document = saxBuilder.build(new StringReader(recordsSrc));
             Element root = document.getRootElement();
             return root.getChildren("results").stream()

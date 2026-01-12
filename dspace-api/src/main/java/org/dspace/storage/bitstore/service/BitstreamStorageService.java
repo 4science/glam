@@ -12,8 +12,8 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 
+import jakarta.annotation.Nullable;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
 import org.dspace.core.Context;
@@ -193,5 +193,19 @@ public interface BitstreamStorageService {
      */
     @Nullable
     Long getLastModified(Bitstream bitstream) throws IOException;
+
+    /**
+     * Generate a presigned URL for direct access to the bitstream content.
+     * This allows downloading files directly from storage (S3, etc.) without going through DSpace.
+     *
+     * @param context   The current context
+     * @param bitstream The bitstream for which to generate the presigned URL
+     * @return The presigned URL as a string, or null if not supported by the storage backend
+     * @throws IOException        If a problem occurs while generating the URL
+     * @throws SQLException       If a problem occurs accessing the RDBMS
+     * @throws AuthorizeException Exception indicating the current user does not have permission
+     */
+    String getPresignedUrl(Context context, Bitstream bitstream)
+        throws IOException, SQLException, AuthorizeException;
 
 }

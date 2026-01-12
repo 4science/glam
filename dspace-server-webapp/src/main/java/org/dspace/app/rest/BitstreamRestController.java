@@ -13,13 +13,16 @@ import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Response;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.Response;
 import org.apache.catalina.connector.ClientAbortException;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.rest.converter.ConverterService;
@@ -32,13 +35,13 @@ import org.dspace.app.rest.utils.Utils;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Bitstream;
 import org.dspace.content.BitstreamFormat;
-import org.dspace.content.service.BitstreamFormatService;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.dspace.disseminate.service.CitationDocumentService;
 import org.dspace.eperson.EPerson;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.EventService;
+import org.dspace.storage.bitstore.service.BitstreamStorageService;
 import org.dspace.usage.UsageEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
@@ -81,9 +84,6 @@ public class BitstreamRestController {
     private BitstreamService bitstreamService;
 
     @Autowired
-    BitstreamFormatService bitstreamFormatService;
-
-    @Autowired
     private EventService eventService;
 
     @Autowired
@@ -97,6 +97,9 @@ public class BitstreamRestController {
 
     @Autowired
     Utils utils;
+
+    @Autowired
+    private BitstreamStorageService bitstreamStorageService;
 
     @PreAuthorize("hasPermission(#uuid, 'BITSTREAM', 'READ')")
     @RequestMapping( method = {RequestMethod.GET, RequestMethod.HEAD}, value = "content")
@@ -137,10 +140,16 @@ public class BitstreamRestController {
             Boolean citationEnabledForBitstream = citationDocumentService.isCitationEnabledForBitstream(bit, context);
             context.turnOffAuthorisationSystem();
 
+            var bitstreamResource =
+                    new org.dspace.app.rest.utils.BitstreamResource(name, uuid,
+                            currentUser != null ? currentUser.getID() : null,
+                            context.getSpecialGroupUuids(), citationEnabledForBitstream, true);
+
             HttpHeadersInitializer httpHeadersInitializer = new HttpHeadersInitializer()
                 .withBufferSize(BUFFER_SIZE)
                 .withFileName(name)
-                .withChecksum(bit.getChecksum())
+                .withChecksum(bitstreamResource.getChecksum())
+                .withLength(bitstreamResource.contentLength())
                 .withMimetype(mimetype)
                 .with(request)
                 .with(response);
@@ -158,10 +167,6 @@ public class BitstreamRestController {
                 httpHeadersInitializer.withDisposition(HttpHeadersInitializer.CONTENT_DISPOSITION_ATTACHMENT);
             }
 
-            org.dspace.app.rest.utils.BitstreamResource bitstreamResource =
-                new org.dspace.app.rest.utils.BitstreamResource(name, uuid,
-                    currentUser != null ? currentUser.getID() : null,
-                    context.getSpecialGroupUuids(), citationEnabledForBitstream, true);
             //We have all the data we need, close the connection to the database so that it doesn't stay open during
             //download/streaming
             context.complete();
@@ -169,6 +174,12 @@ public class BitstreamRestController {
             //Send the data
             if (httpHeadersInitializer.isValid()) {
                 HttpHeaders httpHeaders = httpHeadersInitializer.initialiseHeaders();
+
+                if (RequestMethod.HEAD.name().equals(request.getMethod())) {
+                    log.debug("HEAD request - no response body");
+                    return ResponseEntity.ok().headers(httpHeaders).build();
+                }
+
                 return ResponseEntity.ok().headers(httpHeaders).body(bitstreamResource);
             }
 
@@ -201,12 +212,39 @@ public class BitstreamRestController {
             || responseCode.equals(Response.Status.Family.REDIRECTION);
     }
 
+    /**
+     * Check if a Bitstream of the specified format should always be downloaded (i.e. "content-disposition: attachment")
+     * or can be opened inline (i.e. "content-disposition: inline").
+     * <P>
+     * NOTE that downloading via "attachment" is more secure, as the user's browser will not attempt to process or
+     * display the file. But, downloading via "inline" may be seen as more user-friendly for common formats.
+     * @param format BitstreamFormat
+     * @return true if always download ("attachment"). false if can be opened inline ("inline")
+     */
     private boolean checkFormatForContentDisposition(BitstreamFormat format) {
-        // never automatically download undefined formats
-        if (format == null) {
-            return false;
+        // Undefined or Unknown formats should ALWAYS be downloaded for additional security.
+        if (format == null || format.getSupportLevel() == BitstreamFormat.UNKNOWN) {
+            return true;
         }
-        List<String> formats = List.of((configurationService.getArrayProperty("webui.content_disposition_format")));
+
+        // Load additional formats configured to require download
+        List<String> configuredFormats = List.of(configurationService.
+                                                     getArrayProperty("webui.content_disposition_format"));
+
+        // If configuration includes "*", then all formats will always be downloaded.
+        if (configuredFormats.contains("*")) {
+            return true;
+        }
+
+        // Define a download list of formats which DSpace forces to ALWAYS be downloaded.
+        // These formats can embed JavaScript which may be run in the user's browser if the file is opened inline.
+        // Therefore, DSpace blocks opening these formats inline as it could be used for an XSS attack.
+        List<String> downloadOnlyFormats = List.of("text/html", "text/javascript", "text/xml", "rdf");
+
+        // Combine our two lists
+        List<String> formats = ListUtils.union(downloadOnlyFormats, configuredFormats);
+
+        // See if the passed in format's MIME type or file extension is listed.
         boolean download = formats.contains(format.getMIMEType());
         if (!download) {
             for (String ext : format.getExtensions()) {
@@ -256,5 +294,55 @@ public class BitstreamRestController {
 
         BitstreamRest bitstreamRest = converter.toRest(context.reloadEntity(bitstream), utils.obtainProjection());
         return converter.toResource(bitstreamRest);
+    }
+
+    /**
+     * This method will retrieve the presigned URL for the bitstream that corresponds to the provided UUID.
+     * The presigned URL allows direct download from the storage (S3 or local) without going through DSpace.
+     *
+     * @param uuid The UUID of the bitstream for which to retrieve the presigned URL
+     * @param request  The request object
+     * @param response The response object
+     * @return ResponseEntity containing the presigned URL as JSON, or null if an error occurred
+     * @throws SQLException       If something goes wrong in the database
+     * @throws IOException        If something goes wrong accessing the storage
+     * @throws AuthorizeException If the user is not authorized to access the bitstream
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "signedurl")
+    @PreAuthorize("hasPermission(#uuid, 'BITSTREAM','READ')")
+    public ResponseEntity<?> getPresignedUrl(@PathVariable UUID uuid,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response)
+            throws SQLException, IOException, AuthorizeException {
+
+        Context context = obtainContext(request);
+
+        Bitstream bitstream = bitstreamService.find(context, uuid);
+
+        if (bitstream == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return null;
+        }
+
+        try {
+            String presignedUrl = bitstreamStorageService.getPresignedUrl(context, bitstream);
+            if (StringUtils.isBlank(presignedUrl)) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return null;
+            }
+
+            // Return the presigned URL as JSON
+            Map<String, String> result = new HashMap<>();
+            result.put("presignedUrl", presignedUrl);
+
+            log.info("Generated presigned URL for bitstream: {}, StoreNumber: {}, FormatId: {}",
+                     bitstream.getID(), bitstream.getStoreNumber(), bitstream.getFormat(context).getID());
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Unable to get presigned url for Bitstream with id: " + uuid, e);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return null;
+        }
     }
 }

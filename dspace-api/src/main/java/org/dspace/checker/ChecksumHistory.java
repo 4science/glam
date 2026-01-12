@@ -8,19 +8,22 @@
 package org.dspace.checker;
 
 import java.util.Date;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import org.dspace.content.Bitstream;
 import org.dspace.core.Context;
 import org.dspace.core.ReloadableEntity;
@@ -37,7 +40,6 @@ import org.dspace.core.ReloadableEntity;
 @Entity
 @Table(name = "checksum_history")
 public class ChecksumHistory implements ReloadableEntity<Long> {
-
 
     @Id
     @Column(name = "check_id")
@@ -68,6 +70,17 @@ public class ChecksumHistory implements ReloadableEntity<Long> {
     @JoinColumn(name = "result", referencedColumnName = "result_code")
     private ChecksumResult checksumResult;
 
+    @ManyToOne
+    @JoinColumn(name = "droid_status", referencedColumnName = "status_code")
+    private DroidCheckStatus droidCheckStatus;
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "checksumHistory",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List<DroidCheckHistory> droidCheckHistory;
 
     /**
      * Protected constructor, create object using:
@@ -180,4 +193,14 @@ public class ChecksumHistory implements ReloadableEntity<Long> {
     public void setResult(ChecksumResult result) {
         this.checksumResult = result;
     }
+
+    public List<DroidCheckHistory> getDroidCheckHistory() {
+        return droidCheckHistory;
+    }
+
+    public ChecksumHistory setDroidCheckHistory(List<DroidCheckHistory> droidCheckHistory) {
+        this.droidCheckHistory = droidCheckHistory;
+        return this;
+    }
+
 }

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpenAIREProjectAuthority extends ItemAuthority {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrcidAuthority.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIREProjectAuthority.class);
 
     private ServiceManager serviceManager = new DSpace().getServiceManager();
 
@@ -98,7 +98,7 @@ public class OpenAIREProjectAuthority extends ItemAuthority {
         String code = getMetadataValue(record, "oairecerif", "funding", "identifier");
         String authority = getAuthorityPrefix() + code;
         String label = StringUtils.isNotBlank(code) ? value + "(" + code + ")" : value;
-        return new Choice(authority, value, label, getOpenAireExtra(code));
+        return new Choice(authority, value, label, getOpenAireExtra(code), getSource());
     }
 
     private String getMetadataValue(ImportRecord record, String schema, String element, String qualifier) {

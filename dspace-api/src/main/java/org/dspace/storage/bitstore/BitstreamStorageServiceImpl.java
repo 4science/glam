@@ -15,8 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 
+import jakarta.annotation.Nullable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.logging.log4j.LogManager;
@@ -349,6 +349,30 @@ public class BitstreamStorageServiceImpl implements BitstreamStorageService, Ini
             return null;
         }
         return Long.valueOf(metadata.get("modified").toString());
+    }
+
+    @Override
+    public String getPresignedUrl(Context context, Bitstream bitstream)
+        throws IOException, SQLException, AuthorizeException {
+        if (bitstream == null) {
+            throw new IllegalArgumentException("Bitstream cannot be null");
+        }
+
+        // Get the appropriate bitstore for this bitstream
+        BitStoreService store = this.getStore(bitstream.getStoreNumber());
+
+        // Try to get presigned URL from the store implementation
+        String presignedUrl = store.getPresignedUrl(bitstream);
+
+        if (presignedUrl == null) {
+            log.warn("Presigned URL not supported by store with id: {} for bitstream: {}",
+                     bitstream.getStoreNumber(),
+                     bitstream.getID());
+            return null;
+        }
+
+        log.debug("Generated presigned URL for bitstream: {}", bitstream.getID());
+        return presignedUrl;
     }
 
     /**

@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.dspace.authorize.ResourcePolicy;
+import org.dspace.checker.MostRecentChecksum;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
@@ -20,6 +21,7 @@ import org.dspace.content.Community;
 import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.handle.Handle;
+import org.dspace.identifier.DOI;
 import org.dspace.storage.rdbms.DatabaseConfigVO;
 import org.hibernate.FlushMode;
 import org.hibernate.Hibernate;
@@ -27,7 +29,6 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.proxy.HibernateProxyHelper;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -248,6 +249,11 @@ public class HibernateDBConnection implements DBConnection<Session> {
         }
     }
 
+    @Override
+    public void uncacheEntities() throws SQLException {
+        getSession().clear();
+    }
+
     /**
      * Evict an entity from the hibernate cache.
      * <P>
@@ -278,6 +284,11 @@ public class HibernateDBConnection implements DBConnection<Session> {
                         uncacheEntity(policy);
                     }
                 }
+            }
+
+            if (entity instanceof DOI) {
+                DOI doi = (DOI) entity;
+                uncacheEntity(doi.getDSpaceObject());
             }
 
             // ITEM
@@ -326,6 +337,18 @@ public class HibernateDBConnection implements DBConnection<Session> {
                 if (Hibernate.isInitialized(collection.getTemplateItem())) {
                     uncacheEntity(collection.getTemplateItem());
                 }
+            } else if (entity instanceof MostRecentChecksum) {
+
+                MostRecentChecksum mostRecentChecksum = (MostRecentChecksum) entity;
+
+                if (Hibernate.isInitialized(mostRecentChecksum.getBitstream())) {
+                    uncacheEntity(mostRecentChecksum.getBitstream());
+                }
+
+                if (Hibernate.isInitialized(mostRecentChecksum.getChecksumResult())) {
+                    uncacheEntity(mostRecentChecksum.getChecksumResult());
+                }
+
             }
 
             // Unless this object exists in the session, we won't do anything
