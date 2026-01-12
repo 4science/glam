@@ -161,7 +161,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
         assertThat(handler.getWarningMessages().size(), is(3));
         assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handler.getErrorMessages().size(), is(5));
+        assertThat(handler.getErrorMessages().size(), is(6));
         assertThat(handler.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.source.test"));
         assertThat(handler.getErrorMessages().get(1),
@@ -188,7 +188,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
 
         assertThat(handler.getWarningMessages().size(), is(3));
         assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handler.getErrorMessages().size(), is(3));
+        assertThat(handler.getErrorMessages().size(), is(4));
         assertThat(handler.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.source.content"));
         assertThat(handler.getErrorMessages().get(1),
@@ -217,7 +217,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handlerWithoutForce.getWarningMessages().get(2), is("######################################"));
 
         // Verify that there are validation errors (warnings)
-        assertThat(handlerWithoutForce.getErrorMessages().size(), is(3));
+        assertThat(handlerWithoutForce.getErrorMessages().size(), is(4));
         assertThat(handlerWithoutForce.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.content.content"));
         assertThat(handlerWithoutForce.getErrorMessages().get(1),
