@@ -62,7 +62,7 @@ public class ViafImportMetadataSourceServiceImplIT extends AbstractLiveImportInt
         List<MetadatumDTO> metadatums  = new ArrayList<>();
         MetadatumDTO identifierOther = createMetadatumDTO("person", "identifier", null, "24658555");
         MetadatumDTO title = createMetadatumDTO("dc", "title", null, "Albergati Capacelli , Francesco");
-        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "Male");
+        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "m");
         MetadatumDTO birthDate = createMetadatumDTO("person", "birthDate", null, "1728-04-19");
         MetadatumDTO deathDate = createMetadatumDTO("glamperson", "deathDate", null, "1804-03-16");
         MetadatumDTO birthYear = createMetadatumDTO("glamperson", "birthYear", null, "1728");
@@ -134,7 +134,7 @@ public class ViafImportMetadataSourceServiceImplIT extends AbstractLiveImportInt
         List<MetadatumDTO> metadatums  = new ArrayList<>();
         MetadatumDTO identifierOther = createMetadatumDTO("person", "identifier", null, "9999159477794927990009");
         MetadatumDTO title = createMetadatumDTO("dc", "title", null, "Sassi, Francesco");
-        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "Undefined");
+        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "n/a");
         MetadatumDTO link = createMetadatumDTO("glam", "link", "viaf", "http://viaf.org/viaf/9999159477794927990009");
         metadatums.add(identifierOther);
         metadatums.add(title);
@@ -170,7 +170,7 @@ public class ViafImportMetadataSourceServiceImplIT extends AbstractLiveImportInt
         MetadatumDTO identifierOther = createMetadatumDTO("person", "identifier", null, "8441159477949227990009");
         MetadatumDTO title = createMetadatumDTO("dc", "title", null,
                                           "Hohenlohe-Waldenburg-Schillingsfürst, Carl Albrecht I.");
-        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "Male");
+        MetadatumDTO gender = createMetadatumDTO("glamperson", "gender", null, "m");
         MetadatumDTO birthDate = createMetadatumDTO("person", "birthDate", null, "1719-09-22");
         MetadatumDTO deathDate = createMetadatumDTO("glamperson", "deathDate", null, "1793-01-25");
         MetadatumDTO birthYear = createMetadatumDTO("glamperson", "birthYear", null, "1719");
@@ -194,7 +194,7 @@ public class ViafImportMetadataSourceServiceImplIT extends AbstractLiveImportInt
         List<MetadatumDTO> metadatums2  = new ArrayList<>();
         MetadatumDTO identifierOther2 = createMetadatumDTO("person", "identifier", null, "7646174414001308700008");
         MetadatumDTO title2 = createMetadatumDTO("dc", "title", null, "Farina, Carlo");
-        MetadatumDTO gender2 = createMetadatumDTO("glamperson", "gender", null, "Male");
+        MetadatumDTO gender2 = createMetadatumDTO("glamperson", "gender", null, "m");
         MetadatumDTO deathDate2 = createMetadatumDTO("glamperson", "deathDate", null, "1639");
         MetadatumDTO deathYear2 = createMetadatumDTO("glamperson", "deathYear", null, "1639");
         MetadatumDTO link2 = createMetadatumDTO("glam", "link", "viaf", "http://viaf.org/viaf/7646174414001308700008");
@@ -211,7 +211,7 @@ public class ViafImportMetadataSourceServiceImplIT extends AbstractLiveImportInt
         List<MetadatumDTO> metadatums3  = new ArrayList<>();
         MetadatumDTO identifierOther3 = createMetadatumDTO("person", "identifier", null, "7196150325547210090003");
         MetadatumDTO title3 = createMetadatumDTO("dc", "title", null, "Leo I");
-        MetadatumDTO gender3 = createMetadatumDTO("glamperson", "gender", null, "Male");
+        MetadatumDTO gender3 = createMetadatumDTO("glamperson", "gender", null, "m");
         MetadatumDTO birthDate3 = createMetadatumDTO("person", "birthDate", null, "1806-12-13");
         MetadatumDTO deathDate3 = createMetadatumDTO("glamperson", "deathDate", null, "1881-04-14");
         MetadatumDTO birthYear3 = createMetadatumDTO("glamperson", "birthYear", null, "1806");

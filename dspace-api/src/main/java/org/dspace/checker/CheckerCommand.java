@@ -9,17 +9,24 @@ package org.dspace.checker;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.logging.log4j.Logger;
 import org.dspace.checker.factory.CheckerServiceFactory;
+import org.dspace.checker.factory.DroidServiceFactory;
 import org.dspace.checker.service.ChecksumHistoryService;
 import org.dspace.checker.service.ChecksumResultService;
+import org.dspace.checker.service.DroidCheckResultService;
+import org.dspace.checker.service.DroidCheckStatusService;
 import org.dspace.checker.service.MostRecentChecksumService;
 import org.dspace.content.Bitstream;
 import org.dspace.core.Context;
+import org.dspace.scripts.handler.DSpaceRunnableHandler;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
 
@@ -44,24 +51,29 @@ public final class CheckerCommand {
      */
     private static final Logger LOG = org.apache.logging.log4j.LogManager.getLogger(CheckerCommand.class);
 
+
+    private final ChecksumHistoryService checksumHistoryService =
+        CheckerServiceFactory.getInstance().getChecksumHistoryService();
+    private final MostRecentChecksumService checksumService =
+        CheckerServiceFactory.getInstance().getMostRecentChecksumService();
+    private final BitstreamStorageService bitstreamStorageService =
+        StorageServiceFactory.getInstance().getBitstreamStorageService();
+    private final ChecksumResultService checksumResultService =
+        CheckerServiceFactory.getInstance().getChecksumResultService();
+    private final DroidCheckResultService droidCheckResultService =
+        DroidServiceFactory.getInstance().getDroidCheckResultService();
+    private final DroidCheckStatusService droidCheckStatusService =
+        DroidServiceFactory.getInstance().getDroidCheckStatusService();
+
+    /**
+     * DSpace Context
+     */
     private Context context;
-
-    /**
-     * BitstreamInfoDAO dependency.
-     */
-    private MostRecentChecksumService checksumService = null;
-
-    /**
-     * Checksum history Data access object
-     */
-    private ChecksumHistoryService checksumHistoryService = null;
-    private BitstreamStorageService bitstreamStorageService = null;
-    private ChecksumResultService checksumResultService = null;
 
     /**
      * start time for current process.
      */
-    private Date processStartDate = null;
+    private Optional<Date> processStartDate;
 
     /**
      * Dispatcher to be used for processing run.
@@ -71,7 +83,7 @@ public final class CheckerCommand {
     /**
      * Container/logger with details about each bitstream and checksum results.
      */
-    private ChecksumResultsCollector collector = null;
+    private List<ChecksumResultsCollector> collectors = new ArrayList<>();
 
     /**
      * Report all processing
@@ -79,60 +91,54 @@ public final class CheckerCommand {
     private boolean reportVerbose = false;
 
     /**
+     * Report all processing
+     */
+    private boolean droidCheck = false;
+
+    /**
+     * Configured to send mail
+     */
+    private boolean mailReport = false;
+
+    /**
+     * Handler of the process
+     */
+    private DSpaceRunnableHandler handler;
+
+    /**
      * Default constructor uses DSpace plugin manager to construct dependencies.
      *
      * @param context Context
      */
     public CheckerCommand(Context context) {
-        checksumService = CheckerServiceFactory.getInstance().getMostRecentChecksumService();
-        checksumHistoryService = CheckerServiceFactory.getInstance().getChecksumHistoryService();
-        bitstreamStorageService = StorageServiceFactory.getInstance().getBitstreamStorageService();
-        checksumResultService = CheckerServiceFactory.getInstance().getChecksumResultService();
         this.context = context;
     }
 
-    /**
-     * <p>
-     * Uses the options set up on this checker to determine a mode of execution,
-     * and then accepts bitstream ids from the dispatcher and checks their
-     * bitstreams against the db records.
-     * </p>
-     *
-     * <p>
-     * N.B. a valid BitstreamDispatcher must be provided using
-     * setBitstreamDispatcher before calling this method
-     * </p>
-     *
-     * @throws SQLException if database error
-     */
-    public void process() throws SQLException {
-        LOG.debug("Begin Checker Processing");
-
-        if (dispatcher == null) {
-            throw new IllegalStateException("No BitstreamDispatcher provided");
+    private void logInfo(String message) {
+        LOG.info(message);
+        if (handler != null) {
+            handler.logInfo(message);
         }
+    }
 
-        if (collector == null) {
-            collector = new ResultsLogger(processStartDate);
+    private void logDebug(String message) {
+        LOG.debug(message);
+        if (handler != null) {
+            handler.logDebug(message);
         }
+    }
 
-        // update missing bitstreams that were entered into the
-        // bitstream table - this always done.
-        checksumService.updateMissingBitstreams(context);
+    private void logError(String message, Throwable e) {
+        LOG.error(message, e);
+        if (handler != null) {
+            handler.logError(message, e);
+        }
+    }
 
-        Bitstream bitstream = dispatcher.next();
-
-        while (bitstream != null) {
-            LOG.debug("Processing bitstream id = " + bitstream.getID());
-            MostRecentChecksum info = checkBitstream(bitstream);
-
-            if (reportVerbose
-                || !ChecksumResultCode.CHECKSUM_MATCH.equals(info.getChecksumResult().getResultCode())) {
-                collector.collect(context, info);
-            }
-
-            context.uncacheEntity(bitstream);
-            bitstream = dispatcher.next();
+    private void logWarning(String message) {
+        LOG.warn(message);
+        if (handler != null) {
+            handler.logWarning(message);
         }
     }
 
@@ -227,6 +233,75 @@ public final class CheckerCommand {
 
     /**
      * <p>
+     * Uses the options set up on this checker to determine a mode of execution,
+     * and then accepts bitstream ids from the dispatcher and checks their
+     * bitstreams against the db records.
+     * </p>
+     *
+     * <p>
+     * N.B. a valid BitstreamDispatcher must be provided using
+     * setBitstreamDispatcher before calling this method
+     * </p>
+     *
+     * @throws SQLException if database error
+     */
+    public void process() throws SQLException {
+        logDebug("Begin Checker Processing");
+
+        if (dispatcher == null) {
+            throw new IllegalStateException("No BitstreamDispatcher provided");
+        }
+
+        if (collectors.isEmpty()) {
+            collectors.add(new ResultsLogger(processStartDate.get()));
+        }
+
+        // update missing bitstreams that were entered into the
+        // bitstream table - this always done.
+        checksumService.updateMissingBitstreams(context);
+
+        // TODO: change to process MostRecentChecksum directly (if any)
+        Bitstream bitstream = dispatcher.next();
+
+        while (bitstream != null) {
+            logInfo("Processing bitstream id = " + bitstream.getID());
+            MostRecentChecksum info = checkBitstream(bitstream);
+
+            if (
+                    info == null ||
+                    info.getBitstream() == null ||
+                    ChecksumResultCode.BITSTREAM_INFO_NOT_FOUND.equals(info.getChecksumResult().getResultCode())
+            ) {
+                logWarning("Cannot retrieve bitstream checksum info! Skipping checker for " + bitstream.getID());
+            } else if (
+                    isDroidCheck() ||
+                    isMailReport() ||
+                    reportVerbose ||
+                    !ChecksumResultCode.CHECKSUM_MATCH.equals(info.getChecksumResult().getResultCode())
+            ) {
+                collectors.forEach(collector -> {
+                    try {
+                        collector.collect(context, info);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            bitstream = dispatcher.next();
+        }
+
+        collectors.forEach(collector -> {
+            try {
+                collector.complete(context);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
+     * <p>
      * Process general case bitstream.
      * </p>
      *
@@ -264,20 +339,39 @@ public final class CheckerCommand {
                 info.setChecksumResult(getChecksumResultByCode(ChecksumResultCode.BITSTREAM_NOT_FOUND));
                 info.setToBeProcessed(false);
             }
+            info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.NOT_PROCESSED));
+
+            if (isDroidCheck()) {
+                try {
+                    checksumService.setDroidResults(
+                        context,
+                        info,
+                        droidCheckResultService.validate(context, info)
+                    );
+                    // no related format found.
+                    if (info.getDroidCheckResults() == null || info.getDroidCheckResults().isEmpty()) {
+                        info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.NOT_FOUND));
+                    } else {
+                        info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.VALIDATED));
+                    }
+                } catch (DroidValidationException | SQLException e) {
+                    logError("Cannot validate the bitstream " + info.getBitstream().getID() + " with DROID", e);
+                    info.setDroidCheckStatus(droidCheckStatusService.findBy(context, DroidResultCode.VALIDATION_ERROR));
+                }
+            }
 
         } catch (IOException e) {
             // bitstream located, but file missing from asset store
             info.setChecksumResult(getChecksumResultByCode(ChecksumResultCode.BITSTREAM_NOT_FOUND));
             info.setToBeProcessed(false);
-            LOG.error("Error retrieving bitstream ID " + info.getBitstream().getID()
+            logError("Error retrieving bitstream ID " + info.getBitstream().getID()
                           + " from " + "asset store.", e);
         } catch (SQLException e) {
             // ??this code only executes if an SQL
             // exception occurs in *DSpace* code, probably
             // indicating a general db problem?
             info.setChecksumResult(getChecksumResultByCode(ChecksumResultCode.BITSTREAM_INFO_NOT_FOUND));
-            LOG.error("Error retrieving metadata for bitstream ID "
-                          + info.getBitstream().getID(), e);
+            logError("Error retrieving metadata for bitstream ID " + info.getBitstream().getID(), e);
         } finally {
             info.setProcessEndDate(new Date());
 
@@ -305,8 +399,9 @@ public final class CheckerCommand {
      *
      * @param dispatcher Dispatcher to use.
      */
-    public void setDispatcher(BitstreamDispatcher dispatcher) {
+    public CheckerCommand setDispatcher(BitstreamDispatcher dispatcher) {
         this.dispatcher = dispatcher;
+        return this;
     }
 
     /**
@@ -314,17 +409,18 @@ public final class CheckerCommand {
      *
      * @return The ChecksumResultsCollector being used.
      */
-    public ChecksumResultsCollector getCollector() {
-        return collector;
+    public List<ChecksumResultsCollector> getCollectors() {
+        return collectors;
     }
 
     /**
-     * Set the collector that holds/logs the results for this process run.
+     * Set the collectors that holds/logs the results for this process run.
      *
-     * @param collector the collector to be used for this run
+     * @param collectors the collectors to be used for this run
      */
-    public void setCollector(ChecksumResultsCollector collector) {
-        this.collector = collector;
+    public CheckerCommand setCollectors(List<ChecksumResultsCollector> collectors) {
+        this.collectors = collectors;
+        return this;
     }
 
     /**
@@ -333,7 +429,7 @@ public final class CheckerCommand {
      * @return start time
      */
     public Date getProcessStartDate() {
-        return processStartDate == null ? null : new Date(processStartDate.getTime());
+        return processStartDate.orElse(null);
     }
 
     /**
@@ -341,8 +437,9 @@ public final class CheckerCommand {
      *
      * @param startDate start time
      */
-    public void setProcessStartDate(Date startDate) {
-        processStartDate = startDate == null ? null : new Date(startDate.getTime());
+    public CheckerCommand setProcessStartDate(Date startDate) {
+        processStartDate = Optional.ofNullable(startDate).map(date -> new Date(startDate.getTime()));
+        return this;
     }
 
     /**
@@ -359,7 +456,31 @@ public final class CheckerCommand {
      *
      * @param reportVerbose true to report only errors in the logs.
      */
-    public void setReportVerbose(boolean reportVerbose) {
+    public CheckerCommand setReportVerbose(boolean reportVerbose) {
         this.reportVerbose = reportVerbose;
+        return this;
+    }
+
+    public boolean isDroidCheck() {
+        return droidCheck;
+    }
+
+    public CheckerCommand setDroidCheck(boolean droidCheck) {
+        this.droidCheck = droidCheck;
+        return this;
+    }
+
+    public CheckerCommand setHandler(DSpaceRunnableHandler handler) {
+        this.handler = handler;
+        return this;
+    }
+
+    public boolean isMailReport() {
+        return mailReport;
+    }
+
+    public CheckerCommand setMailReport(boolean mailReport) {
+        this.mailReport = mailReport;
+        return this;
     }
 }

@@ -37,7 +37,7 @@
 
     <bean id="viafIDContrib" class="org.dspace.importer.external.metadatamapping.contributor.SimpleJsonPathMetadataContributor">
         <property name="field" ref="viaf.id"/>
-        <property name="query" value="/ns1:VIAFCluster/ns1:viafID"/>
+        <property name="query" value="/VIAFCluster/viafID"/>
     </bean>
     <bean id="viaf.id" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="person.identifier"/>
@@ -72,12 +72,12 @@
     </bean>
     <bean id="viafGenderMetadataProcessor" class="org.dspace.importer.external.metadatamapping.transform.StringJsonValueMappingMetadataProcessorService">
         <property name="valueMapConverter" ref="mapConverterViafGenderType"/>
-        <property name="query" value="/ns1:VIAFCluster/ns1:fixed/ns1:gender"/>
+        <property name="query" value="/VIAFCluster/fixed/gender"/>
     </bean>
     <bean name="mapConverterViafGenderType" class="org.dspace.util.SimpleMapConverter" init-method="init">
         <property name="converterNameFile" value="mapConverter-viaf-gender-type.properties" />
         <property name="configurationService" ref="org.dspace.services.ConfigurationService" />
-        <property name="defaultValue" value="undefined"/>
+        <property name="defaultValue" value="n/a"/>
     </bean>
     <bean id="viaf.glamperson.gender" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="glamperson.gender"/>
@@ -88,7 +88,7 @@
         <property name="metadataProcessor" ref="viafPersonBirthDateMetadataProcessor"/>
     </bean>
     <bean id="viafPersonBirthDateMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafDateProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:birthDate"/>
+        <property name="query" value="/VIAFCluster/birthDate"/>
     </bean>
     <bean id="viaf.person.birthDate" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="person.birthDate"/>
@@ -99,7 +99,7 @@
         <property name="metadataProcessor" ref="viafPersonBirthYearMetadataProcessor"/>
     </bean>
     <bean id="viafPersonBirthYearMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafDateProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:birthDate"/>
+        <property name="query" value="/VIAFCluster/birthDate"/>
         <property name="takeOnlyYear" value="true"/>
     </bean>
     <bean id="viaf.glamperson.birthYear" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
@@ -111,7 +111,7 @@
         <property name="metadataProcessor" ref="viafGlampersonDeathDateMetadataProcessor"/>
     </bean>
     <bean id="viafGlampersonDeathDateMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafDateProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:deathDate"/>
+        <property name="query" value="/VIAFCluster/deathDate"/>
     </bean>
     <bean id="viaf.glamperson.deathDate" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="glamperson.deathDate"/>
@@ -122,7 +122,7 @@
         <property name="metadataProcessor" ref="viafPersonDeathYearMetadataProcessor"/>
     </bean>
     <bean id="viafPersonDeathYearMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafDateProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:deathDate"/>
+        <property name="query" value="/VIAFCluster/deathDate"/>
         <property name="takeOnlyYear" value="true"/>
     </bean>
     <bean id="viaf.glamperson.deathYear" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
@@ -134,7 +134,7 @@
         <property name="metadataProcessor" ref="viafGlamLinkMetadataProcessor"/>
     </bean>
     <bean id="viafGlamLinkMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafSimplePrefixProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:viafID"/>
+        <property name="query" value="/VIAFCluster/viafID"/>
         <property name="prefix" value="http://viaf.org/viaf/"/>
     </bean>
     <bean id="viaf.glam.link.viaf" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
@@ -146,7 +146,7 @@
         <property name="metadataProcessor" ref="viafGlamWikipediaMetadataProcessor"/>
     </bean>
     <bean id="viafGlamWikipediaMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafWikipediaProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:xLinks/ns1:xLink"/>
+        <property name="query" value="/VIAFCluster/xLinks/xLink"/>
     </bean>
     <bean id="viaf.glam.link.wikipedia" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="glam.link.wikipedia"/>
@@ -157,7 +157,7 @@
         <property name="metadataProcessor" ref="viafNationalityMetadataProcessor"/>
     </bean>
     <bean id="viafNationalityMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafNationalityProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:nationalityOfEntity/ns1:data"/>
+        <property name="query" value="/VIAFCluster/nationalityOfEntity/data"/>
     </bean>
     <bean id="viaf.person.nationality" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="person.nationality"/>
@@ -185,7 +185,7 @@
         <property name="metadataProcessor" ref="viafSubjectLcshMetadataProcessor"/>
     </bean>
     <bean id="viafSubjectLcshMetadataProcessor" class="org.dspace.importer.external.viaf.contributors.ViafSubjectIcshProcessor">
-        <property name="query" value="/ns1:VIAFCluster/ns1:occupation/ns1:data"/>
+        <property name="query" value="/VIAFCluster/occupation/data"/>
     </bean>
     <bean id="viaf.dc.subject.lcsh" class="org.dspace.importer.external.metadatamapping.MetadataFieldConfig">
         <constructor-arg value="dc.subject.lcsh"/>

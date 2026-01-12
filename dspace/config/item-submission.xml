@@ -241,6 +241,11 @@
       <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
       <type>submission-form</type>
     </step-definition>
+    <step-definition id="curation" mandatory="false">
+      <heading>submit.progressbar.describe.curation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
   </step-definitions>
   <submission-definitions>
     <submission-process name="archival_material">
@@ -249,6 +254,7 @@
       <step id="archival_material_indexing" />
       <step id="archival_material_references" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="archival_material-edit">
@@ -264,6 +270,7 @@
       <step id="publication_indexing" />
       <step id="publication_references" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="publication-edit">
@@ -326,6 +333,7 @@
       <step id="collection" />
       <step id="place" />
       <step id="upload" />
+      <step id="curation" />
     </submission-process>
     <submission-process name="place-edit">
       <step id="place" />
@@ -377,6 +385,7 @@
       <step id="collection" />
       <step id="journal_file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="journal_file-edit">
@@ -397,6 +406,7 @@
       <step id="collection" />
       <step id="picture" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="picture-edit">
@@ -408,6 +418,7 @@
       <step id="audiovideo" />
       <step id="audiovideo-file" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="audiovideo-edit">
@@ -429,6 +440,7 @@
       <step id="collection" />
       <step id="coin" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="coin-edit">
@@ -439,6 +451,7 @@
       <step id="collection" />
       <step id="musical_librettos" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="musical_librettos-edit">
@@ -449,6 +462,7 @@
       <step id="collection" />
       <step id="scientific_materials" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="scientific_materials-edit">
@@ -459,6 +473,7 @@
       <step id="collection" />
       <step id="artworks" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="artworks-edit">

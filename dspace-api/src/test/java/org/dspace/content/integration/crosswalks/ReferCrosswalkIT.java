@@ -80,8 +80,8 @@ import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.utils.DSpace;
 import org.json.JSONObject;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -115,6 +115,9 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
 
     private ChoiceAuthorityService choiceAuthorityService;
 
+    @Rule
+    public CrisConditionalRule crisConditionalRule = new CrisConditionalRule();
+
     @Before
     public void setup() throws SQLException, AuthorizeException {
         this.crosswalkMapper = new DSpace().getSingletonService(StreamDisseminationCrosswalkMapper.class);
@@ -144,8 +147,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
         collection = createCollection(context, community).withAdminGroup(eperson).build();
         context.restoreAuthSystemState();
 
-        // skip test based on configuration
-        Assume.assumeFalse(configurationService.getBooleanProperty("test.skip.cris", true));
+        // conditional test execution now handled by @Rule CrisConditionalRule
     }
 
     @After
@@ -154,6 +156,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonXmlDisseminate() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -228,6 +231,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonXmlCerifDisseminate() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -268,6 +272,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPersonsXmlCerifDisseminate() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -322,6 +327,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonWithEmptyGroupsXmlDisseminate() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -371,6 +377,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonXmlDisseminateWithPersonalPicture() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -400,6 +407,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonXmlDisseminateWithMultiplePersonalPictures() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -442,6 +450,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPersonJsonDisseminate() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -517,6 +526,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPersonsXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -572,6 +582,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPersonsJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -627,6 +638,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -703,6 +715,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationXmlDisseminateWithAuthorityOnFunder() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -777,6 +790,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPublicationXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -827,6 +841,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationEndnoteDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -868,6 +883,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testProjectXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -925,6 +941,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testProjectJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -985,6 +1002,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyProjectsXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1046,6 +1064,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyProjectsJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1107,6 +1126,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testOrgUnitXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1158,6 +1178,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testOrgUnitJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1203,6 +1224,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyOrgUnitsXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1245,6 +1267,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyOrgUnitsJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1287,6 +1310,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testEquipmentJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1317,6 +1341,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testEquipmentXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1347,6 +1372,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyEquipmentJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1386,6 +1412,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyEquipmentXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1425,6 +1452,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testFundingXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1462,6 +1490,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testFundingXmlDisseminateWithRestrictedMetadata() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -1519,6 +1548,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testFundingJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1556,6 +1586,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyFundingsXmlDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1607,6 +1638,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyFundingsJsonDisseminate() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -1658,6 +1690,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPatentCerifXmlDisseminate() throws Exception {
 
         Item patent = ItemBuilder.createItem(context, collection)
@@ -1692,6 +1725,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPatentsCerifXmlDisseminate() throws Exception {
 
         Item firstPatent = ItemBuilder.createItem(context, collection)
@@ -1728,6 +1762,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPatentJsonDisseminate() throws Exception {
 
         Item patent = ItemBuilder.createItem(context, collection)
@@ -1770,6 +1805,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyPatentsJsonDisseminate() throws Exception {
 
         Item firstPatent = ItemBuilder.createItem(context, collection)
@@ -1808,6 +1844,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testDataSetCerifXmlDisseminate() throws Exception {
 
         Item project = ItemBuilder.createItem(context, collection)
@@ -1848,6 +1885,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyDataSetsCerifXmlDisseminate() throws Exception {
 
         Item firstDataSet = ItemBuilder.createItem(context, collection)
@@ -1885,6 +1923,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testEventCerifXmlDisseminate() throws Exception {
 
         Item event = ItemBuilder.createItem(context, collection)
@@ -1923,6 +1962,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testManyEventsCerifXmlDisseminate() throws Exception {
 
         Item firstEvent = ItemBuilder.createItem(context, collection)
@@ -1977,6 +2017,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualFieldDate() throws Exception {
 
         Item publication = ItemBuilder.createItem(context, collection)
@@ -2015,6 +2056,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualFieldVocabulary() throws Exception {
 
         Item publication = ItemBuilder.createItem(context, collection)
@@ -2042,6 +2084,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void placeholderFieldMustBeIgnoredTest() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -2063,6 +2106,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void xmlDisseminateMetadataSecurityFirstLevelTest() throws Exception {
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context).build();
@@ -2127,6 +2171,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void xmlDisseminateMetadataSecuritySecondLevelTest() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -2214,6 +2259,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void xmlDisseminateMetadataSecurityThirdLevelTest() throws Exception {
         context.turnOffAuthorisationSystem();
 
@@ -2297,6 +2343,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualFieldCitationsWithPerson() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -2347,6 +2394,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualFieldCitationsWithPublication() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -2381,6 +2429,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualFieldCitationsWithFirstSelectedPublication() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -2501,6 +2550,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
 
 
     @Test
+    @SkipIfCrisDisabled
     public void testVirtualBitstreamFieldWithProject() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -2617,6 +2667,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testReferCrosswalkPublicationDataciteXml() throws Exception {
 
         ReferCrosswalk referCrosswalk = new DSpace().getServiceManager()
@@ -2676,6 +2727,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
 
     public void testReferCrosswalkPublicationDataciteXmlWithoutTypeAndAuthor() throws Exception {
 
@@ -2715,6 +2767,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
 
 
     @Test
+    @SkipIfCrisDisabled
     public void testReferCrosswalkPublicationDataciteXmlWithVirtualPlace() throws Exception {
 
         ReferCrosswalk referCrosswalk = new DSpace().getServiceManager()
@@ -2751,6 +2804,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testExportToDataciteFormatItemWithThreeDOI() throws Exception {
         String prefix;
         prefix = this.configurationService.getProperty(CFG_PREFIX);
@@ -2790,6 +2844,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testExportToDataciteFormatItemWithSingleDOINotMatchingPrefix() throws Exception {
         String prefix;
         prefix = this.configurationService.getProperty(CFG_PREFIX);
@@ -2827,6 +2882,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
 
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationVirtualFieldWithVocabularyValuePairList() throws Exception {
 
         Locale defaultLocale = context.getCurrentLocale();
@@ -2902,6 +2958,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationVirtualFieldValuePairList() throws Exception {
 
         context.turnOffAuthorisationSystem();
@@ -2938,6 +2995,7 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
+    @SkipIfCrisDisabled
     public void testPublicationMultilanguageVirtualFieldValuePairList() throws Exception {
 
         Locale defaultLocale = context.getCurrentLocale();
@@ -3043,6 +3101,71 @@ public class ReferCrosswalkIT extends AbstractIntegrationTestWithDatabase {
             configurationService.setProperty("webui.supported.locales", defaultLocales);
             DCInputAuthority.reset();
             DCInputAuthority.getPluginNames();
+        }
+    }
+
+    @Test
+    @SkipIfCrisEnabled
+    public void testFamilyXmlCrosswalk() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        Item aggregationItem = createItem(context, collection)
+            .withEntityType("Aggregation")
+            .withTitle("Aggregation Title")
+            .build();
+
+        Item eventItem = createItem(context, collection)
+            .withEntityType("Event")
+            .withTitle("Event Title")
+            .build();
+
+        Item familyItem = createItem(context, collection)
+            .withEntityType("Family")
+            .withTitle("Family Title")
+            .withAlternativeTitle("Alternative Family")
+            .withDescription("This is the Family description")
+            .build();
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "glamfamily", "nationality", null,
+            null, "IT"
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "glamfamily", "editor", null,
+            null, "Custom Editor"
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "dc", "relation", "aggregation",
+            aggregationItem.getName(), aggregationItem.getID().toString()
+        );
+
+        itemService.addMetadata(
+            context,
+            familyItem,
+            "dc", "relation", "event",
+            eventItem.getName(), eventItem.getID().toString()
+        );
+
+        context.commit();
+        context.restoreAuthSystemState();
+
+        ReferCrosswalk referCrossWalk = (ReferCrosswalk) crosswalkMapper.getByType("family-xml");
+        assertThat(referCrossWalk, notNullValue());
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        referCrossWalk.disseminate(context, familyItem, out);
+
+        try (FileInputStream fis = getFileInputStream("family.xml")) {
+            String expectedXml = IOUtils.toString(fis, Charset.defaultCharset());
+            compareEachLine(out.toString(), expectedXml);
         }
     }
 

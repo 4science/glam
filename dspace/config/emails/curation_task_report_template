@@ -1,0 +1,14 @@
+## Email notification about curation tasks status
+##
+##
+#set($subject = "${config.get('dspace.name')}: Curation Tasks Summary")
+
+Dear user,
+
+Please find below the summary of initiated curation tasks:
+${params[0]}
+
+See progress and details following this link: ${params[1]}
+
+Best regards,
+The ${config.get('dspace.name')} Team

@@ -6,6 +6,7 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.app.rest.repository;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -143,8 +144,10 @@ public class ScriptRestRepository extends DSpaceRestRepository<ScriptRest, Strin
         return args;
     }
 
-    private void runDSpaceScript(List<MultipartFile> files, Context context, EPerson user,
-        ScriptConfiguration scriptToExecute, RestDSpaceRunnableHandler restDSpaceRunnableHandler, List<String> args)
+    private void runDSpaceScript(List<MultipartFile> files,
+                                 Context context, EPerson user,
+                                 ScriptConfiguration scriptToExecute,
+                                 RestDSpaceRunnableHandler restDSpaceRunnableHandler, List<String> args)
         throws IOException, SQLException, AuthorizeException, InstantiationException, IllegalAccessException {
         DSpaceRunnable dSpaceRunnable = scriptService.createDSpaceRunnableForScriptConfiguration(scriptToExecute);
         try {

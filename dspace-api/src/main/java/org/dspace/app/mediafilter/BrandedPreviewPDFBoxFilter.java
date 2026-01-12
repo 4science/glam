@@ -22,6 +22,8 @@ import java.io.InputStream;
 import javax.imageio.ImageIO;
 
 import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -90,7 +92,7 @@ public class BrandedPreviewPDFBoxFilter extends PDFBoxThumbnail {
             throws Exception {
         BufferedImage buf;
 
-        try (PDDocument doc = PDDocument.load(source)) {
+        try (PDDocument doc = Loader.loadPDF(new RandomAccessReadBuffer(source))) {
             PDFRenderer renderer = new PDFRenderer(doc);
             buf = renderer.renderImage(0);
         } catch (InvalidPasswordException ex) {
