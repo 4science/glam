@@ -200,7 +200,7 @@
                     <property name="fitHeight" value="false" />
                     <property name="showBlurryBackdrop" value="true" />
                     <property name="keepAspectRatio" value="false" />
-                    <property name="carouselHeightPx" value="500" />
+                    <property name="carouselHeightPx" value="300" />
                     <property name="captionStyle" value="text-justify" />
                     <property name="titleStyle" value="text-center" />
                 </bean>
