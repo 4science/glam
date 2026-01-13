@@ -62,6 +62,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -1096,7 +1098,7 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
 
         try (ByteArrayInputStream source = new ByteArrayInputStream(content);
              Writer writer = new StringWriter();
-             PDDocument pdfDoc = PDDocument.load(source)) {
+             PDDocument pdfDoc = Loader.loadPDF(new RandomAccessReadBuffer(source))) {
 
             pts.writeText(pdfDoc, writer);
             return writer.toString();
@@ -1105,7 +1107,7 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
 
     private int getNumberOfPdfPages(byte[] content) throws IOException {
         try (ByteArrayInputStream source = new ByteArrayInputStream(content);
-             PDDocument pdfDoc = PDDocument.load(source)) {
+            PDDocument pdfDoc = Loader.loadPDF(new RandomAccessReadBuffer(source))) {
             return pdfDoc.getNumberOfPages();
         }
     }
@@ -1705,8 +1707,6 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
                 .build();
         }
 
-        // S3Mock is already set up at class level
-
         // Create a new S3BitStoreService configured with the mock S3 client
         // We need to create an S3Presigner for the same mock endpoint
         // Use static credentials for S3Mock compatibility (required for SigV4 signatures)
@@ -1728,15 +1728,21 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
         constructor.setAccessible(true);
         S3BitStoreService s3BitStoreService = constructor.newInstance(s3AsyncClient);
 
-        // Use reflection to set the presigner field
+        s3BitStoreService.setS3ChecksumAlgorithm(ChecksumAlgorithm.SHA256);
+        s3BitStoreService.setEnabled(true);
+
+        // Set the endpoint and credentials so init() creates the presigner with correct mock endpoint
+        s3BitStoreService.setEndpoint("http://127.0.0.1:" + s3Mock.getHttpServerPort());
+        s3BitStoreService.setAwsAccessKey("test-access-key");
+        s3BitStoreService.setAwsSecretKey("test-secret-key");
+        s3BitStoreService.setAwsRegionName("us-east-1");
+
+        s3BitStoreService.init();
+
+        // Use reflection to set the presigner field AFTER init() to override the one created by init()
         java.lang.reflect.Field presignerField = s3Class.getDeclaredField("presigner");
         presignerField.setAccessible(true);
         presignerField.set(s3BitStoreService, s3Presigner);
-
-        s3BitStoreService.setS3ChecksumAlgorithm(ChecksumAlgorithm.SHA256);
-        s3BitStoreService.setEnabled(true);
-        //s3BitStoreService.setBucketName(bucketName);
-        s3BitStoreService.init();
 
         // Replace store number 1 in the BitstreamStorageService with our mock S3 store
         Map<Integer, org.dspace.storage.bitstore.BitStoreService> stores =

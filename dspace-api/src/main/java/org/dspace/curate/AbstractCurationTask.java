@@ -10,15 +10,21 @@ package org.dspace.curate;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.authorize.AuthorizeException;
+import org.dspace.content.Bitstream;
 import org.dspace.content.DCDate;
 import org.dspace.content.DSpaceObject;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
 import org.dspace.content.factory.ContentServiceFactory;
+import org.dspace.content.service.BitstreamFormatService;
+import org.dspace.content.service.BitstreamService;
+import org.dspace.content.service.BundleService;
 import org.dspace.content.service.CommunityService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
@@ -34,6 +40,8 @@ import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.storage.bitstore.factory.StorageServiceFactory;
+import org.dspace.storage.bitstore.service.BitstreamStorageService;
 
 /**
  * AbstractCurationTask encapsulates a few common patterns of task use,
@@ -42,16 +50,24 @@ import org.dspace.services.factory.DSpaceServicesFactory;
  * @author richardrodgers
  */
 public abstract class AbstractCurationTask implements CurationTask {
+
+    public static final String EXCLUDE_ALL = "all";
+
     // invoking curator
     protected Curator curator = null;
     // curator-assigned taskId
-    protected String taskId = null;
-    protected CommunityService communityService;
-    protected ItemService itemService;
-    protected HandleService handleService;
-    protected ConfigurationService configurationService;
-    protected SearchService searchService;
     protected int batchSize;
+    protected String taskId = null;
+
+    protected ItemService itemService;
+    protected SearchService searchService;
+    protected HandleService handleService;
+    protected BundleService bundleService;
+    protected BitstreamService bitstreamService;
+    protected CommunityService communityService;
+    protected ConfigurationService configurationService;
+    protected BitstreamFormatService bitstreamFormatService;
+    protected BitstreamStorageService bitstreamStorageService;
 
     private void addOrUpdateProcessMetadata(Context context, Item item) throws SQLException {
         List<MetadataValue> existingProcesses = itemService.getMetadata(item, "cris", "curation", "process", Item.ANY);
@@ -113,11 +129,15 @@ public abstract class AbstractCurationTask implements CurationTask {
     public void init(Curator curator, String taskId) throws IOException {
         this.curator = curator;
         this.taskId = taskId;
-        communityService = ContentServiceFactory.getInstance().getCommunityService();
+        searchService = SearchUtils.getSearchService();
         itemService = ContentServiceFactory.getInstance().getItemService();
         handleService = HandleServiceFactory.getInstance().getHandleService();
+        bundleService = ContentServiceFactory.getInstance().getBundleService();
+        bitstreamService = ContentServiceFactory.getInstance().getBitstreamService();
+        communityService = ContentServiceFactory.getInstance().getCommunityService();
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-        searchService = SearchUtils.getSearchService();
+        bitstreamFormatService = ContentServiceFactory.getInstance().getBitstreamFormatService();
+        bitstreamStorageService =  StorageServiceFactory.getInstance().getBitstreamStorageService();
         batchSize = configurationService.getIntProperty("curation.task.batchsize", 100);
     }
 
@@ -458,4 +478,30 @@ public abstract class AbstractCurationTask implements CurationTask {
             return configurationService.getArrayProperty(name);
         }
     }
+
+    /**
+     * Determines whether a bitstream should be skipped for the specified curation task.
+     * Checks bitstream metadata to see if the task is excluded.
+     *
+     * @param bitstream the bitstream to check
+     * @return true if the bitstream should be skipped for this task, false otherwise
+     */
+    protected boolean skipBitstreamForCurrentTask(Bitstream bitstream) {
+        String curationMetadata = this.configurationService.getProperty("curation.task.bitstream.metadata.definition",
+                                                             "bitstream.curation.exclude");
+        if (StringUtils.isEmpty(curationMetadata)) {
+            return false;
+        }
+        List<MetadataValue> metadata =
+            this.bitstreamService.getMetadataByMetadataString(bitstream, curationMetadata);
+        if (metadata.isEmpty()) {
+            return false;
+        }
+        Set<String> excludedTasks =
+            metadata.stream()
+                    .map(MetadataValue::getValue)
+                    .collect(Collectors.toSet());
+        return excludedTasks.contains(EXCLUDE_ALL) || excludedTasks.contains(this.taskId);
+    }
+
 }

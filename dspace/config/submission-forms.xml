@@ -47,6 +47,19 @@
           <hint />
         </field>
       </row>
+      <row>
+        <field>
+          <dc-schema>bitstream</dc-schema>
+          <dc-element>curation</dc-element>
+          <dc-qualifier>exclude</dc-qualifier>
+          <label>Exclude curation tasks</label>
+          <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <repeatable>true</repeatable>
+          <hint>Select the curation tasks to exclude for this bitstream</hint>
+        </field>
+      </row>
     </form>
     <form name="publication-dc-contributor-author">
       <row>
@@ -2522,6 +2535,20 @@ it, please enter the types and the actual numbers or codes.</hint>
         </field>
       </row>
     </form>
+    <form name="curation">
+      <row>
+        <field>
+          <dc-schema>cris</dc-schema>
+          <dc-element>curation</dc-element>
+          <dc-qualifier>task</dc-qualifier>
+          <label>Type of curation task to be performed during deposit</label>
+          <input-type value-pairs-name="curation_tasks">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Select curation task</hint>
+        </field>
+      </row>
+    </form>
   </form-definitions>
   <form-value-pairs>
     <value-pairs value-pairs-name="patent_types" dc-term="patent_types">
@@ -3137,6 +3164,34 @@ it, please enter the types and the actual numbers or codes.</hint>
         <displayed-value>National Health Service</displayed-value>
         <stored-value>National Health Service</stored-value>
       </pair>
+      <pair>
+        <displayed-value>Education</displayed-value>
+        <stored-value>Education</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Healthcare</displayed-value>
+        <stored-value>Healthcare</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Archive</displayed-value>
+        <stored-value>Archive</stored-value>
+      </pair>
+        <pair>
+         <displayed-value>Nonprofit</displayed-value>
+         <stored-value>Nonprofit</stored-value>
+        </pair>
+      <pair>
+        <displayed-value>Funder</displayed-value>
+        <stored-value>Funder</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Facility</displayed-value>
+        <stored-value>Facility</stored-value>
+      </pair>
+        <pair>
+         <displayed-value>Other</displayed-value>
+         <stored-value>Other</stored-value>
+        </pair>
     </value-pairs>
     <value-pairs value-pairs-name="project_types" dc-term="project_types">
       <pair>
@@ -4214,6 +4269,22 @@ it, please enter the types and the actual numbers or codes.</hint>
       <pair>
         <displayed-value>Personal Picture</displayed-value>
         <stored-value>personal picture</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="curation_tasks" dc-term="curation_tasks">
+      <pair>
+        <displayed-value>Create PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="bitstream_curation_tasks" dc-term="bitstream_curation_tasks">
+      <pair>
+        <displayed-value>ALL</displayed-value>
+        <stored-value>all</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>PDF/A</displayed-value>
+        <stored-value>pdfATransformer</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>

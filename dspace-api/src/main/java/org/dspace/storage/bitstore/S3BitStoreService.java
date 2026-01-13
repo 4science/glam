@@ -89,19 +89,6 @@ public class S3BitStoreService extends BaseBitStoreService {
      */
     static final String CSA = "MD5";
 
-    // These settings control the way an identifier is hashed into
-    // directory and file names
-    //
-    // With digitsPerLevel 2 and directoryLevels 3, an identifier
-    // like 12345678901234567890 turns into the relative name
-    // /12/34/56/12345678901234567890.
-    //
-    // You should not change these settings if you have data in the
-    // asset store, as the BitstreamStorageManager will be unable
-    // to find your existing data.
-    protected static final int digitsPerLevel = 2;
-    protected static final int directoryLevels = 3;
-
     private boolean enabled = false;
 
     private boolean useRelativePath;

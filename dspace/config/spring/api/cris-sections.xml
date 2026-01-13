@@ -252,6 +252,7 @@
                     <property name="targetBlank" value="true" />
                     <property name="fitWidth" value="false" />
                     <property name="fitHeight" value="false" />
+                    <property name="showBlurryBackdrop" value="false" />
                     <property name="keepAspectRatio" value="false" />
                     <property name="carouselHeightPx" value="500" />
                     <property name="captionStyle" value="text-justify" />
