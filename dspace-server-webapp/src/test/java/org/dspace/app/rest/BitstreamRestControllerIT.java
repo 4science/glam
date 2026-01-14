@@ -92,9 +92,12 @@ import org.dspace.statistics.ObjectCount;
 import org.dspace.statistics.SolrLoggerServiceImpl;
 import org.dspace.statistics.factory.StatisticsServiceFactory;
 import org.dspace.statistics.service.SolrLoggerService;
+import org.dspace.storage.bitstore.AWSCredentialsProviderBuilder;
+import org.dspace.storage.bitstore.AWSS3ClientBuilder;
 import org.dspace.storage.bitstore.S3BitStoreService;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
+import org.jspecify.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -104,6 +107,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -1732,10 +1736,12 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
         s3BitStoreService.setEnabled(true);
 
         // Set the endpoint and credentials so init() creates the presigner with correct mock endpoint
-        s3BitStoreService.setEndpoint("http://127.0.0.1:" + s3Mock.getHttpServerPort());
-        s3BitStoreService.setAwsAccessKey("test-access-key");
-        s3BitStoreService.setAwsSecretKey("test-secret-key");
-        s3BitStoreService.setAwsRegionName("us-east-1");
+        s3BitStoreService.setBuilder(
+            AWSS3ClientBuilder.builder()
+                .setEndpoint("http://127.0.0.1:" + s3Mock.getHttpServerPort())
+                .setRegion(Region.of("us-east-1"))
+                .setCredentialsProvider(BitstreamRestControllerIT::testCredentials)
+        );
 
         s3BitStoreService.init();
 
@@ -1766,6 +1772,11 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
             .andExpect(jsonPath("$.presignedUrl")
                            .value(org.hamcrest.Matchers.startsWith(
                                "http://127.0.0.1:" + s3Mock.getHttpServerPort() + "/" + DEFAULT_BUCKET_NAME)));
+    }
+
+    private static @NonNull AwsCredentialsProvider testCredentials() {
+        return AWSCredentialsProviderBuilder
+            .basic("test-access-key", "test-secret-key");
     }
 
     @Test
