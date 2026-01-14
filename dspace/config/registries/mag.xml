@@ -1,0 +1,18 @@
+<dspace-dc-types>
+
+    <dspace-header>
+        <title>MAG fields definition</title>
+    </dspace-header>
+
+    <dc-schema>
+        <name>mag</name>
+        <namespace>http://dspace.org/mag</namespace>
+    </dc-schema>
+
+    <dc-type>
+        <schema>mag</schema>
+        <element>biblevel</element>
+        <qualifier></qualifier>
+    </dc-type>
+
+</dspace-dc-types>
