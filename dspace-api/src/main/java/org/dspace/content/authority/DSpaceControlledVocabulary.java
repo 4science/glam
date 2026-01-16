@@ -101,7 +101,7 @@ public class DSpaceControlledVocabulary extends SelfNamedPlugin implements Hiera
         if (pluginNames == null) {
             initPluginNames();
         }
-        return (String[]) ArrayUtils.clone(pluginNames);
+        return ArrayUtils.clone(pluginNames);
     }
 
     private static synchronized void initPluginNames() {
@@ -117,7 +117,7 @@ public class DSpaceControlledVocabulary extends SelfNamedPlugin implements Hiera
                                                            File.separator + "config" +
                                                            File.separator + "controlled-vocabularies";
             String[] xmlFiles = (new File(vocabulariesPath)).list(new xmlFilter());
-            List<String> names = new ArrayList<String>();
+            List<String> names = new ArrayList<>();
             for (String filename : xmlFiles) {
                 if (!filename.matches("(.*)_[a-z]{2}\\.xml")) {
                     names.add((new File(filename)).getName().replace(".xml", ""));
@@ -518,4 +518,17 @@ public class DSpaceControlledVocabulary extends SelfNamedPlugin implements Hiera
         Locale currentLocale = I18nUtil.getSupportedLocale(locale);
         return vocabularies.get(currentLocale);
     }
+
+    /**
+     * Checks if the given vocabulary name corresponds to a controlled vocabulary
+     * plugin instance that is automatically configured from XML files in the
+     * controlled vocabularies directory.
+     *
+     * @param vocabulary the vocabulary name to check (e.g., "nsi" for nsi.xml)
+     * @return true if the vocabulary is a valid controlled vocabulary plugin name, false otherwise
+     */
+    public static boolean isControlledVocabulary(String vocabulary) {
+        return List.of(getPluginNames()).contains(vocabulary);
+    }
+
 }
