@@ -41,19 +41,13 @@
         <property name="builder" ref="defaultClientBuilder"/>
     </bean>
 
-    <bean name="s3TempStore" class="org.dspace.storage.bitstore.S3BitStoreService" lazy-init="true">
+    <bean name="s3TempStore" class="org.dspace.storage.bitstore.S3BitStoreService" lazy-init="true" parent="s3Store">
         <property name="enabled" value="${assetstore.s3.temp.enabled}"/>
-
-        <!-- S3 bucket name to store assets in. example: longsight-dspace-auk -->
         <property name="bucketName" value="${assetstore.s3.temp.bucketName}"/>
 
         <!-- Subfolder to organize assets within the bucket, in case this bucket is shared  -->
         <!-- Optional, default is root level of bucket -->
         <property name="subfolder" value="${assetstore.s3.temp.subfolder}"/>
-
-        <!-- The algorithm the S3 client will use to create a checksum when doing putObject. -->
-        <property name="s3ChecksumAlgorithm" value="${assetstore.s3.s3ChecksumAlgorithm}"/>
-
         <property name="builder" ref="tempClientBuilder"/>
     </bean>
 
