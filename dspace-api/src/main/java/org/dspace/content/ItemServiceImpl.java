@@ -249,18 +249,16 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
             List<Bundle> originalBundles = getBundles(item, "ORIGINAL");
             Bitstream primaryBitstream = null;
             if (CollectionUtils.isNotEmpty(originalBundles)) {
-                primaryBitstream = originalBundles.get(0).getPrimaryBitstream();
-            }
-            if (primaryBitstream == null) {
-                if (requireOriginal) {
-                    primaryBitstream = bitstreamService.getFirstBitstream(item, "ORIGINAL");
+                Bundle originalBundle = originalBundles.get(0);
+                primaryBitstream = originalBundle.getPrimaryBitstream();
+                if (primaryBitstream == null) {
+                    primaryBitstream = bitstreamService.getPrimaryBitstream(context, originalBundle);
                 }
-                thumbBitstream = bitstreamService.getFirstBitstream(item, "THUMBNAIL");
             }
             if (primaryBitstream != null) {
-                thumbBitstream = bitstreamService.getThumbnail(context, primaryBitstream);
+                thumbBitstream = bitstreamService.getThumbnail(context, item, primaryBitstream);
                 if (thumbBitstream == null) {
-                    thumbBitstream = bitstreamService.getFirstBitstream(item, "THUMBNAIL");
+                    thumbBitstream = primaryBitstream;
                     if (!bitstreamService.isValidThumbnail(context, thumbBitstream)) {
                         thumbBitstream = null;
                     }

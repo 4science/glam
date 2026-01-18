@@ -218,6 +218,8 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
 
     public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException;
 
+    public Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException;
+
     public boolean isValidThumbnail(Context context, Bitstream thumbnail) throws SQLException;
 
     public BitstreamFormat getFormat(Context context, Bitstream bitstream) throws SQLException;
@@ -269,4 +271,5 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
 
     void updateThumbnailResourcePolicies(Context context, Bitstream bitstream) throws SQLException;
 
+    Bitstream getPrimaryBitstream(Context context, Bundle bundle);
 }

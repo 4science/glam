@@ -13,6 +13,7 @@ import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -442,38 +443,83 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
         return null;
     }
 
+    public Bitstream getPrimaryBitstream(Context context, Bundle bundle) {
+        Iterator<Bitstream> primaryBitstream;
+        try {
+            primaryBitstream = bitstreamDAO.getPrimaryBitstream(context, bundle);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (primaryBitstream.hasNext()) {
+            return primaryBitstream.next();
+        }
+        return null;
+    }
+
     @Override
     public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException {
         Pattern pattern = getBitstreamNamePattern(bitstream);
 
-        for (Bundle bundle : bitstream.getBundles()) {
-            for (Item item : bundle.getItems()) {
-                for (Bundle thumbnails : itemService.getBundles(item, "THUMBNAIL")) {
-                    for (Bitstream thumbnail : thumbnails.getBitstreams()) {
-                        if (pattern.matcher(thumbnail.getName()).matches() &&
-                            isValidThumbnail(context, thumbnail)) {
-                            return thumbnail;
-                        }
-                    }
-                }
+        List<Bitstream> candidates = bitstreamDAO.findThumbnailCandidates(
+            context,
+            bitstream.getID(),
+            Arrays.asList("THUMBNAIL", "PREVIEW")
+        );
 
-                for (Bundle thumbnails : itemService.getBundles(item, "PREVIEW")) {
-                    for (Bitstream thumbnail : thumbnails.getBitstreams()) {
-                        if (pattern.matcher(thumbnail.getName()).matches() &&
-                            isValidThumbnail(context, thumbnail)) {
-                            return thumbnail;
-                        }
-                    }
+        // Handle SQLException from isValidThumbnail
+        for (Bitstream candidate : candidates) {
+            try {
+                if (pattern.matcher(candidate.getName()).matches() &&
+                    isValidThumbnail(context, candidate)) {
+                    return candidate;
                 }
-
-                if (isValidThumbnail(context, bitstream)) {
-                    return bitstream;
-                }
+            } catch (SQLException e) {
+                // Log the error and continue to next candidate
+                log.warn("Error validating thumbnail candidate {}: {}",
+                         candidate.getID(), e.getMessage(), e);
+                // Continue to next candidate instead of failing
+                continue;
             }
+        }
+
+        // Check if the original bitstream itself is a valid thumbnail
+        try {
+            if (isValidThumbnail(context, bitstream)) {
+                return bitstream;
+            }
+        } catch (SQLException e) {
+            // Log the error but don't fail - return null instead
+            log.warn("Error validating original bitstream {} as thumbnail: {}",
+                     bitstream.getID(), e.getMessage(), e);
         }
 
         return null;
     }
+
+    public Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException {
+        Iterator<Bitstream> candidates = bitstreamDAO.getThumbnail(
+            context,
+            item.getID(),
+            bitstream.getName() + "%"
+        );
+
+        boolean valid = false;
+        Bitstream candidate = null;
+        while (candidates.hasNext() && !valid) {
+            candidate = candidates.next();
+            if (isValidThumbnail(context, candidate)) {
+                return candidate;
+            }
+        }
+
+        if (isValidThumbnail(context, bitstream)) {
+            return bitstream;
+        }
+
+        return null;
+    }
+
 
     protected Pattern getBitstreamNamePattern(Bitstream bitstream) {
         if (bitstream.getName() != null) {

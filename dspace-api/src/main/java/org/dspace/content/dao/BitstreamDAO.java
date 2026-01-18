@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.dspace.content.Bitstream;
+import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.Item;
@@ -75,4 +76,12 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
     public Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
                                                            String metadataField, String metadataValue)
         throws SQLException;
+
+    List<Bitstream> findThumbnailCandidates(Context context, UUID id, List<String> list) throws SQLException;
+
+    Iterator<Bitstream> getThumbnail(
+        Context context, UUID itemId, String namePattern
+    ) throws SQLException;
+
+    Iterator<Bitstream> getPrimaryBitstream(Context context, Bundle bundle) throws SQLException;
 }
