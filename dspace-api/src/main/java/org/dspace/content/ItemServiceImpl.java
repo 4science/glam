@@ -246,15 +246,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
             // If no thumbnail is retrieved by the first strategy
             // then use the fallback strategy
             Bitstream thumbBitstream = null;
-            List<Bundle> originalBundles = getBundles(item, "ORIGINAL");
-            Bitstream primaryBitstream = null;
-            if (CollectionUtils.isNotEmpty(originalBundles)) {
-                Bundle originalBundle = originalBundles.get(0);
-                primaryBitstream = originalBundle.getPrimaryBitstream();
-                if (primaryBitstream == null) {
-                    primaryBitstream = bitstreamService.getPrimaryBitstream(context, originalBundle);
-                }
-            }
+            Bitstream primaryBitstream = bitstreamService.getPrimaryBitstream(context, item);
             if (primaryBitstream != null) {
                 thumbBitstream = bitstreamService.getThumbnail(context, item, primaryBitstream);
                 if (thumbBitstream == null) {

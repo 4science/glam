@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.dspace.content.Bitstream;
-import org.dspace.content.Bundle;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.Item;
@@ -83,5 +82,8 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
         Context context, UUID itemId, String namePattern
     ) throws SQLException;
 
-    Iterator<Bitstream> getPrimaryBitstream(Context context, Bundle bundle) throws SQLException;
+    Iterator<Bitstream> getPrimaryBitstream(Context context, UUID bundleId) throws SQLException;
+
+    Iterator<Bitstream> getPrimaryBitstreamByItem(Context context, UUID itemId)
+        throws SQLException;
 }

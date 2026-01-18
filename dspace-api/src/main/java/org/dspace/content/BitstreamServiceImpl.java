@@ -446,7 +446,21 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
     public Bitstream getPrimaryBitstream(Context context, Bundle bundle) {
         Iterator<Bitstream> primaryBitstream;
         try {
-            primaryBitstream = bitstreamDAO.getPrimaryBitstream(context, bundle);
+            primaryBitstream = bitstreamDAO.getPrimaryBitstream(context, bundle.getID());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (primaryBitstream.hasNext()) {
+            return primaryBitstream.next();
+        }
+        return null;
+    }
+
+    public Bitstream getPrimaryBitstream(Context context, Item item) {
+        Iterator<Bitstream> primaryBitstream;
+        try {
+            primaryBitstream = bitstreamDAO.getPrimaryBitstreamByItem(context, item.getID());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

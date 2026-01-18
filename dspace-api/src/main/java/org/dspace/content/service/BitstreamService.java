@@ -272,4 +272,6 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
     void updateThumbnailResourcePolicies(Context context, Bitstream bitstream) throws SQLException;
 
     Bitstream getPrimaryBitstream(Context context, Bundle bundle);
+
+    Bitstream getPrimaryBitstream(Context context, Item item);
 }
