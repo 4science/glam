@@ -13,7 +13,6 @@ import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -431,18 +430,6 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
             .collect(Collectors.toList());
     }
 
-    @Override
-    public Bitstream getFirstBitstream(Item item, String bundleName) throws SQLException {
-        List<Bundle> bundles = itemService.getBundles(item, bundleName);
-        if (CollectionUtils.isNotEmpty(bundles)) {
-            List<Bitstream> bitstreams = bundles.get(0).getBitstreams();
-            if (CollectionUtils.isNotEmpty(bitstreams)) {
-                return bitstreams.get(0);
-            }
-        }
-        return null;
-    }
-
     public Bitstream getPrimaryBitstream(Context context, Bundle bundle) {
         Iterator<Bitstream> primaryBitstream;
         try {
@@ -471,55 +458,15 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
         return null;
     }
 
-    @Override
-    public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException {
-        Pattern pattern = getBitstreamNamePattern(bitstream);
-
-        List<Bitstream> candidates = bitstreamDAO.findThumbnailCandidates(
-            context,
-            bitstream.getID(),
-            Arrays.asList("THUMBNAIL", "PREVIEW")
-        );
-
-        // Handle SQLException from isValidThumbnail
-        for (Bitstream candidate : candidates) {
-            try {
-                if (pattern.matcher(candidate.getName()).matches() &&
-                    isValidThumbnail(context, candidate)) {
-                    return candidate;
-                }
-            } catch (SQLException e) {
-                // Log the error and continue to next candidate
-                log.warn("Error validating thumbnail candidate {}: {}",
-                         candidate.getID(), e.getMessage(), e);
-                // Continue to next candidate instead of failing
-                continue;
-            }
-        }
-
-        // Check if the original bitstream itself is a valid thumbnail
-        try {
-            if (isValidThumbnail(context, bitstream)) {
-                return bitstream;
-            }
-        } catch (SQLException e) {
-            // Log the error but don't fail - return null instead
-            log.warn("Error validating original bitstream {} as thumbnail: {}",
-                     bitstream.getID(), e.getMessage(), e);
-        }
-
-        return null;
-    }
-
     public Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException {
         Iterator<Bitstream> candidates = bitstreamDAO.getThumbnail(
             context,
             item.getID(),
-            bitstream.getName() + "%"
+            bitstream.getName() + ".%"
         );
 
         boolean valid = false;
-        Bitstream candidate = null;
+        Bitstream candidate;
         while (candidates.hasNext() && !valid) {
             candidate = candidates.next();
             if (isValidThumbnail(context, candidate)) {

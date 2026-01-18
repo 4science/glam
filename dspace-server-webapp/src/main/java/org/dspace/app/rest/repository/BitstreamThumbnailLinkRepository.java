@@ -17,7 +17,9 @@ import org.dspace.app.rest.model.BitstreamRest;
 import org.dspace.app.rest.projection.Projection;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
+import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamService;
+import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,9 @@ public class BitstreamThumbnailLinkRepository extends AbstractDSpaceRestReposito
     BitstreamService bitstreamService;
 
     @Autowired
+    ItemService itemService;
+
+    @Autowired
     AuthorizeService authorizeService;
 
     public BitstreamRest getThumbnail(@Nullable HttpServletRequest request,
@@ -47,7 +52,15 @@ public class BitstreamThumbnailLinkRepository extends AbstractDSpaceRestReposito
             if (bitstream == null) {
                 throw new ResourceNotFoundException("No such bitstream: " + bitstreamId);
             }
-            Bitstream thumbnail = bitstreamService.getThumbnail(context, bitstream);
+
+            Item item = itemService.findByBitstream(context, bitstream);
+
+            if (item == null) {
+                throw new ResourceNotFoundException("The bitstream with id: " + bitstreamId +
+                                                        " is not linked to an item, cannot retrieve thumbnail");
+            }
+
+            Bitstream thumbnail = bitstreamService.getThumbnail(context, item, bitstream);
             if (thumbnail == null) {
                 return null;
             }

@@ -223,7 +223,8 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
     }
 
     @Override
-    public Thumbnail getThumbnail(Context context, Item item, boolean requireOriginal) throws SQLException {
+    public Thumbnail getThumbnail(Context context, Item item) throws SQLException {
+        boolean requireOriginal = false;
         // Search the thumbnail using the configuration
         Thumbnail thumbnail = thumbnailLayoutTabConfigurationStrategy(context, item, requireOriginal);
         if (thumbnail != null) {
@@ -331,7 +332,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
             if (primaryBitstream.isEmpty()) {
                 return null;
             }
-            Bitstream thumbBitstream = bitstreamService.getThumbnail(context, primaryBitstream.get());
+            Bitstream thumbBitstream = bitstreamService.getThumbnail(context, item, primaryBitstream.get());
             // If the thumbnail is not available return the non thumbnail bitstream
             // retrieved in the previous steps
             if (thumbBitstream != null) {
@@ -2417,4 +2418,16 @@ prevent the generation of resource policy entry values with null dspace_object a
         return this.itemDAO.exists(context, Item.class, id);
     }
 
+    public Item findByBitstream(Context context, Bitstream bitstream) {
+        Iterator<Item> byBitstream;
+        try {
+            byBitstream = this.itemDAO.findByBitstream(context, bitstream.getID());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        if (byBitstream.hasNext()) {
+            return byBitstream.next();
+        }
+        return null;
+    }
 }

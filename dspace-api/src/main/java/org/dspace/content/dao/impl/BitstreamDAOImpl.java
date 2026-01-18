@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.Query;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -34,8 +33,6 @@ import org.dspace.core.AbstractHibernateDSODAO;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.core.UUIDIterator;
-import org.hibernate.Session;
-import org.hibernate.query.NativeQuery;
 
 /**
  * Hibernate implementation of the Database Access Object interface class for the Bitstream object.
@@ -200,41 +197,6 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
         @SuppressWarnings("unchecked")
         List<UUID> uuids = query.getResultList();
         return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
-    }
-
-    @Override
-    public List<Bitstream> findThumbnailCandidates(Context context, UUID bitstreamId, List<String> bundleNames)
-        throws SQLException {
-        String placeholders = bundleNames.stream().map(name -> "?").collect(Collectors.joining(","));
-
-        String nativeQuery =
-            "SELECT DISTINCT t.* " +
-                "FROM bitstream t " +
-                "JOIN bundle2bitstream tb ON t.uuid = tb.bitstream_id " +
-                "JOIN bundle thumbnailBundle ON tb.bundle_id = thumbnailBundle.uuid " +
-                "JOIN item2bundle ib ON thumbnailBundle.uuid = ib.bundle_id " +
-                "JOIN item2bundle oib ON ib.item_id = oib.item_id " +
-                "JOIN bundle2bitstream ob ON oib.bundle_id = ob.bundle_id " +
-                "JOIN metadatavalue mv ON mv.dspace_object_id = thumbnailBundle.uuid " +
-                "JOIN metadatafieldregistry mfr ON mv.metadata_field_id = mfr.metadata_field_id " +
-                "JOIN metadataschemaregistry msr ON mfr.metadata_schema_id = msr.metadata_schema_id " +
-                "WHERE ob.bitstream_id = ? " +
-                "AND msr.short_id = 'dc' " +
-                "AND mfr.element = 'title' " +
-                "AND mfr.qualifier IS NULL " +
-                "AND mv.text_value IN (" + placeholders + ") " +
-                "AND t.deleted = false";
-
-        Session session = getHibernateSession(context);
-        NativeQuery<Bitstream> query = session.createNativeQuery(nativeQuery, Bitstream.class);
-
-        query.setParameter(1, bitstreamId);
-
-        for (int i = 0; i < bundleNames.size(); i++) {
-            query.setParameter(i + 2, bundleNames.get(i));
-        }
-
-        return query.getResultList();
     }
 
     public Iterator<Bitstream> getThumbnail(

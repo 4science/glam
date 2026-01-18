@@ -36,11 +36,11 @@ import org.dspace.core.Context;
 public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpaceObjectLegacySupportService<Bitstream> {
 
     @Override
-    public Bitstream find(Context context, UUID id) throws SQLException;
+    Bitstream find(Context context, UUID id) throws SQLException;
 
-    public List<Bitstream> findAll(Context context) throws SQLException;
+    List<Bitstream> findAll(Context context) throws SQLException;
 
-    public Iterator<Bitstream> findAll(Context context, int limit, int offset) throws SQLException;
+    Iterator<Bitstream> findAll(Context context, int limit, int offset) throws SQLException;
 
     /**
      * Clone the given bitstream by firstly creating a new bitstream, with a new ID.
@@ -56,7 +56,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @return the clone
      * @throws SQLException if database error
      */
-    public Bitstream clone(Context context, Bitstream bitstream) throws SQLException, AuthorizeException;
+    Bitstream clone(Context context, Bitstream bitstream) throws SQLException, AuthorizeException;
 
     /**
      * Create a new bitstream, with a new ID. The checksum and file size are
@@ -69,7 +69,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws IOException  if IO error
      * @throws SQLException if database error
      */
-    public Bitstream create(Context context, InputStream is) throws IOException, SQLException;
+    Bitstream create(Context context, InputStream is) throws IOException, SQLException;
 
     /**
      * Create a new bitstream, with a new ID. The checksum and file size are
@@ -84,7 +84,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws SQLException       if database error
      * @throws AuthorizeException if authorization error
      */
-    public Bitstream create(Context context, Bundle bundle, InputStream is)
+    Bitstream create(Context context, Bundle bundle, InputStream is)
         throws IOException, SQLException, AuthorizeException;
 
     /**
@@ -101,7 +101,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws SQLException       if database error
      * @throws AuthorizeException if authorization error
      */
-    public Bitstream register(Context context, Bundle bundle, int assetstore, String bitstreamPath)
+    Bitstream register(Context context, Bundle bundle, int assetstore, String bitstreamPath)
         throws IOException, SQLException, AuthorizeException;
 
     /**
@@ -117,7 +117,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws SQLException       if database error
      * @throws AuthorizeException if authorization error
      */
-    public Bitstream register(Context context, int assetstore, String bitstreamPath)
+    Bitstream register(Context context, int assetstore, String bitstreamPath)
         throws IOException, SQLException, AuthorizeException;
 
     /**
@@ -129,7 +129,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @param desc      the user's description of the format
      * @throws SQLException if database error
      */
-    public void setUserFormatDescription(Context context, Bitstream bitstream, String desc) throws SQLException;
+    void setUserFormatDescription(Context context, Bitstream bitstream, String desc) throws SQLException;
 
     /**
      * Get the description of the format - either the user's or the description
@@ -140,7 +140,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @return a description of the format.
      * @throws SQLException if database error
      */
-    public String getFormatDescription(Context context, Bitstream bitstream) throws SQLException;
+    String getFormatDescription(Context context, Bitstream bitstream) throws SQLException;
 
     /**
      * Set the format of the bitstream. If the user has supplied a type
@@ -153,7 +153,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      *                        unknown
      * @throws SQLException if database error
      */
-    public void setFormat(Context context, Bitstream bitstream, BitstreamFormat bitstreamFormat) throws SQLException;
+    void setFormat(Context context, Bitstream bitstream, BitstreamFormat bitstreamFormat) throws SQLException;
 
     /**
      * Retrieve the contents of the bitstream
@@ -165,7 +165,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws SQLException       if database error
      * @throws AuthorizeException if authorization error
      */
-    public InputStream retrieve(Context context, Bitstream bitstream)
+    InputStream retrieve(Context context, Bitstream bitstream)
         throws IOException, SQLException, AuthorizeException;
 
     /**
@@ -176,7 +176,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @param bitstream DSpace bitstream
      * @return true if the bitstream is registered, false otherwise
      */
-    public boolean isRegisteredBitstream(Bitstream bitstream);
+    boolean isRegisteredBitstream(Bitstream bitstream);
 
     /**
      * Retrieve all bitstreams with the deleted flag set to true
@@ -185,7 +185,7 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @return a list of all bitstreams that have been "deleted"
      * @throws SQLException if database error
      */
-    public List<Bitstream> findDeletedBitstreams(Context context, int limit, int offset) throws SQLException;
+    List<Bitstream> findDeletedBitstreams(Context context, int limit, int offset) throws SQLException;
 
 
     /**
@@ -196,37 +196,33 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
      * @throws SQLException       if database error
      * @throws AuthorizeException if authorization error
      */
-    public void expunge(Context context, Bitstream bitstream) throws SQLException, AuthorizeException;
+    void expunge(Context context, Bitstream bitstream) throws SQLException, AuthorizeException;
 
-    public List<Bitstream> findDuplicateInternalIdentifier(Context context, Bitstream bitstream) throws SQLException;
+    List<Bitstream> findDuplicateInternalIdentifier(Context context, Bitstream bitstream) throws SQLException;
 
-    public Iterator<Bitstream> getItemBitstreams(Context context, Item item) throws SQLException;
+    Iterator<Bitstream> getItemBitstreams(Context context, Item item) throws SQLException;
 
-    public Iterator<Bitstream> getCollectionBitstreams(Context context, Collection collection) throws SQLException;
+    Iterator<Bitstream> getCollectionBitstreams(Context context, Collection collection) throws SQLException;
 
-    public Iterator<Bitstream> getCommunityBitstreams(Context context, Community community) throws SQLException;
+    Iterator<Bitstream> getCommunityBitstreams(Context context, Community community) throws SQLException;
 
-    public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException;
+    List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException;
 
     List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, int offset, int limit) throws SQLException;
 
-    public Bitstream getBitstreamByName(Item item, String bundleName, String bitstreamName) throws SQLException;
+    Bitstream getBitstreamByName(Item item, String bundleName, String bitstreamName) throws SQLException;
 
     List<Bitstream> getBitstreamByBundleName(Item item, String bundleName) throws SQLException;
 
-    public Bitstream getFirstBitstream(Item item, String bundleName) throws SQLException;
+    Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException;
 
-    public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException;
+    boolean isValidThumbnail(Context context, Bitstream thumbnail) throws SQLException;
 
-    public Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException;
+    BitstreamFormat getFormat(Context context, Bitstream bitstream) throws SQLException;
 
-    public boolean isValidThumbnail(Context context, Bitstream thumbnail) throws SQLException;
+    Iterator<Bitstream> findByStoreNumber(Context context, Integer storeNumber) throws SQLException;
 
-    public BitstreamFormat getFormat(Context context, Bitstream bitstream) throws SQLException;
-
-    public Iterator<Bitstream> findByStoreNumber(Context context, Integer storeNumber) throws SQLException;
-
-    public Long countByStoreNumber(Context context, Integer storeNumber) throws SQLException;
+    Long countByStoreNumber(Context context, Integer storeNumber) throws SQLException;
 
     int countTotal(Context context) throws SQLException;
 
