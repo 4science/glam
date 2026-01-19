@@ -131,6 +131,8 @@ public class StepDefinitions extends InputFormExcel {
             case "unpaywall" -> unpaywallStepClass;
             case "identifiers" -> identifiersStepClass;
             case "external-upload" -> externalUploadStepClass;
+            case "coarnotify" -> coarNotifyStepClass;
+            case "duplicates" -> duplicateDetectionStepClass;
             default -> "";
         };
     }

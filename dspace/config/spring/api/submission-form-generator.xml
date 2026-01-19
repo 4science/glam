@@ -55,6 +55,7 @@
         <value>sherpaPolicy</value>
         <value>identifiers</value>
         <value>external-upload</value>
+        <value>coarnotify</value>
     </util:list>
 
     <!-- Input type values configuration -->

@@ -73,6 +73,8 @@ public class InputFormExcel {
     public static String unpaywallStepClass = "org.dspace.app.rest.submit.step.UnpaywallStep";
     public static String identifiersStepClass = "org.dspace.app.rest.submit.step.ShowIdentifiersStep";
     public static String externalUploadStepClass = "org.dspace.app.rest.submit.step.ExternalUploadStep";
+    public static String coarNotifyStepClass = "org.dspace.app.rest.submit.step.NotifyStep";
+    public static String duplicateDetectionStepClass = "org.dspace.app.rest.submit.step.DuplicateDetectionStep";
 
     public static String CHAR_ENCODING = "Cp1252";
 
