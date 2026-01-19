@@ -126,6 +126,17 @@ public class S3BitStoreService extends BaseBitStoreService {
         this.s3AsyncClient = s3AsyncClient;
     }
 
+    /**
+     * This constructor is used for test purpose.
+     *
+     * @param s3AsyncClient AmazonS3 service
+     * @param presigner     S3Presigner service
+     */
+    protected S3BitStoreService(S3AsyncClient s3AsyncClient, S3Presigner presigner) {
+        this.s3AsyncClient = s3AsyncClient;
+        this.presigner = presigner;
+    }
+
     @Override
     public boolean isEnabled() {
         return this.enabled;

@@ -191,4 +191,9 @@
         <property name="dspaceRunnableClass" value="org.dspace.curate.CurationOrchestratorScript"/>
     </bean>
 
+    <bean id="generate-submission-forms" class="org.dspace.app.submissionform.script.SubmissionFormGeneratorCLIScriptConfiguration" primary="true">
+        <property name="description" value="Generate submission XML forms from XLS"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.submissionform.script.SubmissionFormGeneratorCLI"/>
+    </bean>
+
 </beans>

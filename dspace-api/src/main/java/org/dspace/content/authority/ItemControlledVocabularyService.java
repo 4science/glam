@@ -375,4 +375,14 @@ public class ItemControlledVocabularyService extends SelfNamedPlugin
         return itemAuthorityServiceFactory.getInstance(entityType).getSolrQuery(searchTerm);
     }
 
+    /**
+     * Check if the given vocabulary is an Item Controlled Vocabulary
+     *
+     * @param vocabulary the vocabulary name
+     * @return true if the vocabulary is an Item Controlled Vocabulary, false otherwise
+     */
+    public static boolean isItemControlledVocabulary(String vocabulary) {
+        return List.of(getPluginNames()).contains(vocabulary);
+    }
+
 }
