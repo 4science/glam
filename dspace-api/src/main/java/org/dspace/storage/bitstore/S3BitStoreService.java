@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -43,11 +41,9 @@ import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
 import org.dspace.storage.bitstore.factory.StorageServiceFactory;
 import org.dspace.storage.bitstore.service.BitstreamStorageService;
-import org.dspace.util.FunctionalUtils;
+import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -56,7 +52,6 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
@@ -96,20 +91,8 @@ public class S3BitStoreService extends BaseBitStoreService {
 
     private boolean enabled = false;
 
-    /**
-     *  Override AWS endpoint if not null
-     */
-    private String endpoint = null;
-
-    private String awsAccessKey;
-    private String awsSecretKey;
-    private String awsRegionName;
-    private String awsSessionToken;
     private boolean useRelativePath;
-    private double targetThroughputGbps = 10.0;
-    private long minPartSizeBytes = 8 * 1024 * 1024L;
     private ChecksumAlgorithm s3ChecksumAlgorithm = ChecksumAlgorithm.CRC32;
-    private Integer maxConcurrency = null;
 
     /**
      * container for all the assets
@@ -124,76 +107,13 @@ public class S3BitStoreService extends BaseBitStoreService {
     /**
      * S3 service
      */
-    private S3AsyncClient s3AsyncClient = null;
+    private S3AsyncClient s3AsyncClient;
 
-    private static final ConfigurationService configurationService
-            = DSpaceServicesFactory.getInstance().getConfigurationService();
+    private AWSS3ClientBuilder builder;
     private S3Presigner presigner;
 
-    /**
-     * Creates an AWS credentials provider that supports both basic credentials and session tokens.
-     *
-     * @param accessKey AWS access key
-     * @param secretKey AWS secret key
-     * @param sessionToken AWS session token (optional)
-     * @return StaticCredentialsProvider with appropriate credentials
-     */
-    protected static StaticCredentialsProvider createCredentialsProvider(
-        String accessKey, String secretKey, String sessionToken
-    ) {
-        if (StringUtils.isNotBlank(sessionToken)) {
-            return StaticCredentialsProvider.create(
-                AwsSessionCredentials.create(accessKey, secretKey, sessionToken)
-            );
-        } else {
-            return StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)
-            );
-        }
-    }
-
-    /**
-     * Utility method for generate AmazonS3 builder
-     *
-     * @param region wanted regions in client
-     * @param credentialsProvider credentials of the client
-     * @param endpoint custom AWS endpoint
-     * @param targetThroughput target throughput in Gbps
-     * @param minPartSize minimum part size in bytes
-     * @param maxConcurrency maximum number of concurrent requests
-     * @return builder with the specified parameters
-     */
-    protected static Supplier<S3AsyncClient> amazonClientBuilderBy(
-            Region region,
-            AwsCredentialsProvider credentialsProvider,
-            String endpoint,
-            double targetThroughput,
-            long minPartSize,
-            Integer maxConcurrency
-    ) {
-        return () -> {
-            S3CrtAsyncClientBuilder crtBuilder = S3AsyncClient.crtBuilder();
-
-            if (credentialsProvider != null) {
-                crtBuilder.credentialsProvider(credentialsProvider);
-            }
-
-            if (region != null) {
-                crtBuilder.region(region);
-            }
-
-            if (maxConcurrency != null) {
-                crtBuilder.maxConcurrency(maxConcurrency);
-            }
-
-            if (StringUtils.isNotBlank(endpoint)) {
-                crtBuilder.endpointOverride(URI.create(endpoint));
-                crtBuilder.forcePathStyle(true);
-            }
-
-            return crtBuilder.targetThroughputInGbps(targetThroughput).minimumPartSizeInBytes(minPartSize).build();
-        };
-    }
+    private static final ConfigurationService configurationService =
+        DSpaceServicesFactory.getInstance().getConfigurationService();
 
     public S3BitStoreService() {}
 
@@ -237,49 +157,21 @@ public class S3BitStoreService extends BaseBitStoreService {
 
         try {
 
-            if (StringUtils.isNotBlank(getAwsAccessKey()) && StringUtils.isNotBlank(getAwsSecretKey())) {
-                log.warn("Use local defined S3 credentials");
-                // region
-                Region region = Region.US_EAST_1;
-                if (StringUtils.isNotBlank(awsRegionName)) {
-                    try {
-                        region = Region.of(awsRegionName);
-                    } catch (IllegalArgumentException e) {
-                        log.warn("Invalid aws_region: " + awsRegionName);
-                    }
-                }
-
-                StaticCredentialsProvider credentialsProvider = createCredentialsProvider(
-                    getAwsAccessKey(), getAwsSecretKey(), getAwsSessionToken());
-
-                // init client
-                s3AsyncClient = FunctionalUtils.getDefaultOrBuild(
-                        this.s3AsyncClient,
-                        amazonClientBuilderBy(
-                                region,
-                                credentialsProvider, endpoint, targetThroughputGbps,
-                                minPartSizeBytes, maxConcurrency)
-                        );
-
-                presigner =
-                    FunctionalUtils.getDefaultOrBuild(
-                        this.presigner,
-                        amazonPresignerBuilderBy(region, credentialsProvider)
-                    );
-
-                log.warn("S3 Region set to: " + region.id());
-            } else {
-                log.info("Using a IAM role or aws environment credentials");
-                s3AsyncClient = FunctionalUtils.getDefaultOrBuild(
-                        this.s3AsyncClient,
-                        amazonClientBuilderBy(null, null , endpoint, targetThroughputGbps,
-                                minPartSizeBytes, maxConcurrency));
-
-                presigner = FunctionalUtils.getDefaultOrBuild(
-                    this.presigner,
-                    S3Presigner::create
+            if (s3AsyncClient == null && builder == null) {
+                log.error("Cannot initialize S3BitStoreService: missing S3AsyncClient or AWSS3ClientBuilder");
+                throw new BeanInitializationException(
+                    "Cannot initialize S3BitStoreService: missing S3AsyncClient or AWSS3ClientBuilder"
                 );
             }
+
+            S3Presigner.Builder presignerBuilder = S3Presigner.builder();
+            if (s3AsyncClient == null) {
+                presignerBuilder
+                    .credentialsProvider(builder.credentialsProvider.get())
+                    .region(builder.region);
+                s3AsyncClient = builder.asyncClient();
+            }
+            presigner = presignerBuilder.build();
 
             // bucket name
             if (StringUtils.isEmpty(bucketName)) {
@@ -299,14 +191,6 @@ public class S3BitStoreService extends BaseBitStoreService {
             this.initialized = false;
             log.error("Can't initialize this store!", e);
         }
-    }
-
-    private static Supplier<S3Presigner> amazonPresignerBuilderBy(Region region,
-                                                                StaticCredentialsProvider credentialsProvider) {
-        return () -> S3Presigner.builder()
-                                .region(region)
-                                .credentialsProvider(credentialsProvider)
-                                .build();
     }
 
     /**
@@ -534,32 +418,6 @@ public class S3BitStoreService extends BaseBitStoreService {
         this.enabled = enabled;
     }
 
-    public String getAwsAccessKey() {
-        return awsAccessKey;
-    }
-
-    @Autowired(required = true)
-    public void setAwsAccessKey(String awsAccessKey) {
-        this.awsAccessKey = awsAccessKey;
-    }
-
-    public String getAwsSecretKey() {
-        return awsSecretKey;
-    }
-
-    @Autowired(required = true)
-    public void setAwsSecretKey(String awsSecretKey) {
-        this.awsSecretKey = awsSecretKey;
-    }
-
-    public String getAwsRegionName() {
-        return awsRegionName;
-    }
-
-    public void setAwsRegionName(String awsRegionName) {
-        this.awsRegionName = awsRegionName;
-    }
-
     @Autowired(required = true)
     public String getBucketName() {
         return bucketName;
@@ -585,22 +443,6 @@ public class S3BitStoreService extends BaseBitStoreService {
         this.useRelativePath = useRelativePath;
     }
 
-    public double getTargetThroughputGbps() {
-        return targetThroughputGbps;
-    }
-
-    public void setTargetThroughputGbps(double targetThroughputGbps) {
-        this.targetThroughputGbps = targetThroughputGbps;
-    }
-
-    public long getMinPartSizeBytes() {
-        return minPartSizeBytes;
-    }
-
-    public void setMinPartSizeBytes(long minPartSizeBytes) {
-        this.minPartSizeBytes = minPartSizeBytes;
-    }
-
     public ChecksumAlgorithm getS3ChecksumAlgorithm() {
         return s3ChecksumAlgorithm;
     }
@@ -609,28 +451,8 @@ public class S3BitStoreService extends BaseBitStoreService {
         this.s3ChecksumAlgorithm = s3ChecksumAlgorithm;
     }
 
-    public Integer getMaxConcurrency() {
-        return maxConcurrency;
-    }
-
-    public void setMaxConcurrency(Integer maxConcurrency) {
-        this.maxConcurrency = maxConcurrency;
-    }
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-    }
-
-    public String getAwsSessionToken() {
-        return awsSessionToken;
-    }
-
-    public void setAwsSessionToken(String awsSessionToken) {
-        this.awsSessionToken = awsSessionToken;
+    public void setBuilder(AWSS3ClientBuilder builder) {
+        this.builder = builder;
     }
 
     /**

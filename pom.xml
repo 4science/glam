@@ -2012,6 +2012,22 @@
                 <version>1.4.01</version>
             </dependency>
 
+            <!-- AWS SDK BOM to ensure version consistency -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${software.amazon.awssdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- AWS CRT dependency to force version consistency -->
+            <dependency>
+                <groupId>software.amazon.awssdk.crt</groupId>
+                <artifactId>aws-crt</artifactId>
+                <version>${software.amazon.awssdk.crt.version}</version>
+            </dependency>
+
             <!-- Keep icu4j synced with version used by lucene-analyzers-icu (Solr) -->
             <dependency>
                 <groupId>com.ibm.icu</groupId>
@@ -2212,12 +2228,6 @@
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>${json-smart.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.adobe.testing</groupId>
-                <artifactId>s3mock-testcontainers</artifactId>
-                <version>${s3mock-testcontainers.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.adobe.testing</groupId>
