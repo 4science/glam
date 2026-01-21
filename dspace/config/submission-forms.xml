@@ -7461,6 +7461,18 @@
       <row>
         <field>
           <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>temporal</dc-qualifier>
+          <label>Data secolare</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Data secolare della risorsa. Segnalare, ove possibile, la parte di secolo considerata.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
           <dc-element>date</dc-element>
           <dc-qualifier>note</dc-qualifier>
           <label>Note alla data</label>
@@ -7508,13 +7520,37 @@
       </row>
       <row>
         <field>
-          <dc-schema>glammanuscript</dc-schema>
+          <dc-schema>dc</dc-schema>
           <dc-element>type</dc-element>
           <label>Genere letterario</label>
           <input-type value-pairs-name="genre_list">dropdown</input-type>
           <repeatable>false</repeatable>
           <required />
           <hint>Selezionare il genere lettario</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la località in cui è stato raccolto l'esemplare</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>language</dc-element>
+          <dc-qualifier>iso</dc-qualifier>
+          <label>Lingua</label>
+          <input-type value-pairs-name="common_iso_languages">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Lingua della risorsa. Se la lingua non appare nell'elenco, selezionare 'Altra'. Se il contenuto non ha realmente una lingua (ad es., se si tratta di un set di dati o di un'immagine), selezionare 'Nessuna'.</hint>
         </field>
       </row>
       <row>
@@ -7747,30 +7783,6 @@
       </row>
       <row>
         <field>
-          <dc-schema>dc</dc-schema>
-          <dc-element>description</dc-element>
-          <dc-qualifier>abstract</dc-qualifier>
-          <label>Regesto</label>
-          <input-type>textarea</input-type>
-          <repeatable>true</repeatable>
-          <required />
-          <hint>Inserire l'abstract della risorsa</hint>
-        </field>
-      </row>
-      <row>
-        <field>
-          <dc-schema>dc</dc-schema>
-          <dc-element>description</dc-element>
-          <dc-qualifier>note</dc-qualifier>
-          <label>Tipologia miscellanea</label>
-          <input-type>textarea</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Tipologia miscellanea</hint>
-        </field>
-      </row>
-      <row>
-        <field>
           <dc-schema>mag</dc-schema>
           <dc-element>biblevel</dc-element>
           <label>Livello bibliografico</label>
@@ -7802,6 +7814,65 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'explicit</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>spatialgpdpy</dc-qualifier>
+          <label>Latitudine</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la latitudine della località in cui si trova il manoscritto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>spatialgpdpx</dc-qualifier>
+          <label>Longitudine</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la longitudine della località in cui si trova il manoscritto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>abstract</dc-qualifier>
+          <label>Abstract</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <label>Descrizione</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la descrizione dell'oggetto.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>note</dc-qualifier>
+          <label>Note</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire ogni altro eventuale commento/nota alla risorsa.</hint>
         </field>
       </row>
     </form>
