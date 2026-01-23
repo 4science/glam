@@ -10660,15 +10660,5 @@
         <stored-value>d</stored-value>
       </pair>
     </value-pairs>
-    <value-pairs value-pairs-name="composition_type" dc-term="composition_type">
-      <pair>
-        <displayed-value>Composito</displayed-value>
-        <stored-value>Composito</stored-value>
-      </pair>
-      <pair>
-        <displayed-value>Unitario</displayed-value>
-        <stored-value>Unitario</stored-value>
-      </pair>
-    </value-pairs>
   </form-value-pairs>
 </input-forms>
