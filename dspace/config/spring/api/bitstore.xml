@@ -17,76 +17,128 @@
         </property>
     </bean>
 
-    <bean name="localStore" class="org.dspace.storage.bitstore.DSBitStoreService" scope="singleton">
+    <bean name="localStore" class="org.dspace.storage.bitstore.DSBitStoreService">
         <property name="baseDir" value="${assetstore.dir}"/>
     </bean>
 
-    <bean name="s3Store" class="org.dspace.storage.bitstore.S3BitStoreService" scope="singleton" lazy-init="true">
+    <bean name="s3Store" class="org.dspace.storage.bitstore.S3BitStoreService" lazy-init="true">
         <property name="enabled" value="${assetstore.s3.enabled}"/>
-        <!-- AWS Security credentials, with policies for specified bucket -->
-        <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
-        <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>
-        <property name="awsSessionToken" value="${assetstore.s3.awsToken}"/>
         <property name="useRelativePath" value="${assetstore.s3.useRelativePath}"/>
 
         <!-- S3 bucket name to store assets in. example: longsight-dspace-auk -->
         <property name="bucketName" value="${assetstore.s3.bucketName}"/>
 
-        <!-- AWS S3 Region to use: {us-east-1, us-west-1, eu-west-1, eu-central-1, ap-southeast-1, ... } -->
-        <!-- Optional, sdk default is us-east-1 -->
-        <property name="awsRegionName" value="${assetstore.s3.awsRegionName}"/>
-
         <!-- Subfolder to organize assets within the bucket, in case this bucket is shared  -->
         <!-- Optional, default is root level of bucket -->
         <property name="subfolder" value="${assetstore.s3.subfolder}"/>
-        <property name="maxConnections" value="${assetstore.s3.maxConnections}"/>
-        <property name="connectionTimeout" value="${assetstore.s3.connectionTimeout}"/>
-        <property name="endpoint" value="${assetstore.s3.endpoint}"/>
+
+        <!-- The algorithm the S3 client will use to create a checksum when doing putObject. -->
+        <property name="s3ChecksumAlgorithm" value="${assetstore.s3.s3ChecksumAlgorithm}"/>
+
+        <property name="builder" ref="defaultClientBuilder"/>
     </bean>
 
-    <bean name="s3LegacyStore" class="org.dspace.storage.bitstore.S3BitStoreService" scope="singleton" lazy-init="true">
-        <property name="enabled" value="${assetstore.s3.legacybucket.enabled}"/>
-        <!-- AWS Security credentials, with policies for specified bucket -->
-        <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
-        <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>
-        <property name="awsSessionToken" value="${assetstore.s3.awsToken}"/>
-        <property name="useRelativePath" value="${assetstore.s3.useRelativePath}"/>
-
-        <!-- S3 bucket name to store assets in. example: longsight-dspace-auk -->
-        <property name="bucketName" value="${assetstore.s3.legacybucket.bucketName}"/>
-
-        <!-- AWS S3 Region to use: {us-east-1, us-west-1, eu-west-1, eu-central-1, ap-southeast-1, ... } -->
-        <!-- Optional, sdk default is us-east-1 -->
-        <property name="awsRegionName" value="${assetstore.s3.awsRegionName}"/>
-
-        <!-- Subfolder to organize assets within the bucket, in case this bucket is shared  -->
-        <!-- Optional, default is root level of bucket -->
-        <property name="subfolder" value="${assetstore.s3.legacybucket.subfolder}"/>
-    </bean>
-
-    <bean name="s3TempStore" class="org.dspace.storage.bitstore.S3BitStoreService" scope="singleton" lazy-init="true">
+    <bean name="s3TempStore" class="org.dspace.storage.bitstore.S3BitStoreService" lazy-init="true" parent="s3Store">
         <property name="enabled" value="${assetstore.s3.temp.enabled}"/>
-        <!-- AWS Security credentials, with policies for specified bucket -->
-        <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
-        <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>
-        <property name="awsSessionToken" value="${assetstore.s3.awsToken}"/>
-        <property name="useRelativePath" value="${assetstore.s3.useRelativePath}"/>
-
-        <!-- S3 bucket name to store assets in. example: longsight-dspace-auk -->
         <property name="bucketName" value="${assetstore.s3.temp.bucketName}"/>
-
-        <!-- AWS S3 Region to use: {us-east-1, us-west-1, eu-west-1, eu-central-1, ap-southeast-1, ... } -->
-        <!-- Optional, sdk default is us-east-1 -->
-        <property name="awsRegionName" value="${assetstore.s3.awsRegionName}"/>
 
         <!-- Subfolder to organize assets within the bucket, in case this bucket is shared  -->
         <!-- Optional, default is root level of bucket -->
         <property name="subfolder" value="${assetstore.s3.temp.subfolder}"/>
-        <property name="maxConnections" value="${assetstore.s3.maxConnections}"/>
-        <property name="connectionTimeout" value="${assetstore.s3.connectionTimeout}"/>
-        <property name="endpoint" value="${assetstore.s3.endpoint}"/>
+        <property name="builder" ref="tempClientBuilder"/>
+    </bean>
+
+    <bean name="s3LegacyStore" class="org.dspace.storage.bitstore.S3BitStoreService" lazy-init="true" parent="s3Store">
+        <property name="enabled" value="${assetstore.s3.legacybucket.enabled}"/>
+        <property name="bucketName" value="${assetstore.s3.legacybucket.bucketName}"/>
+        <property name="subfolder" value="${assetstore.s3.legacybucket.subfolder}"/>
+        <property name="builder" ref="legacyClientBuilder"/>
+    </bean>
+
+    <bean name="awsCredentialsFactory"
+          class="org.dspace.storage.bitstore.factory.AWSFactory"/>
+
+    <!-- Default client builder -->
+    <bean name="defaultClientBuilder"
+          factory-bean="awsCredentialsFactory"
+          factory-method="clientBuilder"/>
+
+    <!-- Temp client builder -->
+    <bean name="tempClientBuilder"
+          factory-bean="awsCredentialsFactory"
+          factory-method="clientBuilder">
+        <constructor-arg name="storeSuffix" value="temp"/>
+    </bean>
+
+    <bean name="legacyClientBuilder"
+          factory-bean="awsCredentialsFactory"
+          factory-method="clientBuilder">
+        <constructor-arg name="storeSuffix" value="legacybucket"/>
     </bean>
 
     <!-- <bean name="localStore2 ... -->
     <!-- <bean name="s3Store2 ... -->
+
+    <!-- Custom credentialsProvider; uncomment to use -->
+    <!--
+    <bean name="credentialsProvider" class="org.dspace.storage.bitstore.AWSCredentialsProviderBuilder" scope="singleton">
+        <property name="stsRole" value="${assetstore.s3.sts.role}"/>
+        <property name="stsSessionName" value="${assetstore.s3.sts.sessionname}"/>
+        <property name="stsRegion" value="${assetstore.s3.sts.region}"/>
+        <property name="stsExternalId" value="${assetstore.s3.sts.externalid}"/>
+        <property name="stsSessionDuration" value="${assetstore.s3.sts.sessionduration}"/>
+        <property name="stsEndpoint" value="${assetstore.s3.sts.endpoint}"/>
+        <property name="irsaRole" value="${assetstore.s3.irsa.role}"/>
+        <property name="irsaRoleSessionName" value="${assetstore.s3.irsa.session}"/>
+        <property name="webIdentityTokenFile" value="${assetstore.s3.irsa.tokenfile}"/>
+        <property name="awsAccessKey" value="${assetstore.s3.awsAccessKey}"/>
+        <property name="awsSecretKey" value="${assetstore.s3.awsSecretKey}"/>
+        <property name="awsSessionToken" value="${assetstore.s3.awsToken}"/>
+    </bean
+    >-->
+
+    <!-- Custom stsCredentials; uncomment to use -->
+    <!--
+    <bean name="stsCredentials" factory-bean="credentialsProvider" factory-method="build" scope="singleton"
+          lazy-init="true">
+        <constructor-arg name="type" value="STS"/>
+    </bean>
+    -->
+
+    <!-- Custom irsaCredentials; uncomment to use -->
+    <!--
+    <bean name="irsaCredentials" factory-bean="credentialsProvider" factory-method="build" scope="singleton"
+          lazy-init="true">
+        <constructor-arg name="type" value="IRSA"/>
+    </bean>
+    -->
+
+    <!-- Custom staticCredentials; uncomment to use -->
+    <!--
+    <bean name="staticCredentials" factory-bean="credentialsProvider" factory-method="build" scope="singleton"
+          lazy-init="true">
+        <constructor-arg name="type" value="STATIC"/>
+    </bean>
+    -->
+
+    <!-- Default credentialsProvider; uncomment to use -->
+    <!--
+    <bean name="defaultCredentials" factory-bean="credentialsProvider" factory-method="build" scope="singleton"
+          lazy-init="true">
+        <constructor-arg name="type" value="DEFAULT"/>
+    </bean>
+    -->
+
+    <!-- Default asyncClientBuilder; uncomment to use -->
+    <!--
+    <bean name="asyncClientBuilder" class="org.dspace.storage.bitstore.AWSS3ClientBuilder">
+        <property name="region" value="${assetstore.s3.region}"/>
+        <property name="endpoint" value="${assetstore.s3.endpoint}"/>
+        <property name="maxConcurrency" value="${assetstore.s3.maxConcurrency}"/>
+        <property name="targetThroughput" value="${assetstore.s3.targetThroughput}"/>
+        <property name="minPartSize" value="${assetstore.s3.minPartSize}"/>
+        <property name="credentialsProvider" ref="defaultCredentials"/>
+    </bean>
+    -->
+
 </beans>

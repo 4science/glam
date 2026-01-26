@@ -143,4 +143,10 @@
         <property name="description" value="Verifies the checksum of every item within DSpace"/>
         <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerScript"/>
     </bean>
+
+    <bean id="generate-submission-forms" class="org.dspace.app.submissionform.script.SubmissionFormGeneratorScriptConfiguration" primary="true">
+        <property name="description" value="Generate submission XML forms from XLS"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.submissionform.script.SubmissionFormGenerator"/>
+    </bean>
+
 </beans>
