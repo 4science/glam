@@ -7372,6 +7372,510 @@
         </field>
       </row>
     </form>
+    <form name="manuscript-dc-relation-person">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>person</dc-qualifier>
+          <label>Persona</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Indicare la persona coinvolta nell'opera a vario titolo</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>personrole</dc-qualifier>
+          <label>Responsabilità</label>
+          <input-type value-pairs-name="role_list">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare la responsabilità delle singole persone</hint>
+        </field>
+      </row>
+    </form>
+    <form name="manuscript">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <label>Titolo dell'opera</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Campo obbligatorio</required>
+          <hint>Inserire il titolo dell'opera</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>contributor</dc-element>
+          <dc-qualifier>author</dc-qualifier>
+          <label>Autore</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il nome dell'autore o degli autori dell'opera nella forma Cognome, Nome</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>date</dc-element>
+          <dc-qualifier>issued</dc-qualifier>
+          <label>Data puntuale</label>
+          <input-type>date</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Data puntuale della risorsa. Tralasciare giorno e mese quando non definiti.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>date</dc-element>
+          <dc-qualifier>start</dc-qualifier>
+          <label>Data iniziale</label>
+          <input-type>date</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Estremo cronologico iniziale della risorsa. Tralasciare giorno e mese quando non definiti.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>date</dc-element>
+          <dc-qualifier>end</dc-qualifier>
+          <label>Data finale</label>
+          <input-type>date</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Estremo cronologico finale della risorsa. Tralasciare giorno e mese quando non definiti.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>temporal</dc-qualifier>
+          <label>Data secolare</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Data secolare della risorsa. Segnalare, ove possibile, la parte di secolo considerata.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>date</dc-element>
+          <dc-qualifier>note</dc-qualifier>
+          <label>Note alla data</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire eventuali note alla data</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>contributor</dc-element>
+          <dc-qualifier>insecure</dc-qualifier>
+          <label>Autore incerto</label>
+          <input-type value-pairs-name="check_type">list</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare se l'autore è incerto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>contributor</dc-element>
+          <dc-qualifier>anonym</dc-qualifier>
+          <label>Autore anonimo</label>
+          <input-type value-pairs-name="check_type">list</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare se l'autore è anonimo</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>type</dc-element>
+          <dc-qualifier>manuscript</dc-qualifier>
+          <label>Tipologia Opera</label>
+          <input-type value-pairs-name="manuscript_type">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Selezionare la tipologia di testo dell'opera</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>type</dc-element>
+          <label>Genere letterario</label>
+          <input-type value-pairs-name="genre_list">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare il genere lettario</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la località in cui è stato raccolto l'esemplare</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>language</dc-element>
+          <dc-qualifier>iso</dc-qualifier>
+          <label>Lingua</label>
+          <input-type value-pairs-name="common_iso_languages">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Lingua della risorsa. Se la lingua non appare nell'elenco, selezionare 'Altra'. Se il contenuto non ha realmente una lingua (ad es., se si tratta di un set di dati o di un'immagine), selezionare 'Nessuna'.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>person</dc-qualifier>
+          <label>Persone</label>
+          <input-type>group</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Indicare le persone coinvolte nell'opera a vario titolo</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>description</dc-element>
+          <label>Natura del manoscritto</label>
+          <input-type value-pairs-name="manuscriptdescription_types">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire la natura della descrizione dell'oggetto</required>
+          <hint>Inserire la natura della descrizione dell'oggetto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <label>Bibliografia dell'opera</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Bibliografia opera</hint>
+        </field>
+      </row>
+    </form>
+    <form name="manuscript_relation">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>rights</dc-element>
+          <dc-qualifier>license</dc-qualifier>
+          <label>Licenza</label>
+          <input-type value-pairs-name="license_types">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare la licenza di utilizzo</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>project</dc-qualifier>
+          <label>Progetto</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Collegamento alla scheda progetto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>fonds</dc-qualifier>
+          <label>Fondo</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il nominativo del livello di appartenenza della risorsa</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>event</dc-qualifier>
+          <label>Evento</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Collegamento alla sceda evento</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>path</dc-qualifier>
+          <label>Percorso</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Percorso D-Space GLAM</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>aggregation</dc-qualifier>
+          <label>Aggregazione</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Specificare l'eventuale aggregazione</hint>
+        </field>
+      </row>
+    </form>
+    <form name="manuscript_description">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>url</dc-qualifier>
+          <label>URL Catalografico</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'eventuale URL alla scheda catalografica corrispondente</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>identifier</dc-element>
+          <label>Identificativo</label>
+          <input-type value-pairs-name="common_book_identifiers">qualdrop_value</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire gli identificativi della risorsa</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>type</dc-element>
+          <dc-qualifier>physical</dc-qualifier>
+          <label>Tipologia fisica</label>
+          <input-type value-pairs-name="physical_type">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare la tipologia fisica</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>medium</dc-qualifier>
+          <label>Materia / Supporto</label>
+          <input-type value-pairs-name="support_type">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Selezionare il tipo di supporto fisico</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misa</dc-qualifier>
+          <label>Altezza</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Indicare l'altezza del documento espressa in millimetri</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>misl</dc-qualifier>
+          <label>Larghezza</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Indicare la larghezza del documento espressa in millimetri</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>composite</dc-element>
+          <label>Composito</label>
+          <input-type value-pairs-name="composition_type">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Specificare se il documento è composito o meno</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>format</dc-element>
+          <dc-qualifier>extent</dc-qualifier>
+          <label>Consistenza</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire la consistenza dell'opera</required>
+          <hint>Consistenza espressa in numero di carte</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>ispartofcontainer</dc-qualifier>
+          <label>Fa parte di</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il titolo uniforme dell'opera a cui la risorsa appartiene</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glammanuscript</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>decoration</dc-qualifier>
+          <label>Decorazione</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Decorazione</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>mag</dc-schema>
+          <dc-element>biblevel</dc-element>
+          <label>Livello bibliografico</label>
+          <input-type value-pairs-name="mag_bib_level">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il livello bibliografico MAG</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>incipit</dc-qualifier>
+          <label>Incipit</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'incipit</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>explicit</dc-qualifier>
+          <label>Explicit</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'explicit</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>spatialgpdpy</dc-qualifier>
+          <label>Latitudine</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la latitudine della località in cui si trova il manoscritto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>coverage</dc-element>
+          <dc-qualifier>spatialgpdpx</dc-qualifier>
+          <label>Longitudine</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la longitudine della località in cui si trova il manoscritto</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>abstract</dc-qualifier>
+          <label>Abstract</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <label>Descrizione</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire la descrizione dell'oggetto.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>note</dc-qualifier>
+          <label>Note</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire ogni altro eventuale commento/nota alla risorsa.</hint>
+        </field>
+      </row>
+    </form>
   </form-definitions>
   <form-value-pairs>
     <value-pairs value-pairs-name="common_iso_countries" dc-term="common_iso_countries">
@@ -8464,6 +8968,10 @@
       <pair>
         <displayed-value>BID</displayed-value>
         <stored-value>bid</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>CNMD</displayed-value>
+        <stored-value>cnmd</stored-value>
       </pair>
       <pair>
         <displayed-value>DOI</displayed-value>
@@ -9836,6 +10344,320 @@
       <pair>
         <displayed-value>PDF/A</displayed-value>
         <stored-value>pdfATransformer</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="role_list" dc-term="role_list">
+      <pair>
+        <displayed-value>Amministratore</displayed-value>
+        <stored-value>Amministratore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Autore</displayed-value>
+        <stored-value>Autore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Autore incerto</displayed-value>
+        <stored-value>Autore incerto</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Committente</displayed-value>
+        <stored-value>Committente</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Commentatore</displayed-value>
+        <stored-value>Commentatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Compositore</displayed-value>
+        <stored-value>Compositore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Dedicatario</displayed-value>
+        <stored-value>Dedicatario</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Destinatario</displayed-value>
+        <stored-value>Destinatario</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Emittente</displayed-value>
+        <stored-value>Emittente</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Epitomatore</displayed-value>
+        <stored-value>Epitomatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Glossatore</displayed-value>
+        <stored-value>Glossatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Interlocutore (di dialogo o trattato)</displayed-value>
+        <stored-value>Interlocutore (di dialogo o trattato)</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Testimone</displayed-value>
+        <stored-value>Testimone</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Traduttore</displayed-value>
+        <stored-value>Traduttore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Translitteratore</displayed-value>
+        <stored-value>Translitteratore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Volgarizzatore</displayed-value>
+        <stored-value>Volgarizzatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Personaggio di opera teatrale</displayed-value>
+        <stored-value>Personaggio di opera teatrale</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Biografo</displayed-value>
+        <stored-value>Biografo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Tipografo</displayed-value>
+        <stored-value>Tipografo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Illustratore</displayed-value>
+        <stored-value>Illustratore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Possessore</displayed-value>
+        <stored-value>Possessore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Miniatore</displayed-value>
+        <stored-value>Miniatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Legatore</displayed-value>
+        <stored-value>Legatore</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Altra responsabilità</displayed-value>
+        <stored-value>Altra responsabilità</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="physical_type" dc-term="physical_type">
+      <pair>
+        <displayed-value>Manoscritto</displayed-value>
+        <stored-value>Manoscritto</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Filza</displayed-value>
+        <stored-value>Filza</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Registro</displayed-value>
+        <stored-value>Registro</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Mappa</displayed-value>
+        <stored-value>Mappa</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Foglio sciolto</displayed-value>
+        <stored-value>Foglio sciolto</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Lettera</displayed-value>
+        <stored-value>Lettera</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Palinsesto</displayed-value>
+        <stored-value>Palinsesto</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="support_type" dc-term="support_type">
+      <pair>
+        <displayed-value>Cartaceo</displayed-value>
+        <stored-value>Cartaceo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Membranaceo</displayed-value>
+        <stored-value>Membranaceo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Misto</displayed-value>
+        <stored-value>Misto</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Papiraceo</displayed-value>
+        <stored-value>Papiraceo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Pergamenaceo</displayed-value>
+        <stored-value>Pergamenaceo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Carta cellulosa</displayed-value>
+        <stored-value>Carta cellulosa</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Altro supporto</displayed-value>
+        <stored-value>Altro supporto</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="genre_list" dc-term="genre_list">
+      <pair>
+        <displayed-value>Agiografia</displayed-value>
+        <stored-value>Agiografia</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Biografia</displayed-value>
+        <stored-value>Biografia</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Commento</displayed-value>
+        <stored-value>Commento</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Cronaca</displayed-value>
+        <stored-value>Cronaca</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Dialogo</displayed-value>
+        <stored-value>Dialogo</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Documumenti amminsitrativi</displayed-value>
+        <stored-value>Documumenti amminsitrativi</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Epistolario</displayed-value>
+        <stored-value>Epistolario</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Lettera</displayed-value>
+        <stored-value>Lettera</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Narrativa in versi</displayed-value>
+        <stored-value>Narrativa in versi</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Novellistica</displayed-value>
+        <stored-value>Novellistica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Opera storiografica</displayed-value>
+        <stored-value>Opera storiografica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Opera storica</displayed-value>
+        <stored-value>Opera storica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Opera teatrale</displayed-value>
+        <stored-value>Opera teatrale</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Opera teologica</displayed-value>
+        <stored-value>Opera teologica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Orazione</displayed-value>
+        <stored-value>Orazione</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Poesia didattico-morale o politica</displayed-value>
+        <stored-value>Poesia didattico-morale o politica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Poesia lirica</displayed-value>
+        <stored-value>Poesia lirica</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Protesto</displayed-value>
+        <stored-value>Protesto</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Trattato</displayed-value>
+        <stored-value>Trattato</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Trattato dialogico</displayed-value>
+        <stored-value>Trattato dialogico</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Volgarizzamento</displayed-value>
+        <stored-value>Volgarizzamento</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="manuscript_type" dc-term="manuscript_type">
+      <pair>
+        <displayed-value>Prosa</displayed-value>
+        <stored-value>Prosa</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Poesia</displayed-value>
+        <stored-value>Poesia</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Prosimetro</displayed-value>
+        <stored-value>Prosimetro</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="check_type" dc-term="check_type">
+      <pair>
+        <displayed-value>sì</displayed-value>
+        <stored-value>sì</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="manuscriptdescription_types" dc-term="manuscriptdescription_types">
+      <pair>
+        <displayed-value>Recupero</displayed-value>
+        <stored-value>Recupero</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Scheda di prima mano</displayed-value>
+        <stored-value>Scheda di prima mano</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="composition_type" dc-term="composition_type">
+      <pair>
+        <displayed-value>Composito</displayed-value>
+        <stored-value>Composito</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Unitario</displayed-value>
+        <stored-value>Unitario</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="mag_bib_level" dc-term="mag_bib_level">
+      <pair>
+        <displayed-value>N/A</displayed-value>
+        <stored-value>N/A</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>spoglio</displayed-value>
+        <stored-value>a</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>monografia</displayed-value>
+        <stored-value>m</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>seriale</displayed-value>
+        <stored-value>s</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>raccolta prodotta dall'istituzione</displayed-value>
+        <stored-value>c</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>unità archivistica</displayed-value>
+        <stored-value>f</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>unità documentaria</displayed-value>
+        <stored-value>d</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>

@@ -246,6 +246,21 @@
       <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
       <type>submission-form</type>
     </step-definition>
+    <step-definition id="manuscript" mandatory="true">
+      <heading>submit.progressbar.describe.manuscript</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="manuscript_relation" mandatory="true">
+      <heading>submit.progressbar.describe.manuscript_relation</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
+    <step-definition id="manuscript_description" mandatory="true">
+      <heading>submit.progressbar.describe.manuscript_description</heading>
+      <processing-class>org.dspace.app.rest.submit.step.DescribeStep</processing-class>
+      <type>submission-form</type>
+    </step-definition>
   </step-definitions>
   <submission-definitions>
     <submission-process name="archival_material">
@@ -497,6 +512,20 @@
     <submission-process name="personal_annotation-edit">
       <step id="personal_annotation" />
       <step id="license" />
+    </submission-process>
+    <submission-process name="manuscript">
+      <step id="collection" />
+      <step id="manuscript" />
+      <step id="manuscript_relation" />
+      <step id="manuscript_description" />
+      <step id="upload" />
+      <step id="license" />
+    </submission-process>
+    <submission-process name="manuscript_edit">
+      <step id="manuscript" />
+      <step id="manuscript_relation" />
+      <step id="manuscript_description" />
+      <step id="upload" />
     </submission-process>
   </submission-definitions>
 </item-submission>
