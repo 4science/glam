@@ -59,7 +59,6 @@ import java.util.UUID;
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
@@ -226,69 +225,6 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
         bitstream.setFormat(context, supportedFormat);
 
         context.restoreAuthSystemState();
-    }
-
-    /**
-     * Sets up S3Mock for presigned URL integration tests.
-     * This creates a real S3-compatible mock server that the S3BitStoreService can connect to.
-     */
-    private void setupS3Mock() throws Exception {
-        // Setup S3Mock server similar to S3BitStoreServiceIT
-        s3Directory = new File(System.getProperty("java.io.tmpdir"), "s3mock-test");
-        s3Mock = S3Mock.create(8001, s3Directory.getAbsolutePath());
-        s3Mock.start();
-
-        // Create Amazon S3 client pointing to the mock server
-        amazonS3Client = createAmazonS3Client("http://127.0.0.1:8001");
-
-        // Create the test bucket
-        String bucketName = "testbucket";
-        amazonS3Client.createBucket(bucketName);
-
-        // Create a new S3BitStoreService configured with the mock S3 client
-        Class<S3BitStoreService> s3Class = S3BitStoreService.class;
-        java.lang.reflect.Constructor<S3BitStoreService> constructor =
-            s3Class.getDeclaredConstructor(AmazonS3.class);
-        constructor.setAccessible(true);
-        mockS3BitStoreService = constructor.newInstance(amazonS3Client);
-
-        mockS3BitStoreService.setEnabled(true);
-        mockS3BitStoreService.setBucketName(bucketName);
-        mockS3BitStoreService.init();
-
-        // Replace store number 1 in the BitstreamStorageService with our mock S3 store
-        Map<Integer, org.dspace.storage.bitstore.BitStoreService> stores =
-            (Map<Integer, org.dspace.storage.bitstore.BitStoreService>)
-            ReflectionTestUtils.getField(bitstreamStorageService, "stores");
-
-        if (stores != null) {
-            stores.put(1, mockS3BitStoreService);
-        }
-    }
-
-    /**
-     * Tears down S3Mock after presigned URL tests
-     */
-    private void tearDownS3Mock() throws Exception {
-        if (s3Mock != null) {
-            s3Mock.shutdown();
-        }
-        if (s3Directory != null && s3Directory.exists()) {
-            FileUtils.deleteDirectory(s3Directory);
-        }
-    }
-
-    /**
-     * Creates an Amazon S3 client for testing with S3Mock
-     * Based on the approach used in S3BitStoreServiceIT
-     */
-    private AmazonS3 createAmazonS3Client(String endpoint) {
-        return AmazonS3ClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
-            .withEndpointConfiguration(new AwsClientBuilder
-                .EndpointConfiguration(endpoint, Regions.DEFAULT_REGION.getName()))
-            .withPathStyleAccessEnabled(true)
-            .build();
     }
 
     @Test
