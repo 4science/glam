@@ -400,7 +400,7 @@ public class VersionHistoryRestRepositoryIT extends AbstractControllerIntegratio
         String tokenAdmin = getAuthToken(admin.getEmail(), password);
         getClient(tokenAdmin).perform(get("/api/versioning/versionhistories/" + vh.getID() + "/draftVersion"))
                              .andExpect(status().isOk())
-                             .andExpect(jsonPath("$",Matchers.is(matchProductWithTitleAndDateIssued(witem,
+                             .andExpect(jsonPath("$",Matchers.is(matchTraditional(witem,
                                          "Public test item", "2021-04-27"))));
     }
 
@@ -542,7 +542,7 @@ public class VersionHistoryRestRepositoryIT extends AbstractControllerIntegratio
 
         getClient(tokenAdmin).perform(get("/api/versioning/versionhistories/" + vh.getID() + "/draftVersion"))
                              .andExpect(jsonPath("$", Matchers.is(
-                                 matchProductWithTitleAndDateIssued(witem,
+                                 matchTraditional(witem,
                                         "Workflow Item 1", "2017-10-17"))));
     }
 
@@ -572,7 +572,7 @@ public class VersionHistoryRestRepositoryIT extends AbstractControllerIntegratio
         String ePersonToken = getAuthToken(eperson.getEmail(), password);
         getClient(ePersonToken).perform(get("/api/versioning/versionhistories/" + vh.getID() + "/draftVersion"))
                                .andExpect(status().isOk())
-                               .andExpect(jsonPath("$",Matchers.is(matchProductWithTitleAndDateIssued(
+                               .andExpect(jsonPath("$",Matchers.is(matchTraditional(
                                               witem, "Public test item", "2021-04-27"
                                           )))
                                );
@@ -685,26 +685,27 @@ public class VersionHistoryRestRepositoryIT extends AbstractControllerIntegratio
                              .andExpect(jsonPath("$.page.totalElements", is(1)));
     }
 
-    public static Matcher<?> matchProductWithTitleAndDateIssued(
+    public static Matcher<?> matchTraditional(
         WorkspaceItem witem, String title, String dateIssued
     ) {
         return allOf(
             // Check workspaceitem properties
             matchProperties(witem),
-            hasJsonPath("$.sections.product['dc.title'][0].value", is(title)),
-            hasJsonPath("$.sections.product['dc.date.issued'][0].value", is(dateIssued)),
+            hasJsonPath("$.sections.traditionalpageone['dc.title'][0].value", is(title)),
+            hasJsonPath("$.sections.traditionalpageone['dc.date.issued'][0].value", is(dateIssued)),
             // Check links
             matchLinks(witem));
     }
 
-    public static Matcher<?> matchProductWithTitleAndDateIssued(
+
+    public static Matcher<?> matchTraditional(
         XmlWorkflowItem witem, String title, String dateIssued
     ) {
         return allOf(
             // Check workspaceitem properties
             WorkflowItemMatcher.matchProperties(witem),
-            hasJsonPath("$.sections.product['dc.title'][0].value", is(title)),
-            hasJsonPath("$.sections.product['dc.date.issued'][0].value", is(dateIssued)),
+            hasJsonPath("$.sections.traditionalpageone['dc.title'][0].value", is(title)),
+            hasJsonPath("$.sections.traditionalpageone['dc.date.issued'][0].value", is(dateIssued)),
             // Check links
             WorkflowItemMatcher.matchLinks(witem));
     }

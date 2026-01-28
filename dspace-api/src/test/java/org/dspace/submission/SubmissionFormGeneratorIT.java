@@ -161,7 +161,7 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         handleScript(args, ScriptLauncher.getConfig(kernelImpl), handler, kernelImpl, admin);
         assertThat(handler.getWarningMessages().size(), is(3));
         assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
-        assertThat(handler.getErrorMessages().size(), is(6));
+        assertThat(handler.getErrorMessages().size(), is(5));
         assertThat(handler.getErrorMessages().get(0),
                 is("LEVEL:WARN ERROR:You have to add the element dc.source.test"));
         assertThat(handler.getErrorMessages().get(1),
@@ -169,8 +169,6 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getErrorMessages().get(2), is("LEVEL:ERROR ERROR:The item : " +
                                     "publication:dc.relation.aggregation has Vocabulary aggregationsTree not found!!"));
         assertThat(handler.getErrorMessages().get(3),
-           is("LEVEL:ERROR ERROR:The item : publication:dc.relation.fonds has Vocabulary fondsTree not found!!"));
-        assertThat(handler.getErrorMessages().get(4),
                 is("Cannot proceed to XML generation due to errors in the input Excel file."));
         assertThat(handler.getInfoMessages(), empty());
 
@@ -190,9 +188,9 @@ public class SubmissionFormGeneratorIT extends AbstractIntegrationTestWithDataba
         assertThat(handler.getWarningMessages().get(1), is("####     Validation Failed!!!    #####"));
         assertThat(handler.getErrorMessages().size(), is(4));
         assertThat(handler.getErrorMessages().get(0),
-                is("LEVEL:WARN ERROR:You have to add the element dc.source.content"));
+                is("LEVEL:WARN ERROR:You have to add the element dc.source.custom"));
         assertThat(handler.getErrorMessages().get(1),
-                is("LEVEL:WARN ERROR:You have to add the element dc.relation.ispublishedin"));
+                is("LEVEL:WARN ERROR:You have to add the element dc.relation.newfield"));
         assertThat(handler.getErrorMessages().get(2),
                 is("Cannot proceed to XML generation due to errors in the input Excel file."));
         assertThat(handler.getInfoMessages(), empty());
