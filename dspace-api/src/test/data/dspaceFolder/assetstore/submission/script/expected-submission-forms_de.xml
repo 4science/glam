@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE input-forms SYSTEM "submission-forms.dtd">
+<input-forms>
+  <form-definitions>
+    <form name="publication">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>type</dc-element>
+          <label>Dokumentart</label>
+          <input-type value-pairs-name="resource_types">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required>Sie müssen eine Dokumentart auswählen</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>identifier</dc-element>
+          <dc-qualifier>citation</dc-qualifier>
+          <label>Zitiervorschlag (APA)</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required>Sie müssen die bevorzugte Zitation eingeben</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <label>Titel</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Gegen Sie nach Möglichkeit den Titel der Publlikation ein</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <dc-qualifier>alternative</dc-qualifier>
+          <label>Abweichender Titel</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint />
+        </field>
+      </row>
+    </form>
+    <form name="product">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>type</dc-element>
+          <label>Dokumentart</label>
+          <input-type value-pairs-name="rd_types">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required>Wählen Sie die Dokumentart aus dem Dropdown (in der Regel für Forschungsdaten in Proforis: Data Collection)</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <label>Art der Forschungsdaten</label>
+          <input-type value-pairs-name="kind_of_data">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required>Wählen Sie die Art der Forschungsdaten aus dem Dropdown</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>sponsorship</dc-qualifier>
+          <label>Status Forschungsdaten</label>
+          <input-type value-pairs-name="status_researchdata">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Wählen Sie nach Möglichkeit den Status der Forschungsdaten aus dem Dropdown</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>identifier</dc-element>
+          <dc-qualifier>citation</dc-qualifier>
+          <label>Zitiervorschlag (APA)</label>
+          <input-type>textarea</input-type>
+          <repeatable>false</repeatable>
+          <required>Sie müssen die bevorzugte Zitation eingeben</required>
+          <hint />
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <label>Titel</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Sie müssen einen Haupttitel für diesen Artikel eingeben.</required>
+          <hint>Geben Sie nach Möglichkeit den Titel der Publlikation ein</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <dc-qualifier>alternative</dc-qualifier>
+          <label>Abweichender Titel</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Geben Sie bei Bedarf eine Titelvariante ein</hint>
+        </field>
+      </row>
+    </form>
+  </form-definitions>
+  <form-value-pairs>
+    <value-pairs value-pairs-name="kind_of_data" dc-term="kind_of_data">
+      <pair>
+        <displayed-value>Quantiative Daten (sozialwissenschaftlich)</displayed-value>
+        <stored-value>Quantitative data (social science)</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Qualitative Daten (sozialwissenchsaftlich)</displayed-value>
+        <stored-value>Qualitative data (social science)</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Unbekannt</displayed-value>
+        <stored-value>Unknown</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="resource_types" dc-term="resource_types">
+      <pair>
+        <displayed-value>Abschlussarbeit (Bachelor)</displayed-value>
+        <stored-value>c_7a1f</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Abschlussarbeit (Master)</displayed-value>
+        <stored-value>c_bdcc</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="rd_types" dc-term="rd_types">
+      <pair>
+        <displayed-value>Data Collection</displayed-value>
+        <stored-value>Data Collection</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Dataset</displayed-value>
+        <stored-value>Dataset</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Video</displayed-value>
+        <stored-value>Video</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="status_researchdata" dc-term="status_researchdata">
+      <pair>
+        <displayed-value>Datenerhebung</displayed-value>
+        <stored-value>Data collection</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Datenauswertung</displayed-value>
+        <stored-value>Data analysis</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Daten archiviert</displayed-value>
+        <stored-value>Data archived</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Unbekannt</displayed-value>
+        <stored-value>Unknown</stored-value>
+      </pair>
+    </value-pairs>
+  </form-value-pairs>
+</input-forms>

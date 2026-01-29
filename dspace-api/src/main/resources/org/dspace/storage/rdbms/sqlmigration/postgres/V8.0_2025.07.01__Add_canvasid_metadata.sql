@@ -54,7 +54,7 @@ $$
                                 FROM BUNDLE B
                                     JOIN METADATAVALUE MV ON MV.DSPACE_OBJECT_ID = B.UUID
                                     JOIN DC_TITLE_FIELD DTF ON MV.METADATA_FIELD_ID = DTF.METADATA_FIELD_ID
-                                WHERE MV.TEXT_VALUE LIKE 'IIIF-PDF-%'
+                                WHERE MV.TEXT_VALUE LIKE 'IIIF-PDF-%' AND REPLACE(MV.TEXT_VALUE, 'IIIF-PDF-', '') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
                                 ORDER BY MV.TEXT_VALUE,
                                     MV.METADATA_VALUE_ID DESC) -- ensures we select the latest created bundle
                 ,

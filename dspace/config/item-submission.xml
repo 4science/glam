@@ -411,6 +411,7 @@
       <step id="collection" />
       <step id="journal_fonds" />
       <step id="upload" />
+      <step id="curation" />
       <step id="license" />
     </submission-process>
     <submission-process name="journal_fonds-edit">

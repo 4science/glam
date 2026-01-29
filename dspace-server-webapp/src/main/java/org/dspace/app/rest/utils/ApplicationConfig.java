@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
     "org.dspace.app.rest.utils",
     "org.dspace.app.configuration",
     "org.dspace.iiif",
+    "org.dspace.leader",
     "org.dspace.app.iiif",
     "org.dspace.app.rest.link",
     "org.dspace.app.rest.converter.factory",
