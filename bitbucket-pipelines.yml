@@ -322,10 +322,10 @@ definitions:
         image: alpine:latest
         script:
           - |
-            if [[ "$BITBUCKET_BRANCH" = "ux-plus-cris" ]] || [[ "$BITBUCKET_BRANCH" == ux-plus-cris-20*_02_x ]] || [[ "$BITBUCKET_BRANCH" == prod/* ]] || [[ "$BITBUCKET_BRANCH" == test/* ]]; then
+            if [[ "$BITBUCKET_BRANCH" = "main-glam" ]] || [[ "$BITBUCKET_BRANCH" == prod/* ]] || [[ "$BITBUCKET_BRANCH" == test/* ]]; then
               echo "Branch $BITBUCKET_BRANCH is allowed."
             else
-              echo "This pipeline can only run on ux-plus-cris, ux-plus-cris-20*_02_x, prod/**, or test/**"
+              echo "This pipeline can only run on main-glam, prod/**, or test/**"
               exit 1
             fi
 
