@@ -415,6 +415,11 @@ pipelines:
       - step: *build-and-push
       - step: *build-and-push-orc
       - step: *deploy-on-staging
+    deploy-on-test:
+      - step: *check-branch-name-allowed
+      - step: *install
+      - step: *build-and-push
+      - step: *deploy-on-test
     e2e-test:
       - step: *install
       - parallel: *parallel-build-and-push
