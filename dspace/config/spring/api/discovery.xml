@@ -1851,7 +1851,6 @@
                 <!--DefaultSortOrder can either be desc or asc (desc is default)-->
                 <property name="sortFields">
                     <list>
-                        <ref bean="sortByArchivalMaterialSelection" />
                         <ref bean="sortTitleAsc" />
                     </list>
                 </property>
