@@ -228,6 +228,7 @@
                 <entry key="RELATION.Person.copublications" value-ref="relationContributorPublicationsConfiguration"/>
                 <entry key="RELATION.Person.fonds" value-ref="relationPersonFondsConfiguration"/>
                 <entry key="RELATION.Person.annotations" value-ref="relationPersonAnnotationsConfiguration"/>
+                <entry key="RELATION.Person.story" value-ref="relationPersonStoriesConfiguration"/>
                 <!-- OrgUnit Related items -->
                 <entry key="RELATION.OrgUnit.rpprojects" value-ref="relationOrgunitRPProjectConfiguration"/>
                 <entry key="RELATION.OrgUnit.publications" value-ref="relationOrgunitPublicationsConfiguration"/>
@@ -237,6 +238,7 @@
                 <entry key="RELATION.OrgUnit.organizations" value-ref="relationOrgunitOrgunitsConfiguration"/>
                 <entry key="RELATION.OrgUnit.orgunitfonds" value-ref="relationOrgunitFondsConfiguration"/>
                 <entry key="RELATION.OrgUnit.archivalmaterial" value-ref="relationOrgunitArchivalMaterialConfiguration"/>
+                <entry key="RELATION.OrgUnit.story" value-ref="relationOrgUnitStoriesConfiguration"/>
                 <!-- Project Related items -->
                 <entry key="RELATION.Project.projects" value-ref="relationProjectProjectsConfiguration"/>
                 <entry key="RELATION.Project.fundings" value-ref="relationProjectFundingsConfiguration"/>
@@ -245,6 +247,7 @@
                 <entry key="RELATION.Event.publications" value-ref="relationEventPublicationsConfiguration"/>
                 <entry key="RELATION.Event.people" value-ref="relationEventPeopleConfiguration"/>
                 <entry key="RELATION.Event.annotations" value-ref="relationEventAnnotationsConfiguration"/>
+                <entry key="RELATION.Event.story" value-ref="relationEventStoriesConfiguration"/>
                 <!-- Fonds Related items -->
                 <entry key="RELATION.Fonds.publications" value-ref="relationFondsPublicationsConfiguration"/>
                 <entry key="RELATION.Fonds.children" value-ref="relationFondsFondsChildrenConfiguration"/>
@@ -260,8 +263,10 @@
                 <entry key="RELATION.Place.events" value-ref="relationPlaceEventsConfiguration"/>
                 <entry key="RELATION.Place.annotations" value-ref="relationPlaceAnnotationsConfiguration"/>
                 <entry key="RELATION.Project.researchoutputs" value-ref="relationProjectPublicationConfiguration"/>
+                <entry key="RELATION.Place.story" value-ref="relationPlaceStoriesConfiguration"/>
                 <!-- Family related items -->
                 <entry key="RELATION.Family.annotations" value-ref="relationFamilyAnnotationsConfiguration"/>
+                <entry key="RELATION.Family.story" value-ref="relationFamilyStoriesConfiguration"/>
                 <!-- AudioVideo related items -->
                 <entry key="RELATION.AudioVideo.annotations" value-ref="relationAudioVideoAnnotationsConfiguration"/>
                 <!-- ArchivalMaterial related items -->
@@ -1837,6 +1842,32 @@
         </property>
     </bean>
 
+    <!-- Story of a OrgUnit -->
+    <bean id="relationOrgUnitStoriesConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <!--The sort filters for the discovery search-->
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortByArchivalMaterialSelection" />
+                        <ref bean="sortTitleAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!--Any default filter queries, these filter queries will be used for all
+                queries done by discovery for this configuration -->
+        <property name="defaultFilterQueries">
+            <list>
+                <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
+                <value>dc.relation.orgunit_authority:{0} AND entityType_keyword:Story</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
     <!-- project investigated by people affiliated to an orgunit -->
     <bean id="relationOrgunitRPProjectConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
         <!--The sort filters for the discovery search-->
@@ -2135,13 +2166,34 @@
                 </property>
             </bean>
         </property>
-
         <!--Any default filter queries, these filter queries will be used for all
                 queries done by discovery for this configuration -->
         <property name="defaultFilterQueries">
             <list>
                 <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
                 <value>dc.relation.event_authority:{0} AND entityType_keyword:WebAnnotation</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="relationEventStoriesConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortTitleAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!--Any default filter queries, these filter queries will be used for all queries done by discovery for this configuration -->
+        <property name="defaultFilterQueries">
+            <list>
+                <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
+                <value>dc.relation.event_authority:{0} AND entityType_keyword:Story</value>
                 <value>-withdrawn:true AND -discoverable:false</value>
             </list>
         </property>
@@ -2167,6 +2219,26 @@
         </property>
     </bean>
 
+    <bean id="relationFamilyStoriesConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortTitleAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <property name="defaultFilterQueries">
+            <list>
+                <value>dc.relation.family_authority:{0} AND entityType_keyword:Story</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
     <bean id="relationPersonAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
@@ -2187,6 +2259,26 @@
         </property>
     </bean>
 
+    <bean id="relationPersonStoriesConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortTitleAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <property name="defaultFilterQueries">
+            <list>
+                <value>dc.relation.person_authority:{0} AND entityType_keyword:Story</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
     <bean id="relationPlaceAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
@@ -2202,6 +2294,26 @@
         <property name="defaultFilterQueries">
             <list>
                 <value>dc.relation.place_authority:{0} AND entityType_keyword:WebAnnotation</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="relationPlaceStoriesConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortTitleAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <property name="defaultFilterQueries">
+            <list>
+                <value>dc.relation.place_authority:{0} AND entityType_keyword:Story</value>
                 <value>-withdrawn:true AND -discoverable:false</value>
             </list>
         </property>
