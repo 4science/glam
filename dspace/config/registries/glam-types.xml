@@ -1386,7 +1386,7 @@
         <schema>glam</schema>
         <element>relation</element>
         <qualifier>relatedDocument</qualifier>
-        <scope_note></scope_note>
+        <scope_note>Used to reference a related document.</scope_note>
     </dc-type>
 
 </dspace-dc-types>
