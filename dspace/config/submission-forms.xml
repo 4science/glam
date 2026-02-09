@@ -7659,6 +7659,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Specificare l'eventuale aggregazione</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
