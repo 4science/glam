@@ -7,16 +7,22 @@
  */
 package org.dspace.app.iiif.service;
 
+import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.dspace.app.iiif.service.utils.IIIFUtils;
+import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
 import org.dspace.content.MetadataValue;
+import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.services.ConfigurationService;
@@ -46,6 +52,10 @@ public class StorytellingService {
     private ItemService itemService;
     @Autowired
     private ConfigurationService configurationService;
+    @Autowired
+    private BitstreamService bitstreamService;
+    @Autowired
+    private IIIFUtils iiifUtils;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -61,12 +71,12 @@ public class StorytellingService {
         String storyId = item.getID().toString();
 
         ObjectNode manifest = objectMapper.createObjectNode();
-        buildManifest(manifest, item, serverUrl, storyId);
+        buildManifest(manifest, item, serverUrl, storyId, context);
 
         return serializeManifest(manifest, storyId);
     }
 
-    private void buildManifest(ObjectNode manifest, Item item, String serverUrl, String storyId) {
+    private void buildManifest(ObjectNode manifest, Item item, String serverUrl, String storyId, Context context) {
         manifest.put("@context", IIIF_CONTEXT);
         manifest.put("@id", serverUrl + "/iiif/" + storyId + "/manifest");
         manifest.put("@type", SC_MANIFEST);
@@ -96,10 +106,10 @@ public class StorytellingService {
 
         // Canvases
         ArrayNode canvases = sequence.putArray("canvases");
-        buildCanvases(canvases, item, serverUrl, storyId);
+        buildCanvases(canvases, item, serverUrl, storyId, context);
     }
 
-    private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId) {
+    private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
         List<MetadataValue> canvasMetadata = itemService.getMetadata(item, "iiif", "canvas", "id", Item.ANY);
 
         for (MetadataValue mv : canvasMetadata) {
@@ -120,6 +130,13 @@ public class StorytellingService {
             // Canvas label
             if (StringUtils.isNotBlank(canvasLabel)) {
                 canvas.put("label", canvasLabel);
+            }
+
+            // Canvas dimensions - retrieve from bitstream or use configured defaults
+            int[] dimensions = getCanvasDimensions(context, bitstreamUuid);
+            if (dimensions != null && dimensions.length == 2) {
+                canvas.put("width", dimensions[0]);
+                canvas.put("height", dimensions[1]);
             }
 
             // Images array
@@ -148,25 +165,56 @@ public class StorytellingService {
 
     private void buildOtherContent(ObjectNode canvas, String canvasId, String serverUrl) {
         ArrayNode otherContent = canvas.putArray("otherContent");
-        otherContent.add(serverUrl + "/annotation/search?uri=" + canvasId);
+        ObjectNode annotationList = otherContent.addObject();
+        annotationList.put("@id", serverUrl + "/annotation/search?uri=" + canvasId);
+        annotationList.put("@type", "sc:AnnotationList");
     }
 
     /**
-     * Builds a multilanguage value object: {"value": "...", "@lang": "..."}
+     * Builds a IIIF Presentation 2.0 compliant value.
+     * Without language: returns a simple TextNode (plain string).
+     * With language: returns {"@value": "...", "@language": "..."}.
      */
-    private ObjectNode buildMultilangValue(MetadataValue mv) {
-        ObjectNode node = objectMapper.createObjectNode();
-        node.put("value", mv.getValue());
+    private JsonNode buildMultilangValue(MetadataValue mv) {
         String lang = mv.getLanguage();
         if (StringUtils.isNotBlank(lang)) {
-            node.put("@lang", lang);
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("@value", mv.getValue());
+            node.put("@language", lang);
+            return node;
         }
-        return node;
+        return objectMapper.getNodeFactory().textNode(mv.getValue());
     }
 
     private MetadataValue getFirstMetadata(Item item, String schema, String element, String qualifier) {
         List<MetadataValue> values = itemService.getMetadata(item, schema, element, qualifier, Item.ANY);
         return values.isEmpty() ? null : values.get(0);
+    }
+
+    /**
+     * Gets canvas dimensions from bitstream or configuration.
+     * If default dimensions are configured, use them. Otherwise, retrieve from image server.
+     */
+    private int[] getCanvasDimensions(Context context, String bitstreamUuid) {
+        // Check if default dimensions are configured
+        String configWidth = configurationService.getProperty("iiif.canvas.default-width");
+        String configHeight = configurationService.getProperty("iiif.canvas.default-height");
+
+        // If configured, use configuration values
+        if (configWidth != null && configHeight != null) {
+            return new int[] { Integer.parseInt(configWidth), Integer.parseInt(configHeight) };
+        }
+
+        // Otherwise, try to get dimensions from the bitstream via IIIF image server
+        try {
+            Bitstream bitstream = bitstreamService.find(context, UUID.fromString(bitstreamUuid));
+            if (bitstream != null) {
+                return iiifUtils.getImageDimensions(bitstream);
+            }
+        } catch (SQLException e) {
+            log.warn("Could not retrieve bitstream {} for dimensions: {}", bitstreamUuid, e.getMessage());
+        }
+        return null;
     }
 
     private String serializeManifest(ObjectNode manifest, String storyId) {
