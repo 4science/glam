@@ -18,7 +18,6 @@ import org.dspace.app.iiif.service.ManifestService;
 import org.dspace.app.iiif.service.SearchService;
 import org.dspace.app.iiif.service.StorytellingService;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
-import org.dspace.content.Bitstream;
 import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.content.service.ItemService;
