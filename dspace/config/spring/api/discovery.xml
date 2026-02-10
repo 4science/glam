@@ -214,6 +214,7 @@
                 <entry key="additions" value-ref="additions"/>
                 <entry key="news" value-ref="news"/>
                 <entry key="opera" value-ref="opera"/>
+                <entry key="stories" value-ref="stories"/>
                 <entry key="homePageTopItems" value-ref="homePageTopItemsConfiguration"/>
                 <!-- search for an entity that can be a Person or an OrgUnit -->
                 <entry key="personOrOrgunit" value-ref="personOrOrgunit"/>
@@ -1836,6 +1837,31 @@
                 <value>-withdrawn:true AND -discoverable:false</value>
             </list>
         </property>
+    </bean>
+
+    <!-- Story entity configuration-->
+    <bean id="stories" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+      <!--The sort filters for the discovery search-->
+      <property name="searchSortConfiguration">
+        <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+          <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+          <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+          <property name="sortFields">
+            <list>
+              <ref bean="sortTitleAsc" />
+            </list>
+          </property>
+        </bean>
+      </property>
+      <!--Any default filter queries, these filter queries will be used for all
+              queries done by discovery for this configuration -->
+      <property name="defaultFilterQueries">
+        <list>
+          <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
+          <value>search.resourcetype:Item AND entityType_keyword:Story</value>
+          <value>-withdrawn:true AND -discoverable:false</value>
+        </list>
+      </property>
     </bean>
 
     <!-- Story of a OrgUnit -->
