@@ -1595,6 +1595,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].@type", is("sc:Canvas")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].label", is("Canvas from Item 1")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(800)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(1200)))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].@type", is("oa:Annotation")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].motivation", is("sc:painting")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.@id",
@@ -1604,12 +1606,16 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].@type", is("sc:Canvas")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].label", is("Canvas from Item 2")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(800)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(1200)))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.@id",
                               containsString(bitstream2.getID().toString() + "/content")));
     }
 
     @Test
     public void findOneStoryCanvasIT() throws Exception {
+        configurationService.setProperty("iiif.canvas.default-width", "2200");
+        configurationService.setProperty("iiif.canvas.default-height", "1600");
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context)
                                           .withName("Parent Community")
@@ -1726,7 +1732,7 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(status().isOk())
                    .andExpect(jsonPath("$.@context", is("http://iiif.io/api/presentation/2/context.json")))
                    .andExpect(jsonPath("$.@type", is("sc:Manifest")))
-                   .andExpect(jsonPath("$.label.value", is("Empty Story")))
+                   .andExpect(jsonPath("$.label", is("Empty Story")))
                    .andExpect(jsonPath("$.sequences[0].canvases", Matchers.hasSize(0)));
     }
 
