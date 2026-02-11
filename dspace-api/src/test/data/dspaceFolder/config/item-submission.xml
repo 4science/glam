@@ -597,6 +597,13 @@
             <step id="collection" />
             <step id="product" />
         </submission-process>
+        <submission-process name="manuscript">
+            <step id="collection" />
+            <step id="publication" />
+        </submission-process>
+        <submission-process name="manuscript_edit">
+            <step id="publication" />
+        </submission-process>
     </submission-definitions>
 
 </item-submission>
