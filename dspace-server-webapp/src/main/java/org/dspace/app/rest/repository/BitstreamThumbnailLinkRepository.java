@@ -56,8 +56,7 @@ public class BitstreamThumbnailLinkRepository extends AbstractDSpaceRestReposito
             Item item = itemService.findByBitstream(context, bitstream);
 
             if (item == null) {
-                throw new ResourceNotFoundException("The bitstream with id: " + bitstreamId +
-                                                        " is not linked to an item, cannot retrieve thumbnail");
+                return null;
             }
 
             Bitstream thumbnail = bitstreamService.getThumbnail(context, item, bitstream);
