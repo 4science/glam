@@ -7659,6 +7659,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Specificare l'eventuale aggregazione</hint>
+          <vocabulary closed="true">aggregationsTree</vocabulary>
         </field>
       </row>
     </form>
@@ -7985,7 +7986,7 @@
       </row>
       <row>
         <field>
-          <dc-schema>glam</dc-schema>
+          <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>relatedDocument</dc-qualifier>
           <label>Documenti collegati</label>

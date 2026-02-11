@@ -79,7 +79,7 @@
         <schema>iiif</schema>
         <element>canvas</element>
         <qualifier>id</qualifier>
-        <scope_note></scope_note>
+        <scope_note>Metadata field used to store the unique identifier (ID) of an IIIF canvas.</scope_note>
     </dc-type>
 
 </dspace-dc-types>
