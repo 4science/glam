@@ -7885,7 +7885,7 @@
           <label>Titolo</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
-          <label>Nome dell'oggetto</label>
+          <required>Inserire il titolo della storia.</required>
           <hint>Inserire il titolo della storia.</hint>
         </field>
       </row>
