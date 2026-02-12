@@ -140,14 +140,14 @@ public class StorytellingService {
             }
 
             // Images array
-            buildImages(canvas, canvasId, bitstreamUuid, serverUrl);
+            buildImages(canvas, canvasId, bitstreamUuid);
 
             // otherContent - annotation list
             buildOtherContent(canvas, canvasId, serverUrl);
         }
     }
 
-    private void buildImages(ObjectNode canvas, String canvasId, String bitstreamUuid, String serverUrl) {
+    private void buildImages(ObjectNode canvas, String canvasId, String bitstreamUuid) {
         ArrayNode images = canvas.putArray("images");
         ObjectNode annotation = images.addObject();
 
@@ -156,9 +156,10 @@ public class StorytellingService {
         annotation.put("motivation", MOTIVATION_PAINTING);
         annotation.put("on", canvasId);
 
+        var imageServer = configurationService.getProperty("iiif.image.server");
         // Resource - bitstream download URL, NO service
         ObjectNode resource = annotation.putObject("resource");
-        resource.put("@id", serverUrl + "/api/core/bitstreams/" + bitstreamUuid + "/content");
+        resource.put("@id", imageServer + bitstreamUuid);
         resource.put("@type", DCTYPES_IMAGE);
         resource.put("format", "image/jpeg");
     }
