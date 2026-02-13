@@ -1600,7 +1600,17 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].@type", is("oa:Annotation")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].motivation", is("sc:painting")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.@id",
+                              containsString("/iiif-server/" + bitstream1.getID().toString()
+                                             + "/full/full/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.format", is("image/jpeg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.@context",
+                              is("http://iiif.io/api/image/2/context.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.@id",
                               containsString("/iiif-server/" + bitstream1.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.profile",
+                              is("http://iiif.io/api/image/2/level1.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.protocol",
+                              is("http://iiif.io/api/image")))
                    // second canvas
                    .andExpect(jsonPath("$.sequences[0].canvases[1].@id",
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
@@ -1609,6 +1619,10 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(800)))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(1200)))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.@id",
+                              containsString("/iiif-server/" + bitstream2.getID().toString()
+                                             + "/full/full/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.format", is("image/jpeg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.service.@id",
                               containsString("/iiif-server/" + bitstream2.getID().toString())));
     }
 
