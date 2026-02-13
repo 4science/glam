@@ -28,6 +28,10 @@ ENV DATA_FOLDER=/data \
     CUSTOMER_CFG=conf/local-customer.cfg \
     CUSTOMER_SPRING_DIR=/data/config/spring
 
+RUN curl -L -o /tmp/certificate.crt https://www.tbs-x509.com/Comodo_AAA_Certificate_Services.crt && \
+    keytool -import -trustcacerts -alias comodo -file /tmp/certificate.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt && \
+    rm /tmp/certificate.crt
+
 ENV BASE_GROUP_GID=1000 BASE_GROUP_NAME=ubuntu
 
 RUN if [ "$(getent group $BASE_GROUP_GID)" ]; then \
