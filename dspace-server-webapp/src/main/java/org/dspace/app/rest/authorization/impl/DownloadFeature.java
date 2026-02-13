@@ -8,6 +8,7 @@
 package org.dspace.app.rest.authorization.impl;
 import java.sql.SQLException;
 
+import org.apache.commons.lang.StringUtils;
 import org.dspace.app.rest.authorization.AuthorizationFeature;
 import org.dspace.app.rest.authorization.AuthorizationFeatureDocumentation;
 import org.dspace.app.rest.authorization.AuthorizeServiceRestUtil;
@@ -16,8 +17,11 @@ import org.dspace.app.rest.model.BitstreamRest;
 import org.dspace.app.rest.security.BitstreamCrisSecurityService;
 import org.dspace.app.rest.security.DSpaceRestPermission;
 import org.dspace.app.rest.utils.Utils;
+import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.DSpaceObject;
+import org.dspace.content.Item;
+import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,20 +44,25 @@ public class DownloadFeature implements AuthorizationFeature {
     private static final Logger log = LoggerFactory.getLogger(DownloadFeature.class);
 
     @Autowired
+    private Utils utils;
+    @Autowired
+    private AuthorizeService authorizeService;
+    @Autowired
+    private BitstreamService bitstreamService;
+    @Autowired
     private AuthorizeServiceRestUtil authorizeServiceRestUtil;
-
     @Autowired
     private BitstreamCrisSecurityService bitstreamCrisSecurityService;
-
-    @Autowired
-    private Utils utils;
 
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAuthorized(Context context, BaseObjectRest object) throws SQLException {
-
         if (object instanceof BitstreamRest) {
             if (authorizeServiceRestUtil.authorizeActionBoolean(context, object, DSpaceRestPermission.READ)) {
+                DSpaceObject dso = (DSpaceObject) utils.getDSpaceAPIObjectFromRest(context, object);
+                if (dso instanceof Bitstream && isNoDownload(context, (Bitstream) dso)) {
+                    return false;
+                }
                 return true;
             }
         }
@@ -64,8 +73,10 @@ public class DownloadFeature implements AuthorizationFeature {
             }
 
             if (dSpaceObject instanceof Bitstream && bitstreamCrisSecurityService
-                    .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(),
-                            (Bitstream) dSpaceObject)) {
+                 .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), (Bitstream) dSpaceObject)) {
+                if (isNoDownload(context, (Bitstream) dSpaceObject)) {
+                    return false;
+                }
                 return true;
             }
         } catch (Exception e) {
@@ -75,6 +86,11 @@ public class DownloadFeature implements AuthorizationFeature {
                     e);
         }
         return false;
+    }
+
+    private boolean isNoDownload(Context context, Bitstream bitstream) throws SQLException {
+        String value = bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "viewer", "provider", Item.ANY);
+        return StringUtils.equals("nodownload", value) && !authorizeService.isAdmin(context);
     }
 
     @Override
