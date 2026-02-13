@@ -162,7 +162,7 @@ definitions:
           - self.hosted
           - linux.arm64
           - arm64.group
-        name: Build and Push Docker Image to ECR
+        name: Build and Push Orchestrator Docker Image to ECR
         size: 1x
         image: atlassian/default-image:4  # Default Bitbucket image with Docker support
         services:
@@ -375,7 +375,6 @@ pipelines:
       - parallel: *parallel-build-and-push
       - step: *deploy-on-dev
       - step: *deploy-on-staging
-      - step: *build-and-push-solr8
       - step: *merge-prod-into-test
     'test/**':
       - step: *check-branch-name-allowed
@@ -383,7 +382,6 @@ pipelines:
       - parallel: *parallel-test-steps
       - parallel: *parallel-build-and-push
       - step: *deploy-on-test
-      - step: *build-and-push-solr8
 
   pull-requests:
     '**':
