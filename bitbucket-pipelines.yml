@@ -174,14 +174,14 @@ definitions:
           - export BRANCH_NAME=$(echo "$BITBUCKET_BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's|/|--|g')
           - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 891377365430.dkr.ecr.eu-west-1.amazonaws.com
           - cp ./dspace/modules/server-boot/target/server-boot-*.jar server-boot.jar
-          - docker build -f Dockerfile-orc.build -t dspace-cris:${BRANCH_NAME}-${HASH_COMMIT}-orc -t dspace-cris:${BRANCH_NAME}-orc-latest .
+          - docker build -f Dockerfile-orc.build -t dspace-cris:${BRANCH_NAME}-${HASH_COMMIT}-orc -t dspace-cris:${BRANCH_NAME}-latest-orc .
           - pipe: atlassian/aws-ecr-push-image:2.5.0
             variables:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               AWS_DEFAULT_REGION: $AWS_REGION
               IMAGE_NAME: dspace-cris
-              TAGS: "${BRANCH_NAME}-${HASH_COMMIT}-orc ${BRANCH_NAME}-orc-latest"
+              TAGS: "${BRANCH_NAME}-${HASH_COMMIT}-orc ${BRANCH_NAME}-latest-orc"
 
     - step: &build-and-push-solr8
         runs-on:
