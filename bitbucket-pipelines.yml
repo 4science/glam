@@ -419,6 +419,7 @@ pipelines:
       - step: *check-branch-name-allowed
       - step: *install
       - step: *build-and-push
+      - step: *build-and-push-orc
       - step: *deploy-on-test
     e2e-test:
       - step: *install
