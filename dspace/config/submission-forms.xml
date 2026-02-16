@@ -8000,9 +8000,9 @@
     <form name="story_id">
       <row>
         <field>
-          <dc-schema>iiif</dc-schema>
-          <dc-element>canvas</dc-element>
-          <dc-qualifier>id</dc-qualifier>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier></dc-qualifier>
           <label>Canvas ID</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
