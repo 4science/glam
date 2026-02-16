@@ -79,7 +79,7 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
 
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("My Story")
-                                    .withMetadata("iiif", "canvas", "id", null, "canvas-title",
+                                    .withMetadata("glam", "bitstream", null, null, "canvas-title",
                                                   bitstream.getID().toString(), 600)
                                     .build();
 
@@ -107,7 +107,7 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
 
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("My Story")
-                                    .withMetadata("iiif", "canvas", "id", null,"canvas-value",
+                                    .withMetadata("glam", "bitstream", null, null,"canvas-value",
                                                   bitstream.getID().toString(), 600)
                                     .build();
 
@@ -149,11 +149,11 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
                     .build();
         }
 
-        // Create a non-Story item with iiif.canvas.id
+        // Create a non-Story item with glam.bitstream
         ItemBuilder.createItem(context, pubblicationCol)
                     .withTitle("Publication Item")
                     .withEntityType("Publication")
-                    .withMetadata("iiif", "canvas", "id", null, "canvas-value",
+                    .withMetadata("glam", "bitstream", null, null, "canvas-value",
                                   bitstream.getID().toString(), 600)
                     .build();
 
@@ -178,10 +178,10 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
                     .build();
         }
 
-        // Story with iiif.canvas.id but no authority (blank)
+        // Story with glam.bitstream but no authority (blank)
         ItemBuilder.createItem(context, storyCol)
                    .withTitle("Story Without Authority")
-                   .withMetadata("iiif", "canvas", "id", null, "canvas-value", null, -1)
+                   .withMetadata("glam", "bitstream", null, null, "canvas-value", null, -1)
                    .build();
 
         context.restoreAuthSystemState();
@@ -221,9 +221,9 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
         // Story referencing two canvases (bitstreams from different items)
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("Multi Canvas Story")
-                                    .withMetadata("iiif", "canvas", "id", null, "canvas-1",
+                                    .withMetadata("glam", "bitstream", null, null, "canvas-1",
                                                   bitstream1.getID().toString(), 600)
-                                    .withMetadata("iiif", "canvas", "id", null, "canvas-2",
+                                    .withMetadata("glam", "bitstream", null, null, "canvas-2",
                                                   bitstream2.getID().toString(), 600)
                                     .build();
 

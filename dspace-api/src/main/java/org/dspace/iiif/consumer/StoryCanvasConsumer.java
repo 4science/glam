@@ -30,9 +30,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Consumer that intercepts modifications to Story items and populates
  * dc.relation.story on the Items owning the bitstreams referenced
- * by iiif.canvas.id metadata.
+ * by glam.bitstream metadata.
  *
- * <p>When a Story is saved/modified, for each {@code iiif.canvas.id} metadata
+ * <p>When a Story is saved/modified, for each {@code glam.bitstream} metadata
  * (whose authority contains the bitstream UUID), this consumer:
  * <ol>
  *   <li>Resolves the owning Item via {@code BitstreamService.findItemByBitstreamId}</li>
@@ -73,7 +73,7 @@ public class StoryCanvasConsumer implements Consumer {
 
     private void processStory(Context context, Item story) {
         try {
-            List<MetadataValue> canvasMetadata = itemService.getMetadata(story, "iiif", "canvas", "id", Item.ANY);
+            List<MetadataValue> canvasMetadata = itemService.getMetadata(story, "glam", "bitstream", null, Item.ANY);
             for (MetadataValue mv : canvasMetadata) {
                 String bitstreamUuid = mv.getAuthority();
                 if (StringUtils.isBlank(bitstreamUuid)) {
