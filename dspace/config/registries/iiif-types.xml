@@ -75,11 +75,4 @@
         <scope_note>Metadata field used to enable the IIIF download plugin at item/collection level</scope_note>
     </dc-type>
 
-    <dc-type>
-        <schema>iiif</schema>
-        <element>canvas</element>
-        <qualifier>id</qualifier>
-        <scope_note>Metadata field used to store the unique identifier (ID) of an IIIF canvas.</scope_note>
-    </dc-type>
-
 </dspace-dc-types>
