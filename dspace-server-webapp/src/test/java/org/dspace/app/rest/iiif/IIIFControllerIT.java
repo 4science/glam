@@ -1570,13 +1570,13 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                          .build();
         }
 
-        // Create a Story item referencing the two bitstreams via iiif.canvas.id with authority
+        // Create a Story item referencing the two bitstreams via glam.bitstream with authority
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withMetadata("dc", "description", "abstract", "Story description")
-                                    .withMetadata("iiif", "canvas", "id", null,
+                                    .withMetadata("glam", "bitstream", null, null,
                                             "Canvas from Item 1", bitstream1.getID().toString(), 600)
-                                    .withMetadata("iiif", "canvas", "id", null,
+                                    .withMetadata("glam", "bitstream", null, null,
                                             "Canvas from Item 2", bitstream2.getID().toString(), 600)
                                     .build();
 
@@ -1660,7 +1660,7 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withEntityType("Story")
-                                    .withMetadata("iiif", "canvas", "id", null,
+                                    .withMetadata("glam", "bitstream", null, null,
                                             "Canvas Label", bitstream1.getID().toString(), 600)
                                     .build();
 
@@ -1733,7 +1733,7 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                            .withEntityType("Story")
                                            .build();
 
-        // Create a Story item with no iiif.canvas.id metadata (no canvases)
+        // Create a Story item with no glam.bitstream metadata (no canvases)
         Item storyItem = ItemBuilder.createItem(context, col1)
                                     .withTitle("Empty Story")
                                     .withEntityType("Story")

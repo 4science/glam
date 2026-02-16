@@ -110,7 +110,7 @@ public class StorytellingService {
     }
 
     private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
-        List<MetadataValue> canvasMetadata = itemService.getMetadata(item, "iiif", "canvas", "id", Item.ANY);
+        List<MetadataValue> canvasMetadata = itemService.getMetadata(item, "glam", "bitstream", null, Item.ANY);
 
         for (MetadataValue mv : canvasMetadata) {
             String canvasLabel = mv.getValue();
