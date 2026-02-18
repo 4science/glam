@@ -139,11 +139,33 @@ public class StorytellingService {
                 canvas.put("height", dimensions[1]);
             }
 
+            // Thumbnail
+            buildThumbnail(canvas, bitstreamUuid, context);
+
             // Images array
             buildImages(canvas, canvasId, bitstreamUuid, context);
 
             // otherContent - annotation list
             buildOtherContent(canvas, canvasId, serverUrl);
+        }
+    }
+
+    private void buildThumbnail(ObjectNode canvas, String bitstreamUuid, Context context) {
+        var imageServer = configurationService.getProperty("iiif.image.server");
+        String imageServiceId = imageServer + bitstreamUuid;
+
+        ObjectNode thumbnail = canvas.putObject("thumbnail");
+        thumbnail.put("@id", imageServiceId + "/full/90,/0/default.jpg");
+
+        ObjectNode service = thumbnail.putObject("service");
+        service.put("@context", "http://iiif.io/api/image/2/context.json");
+        service.put("@id", imageServiceId);
+        service.put("profile", "http://iiif.io/api/image/2/level0.json");
+        service.put("protocol", "http://iiif.io/api/image");
+
+        String mimeType = getBitstreamMimeType(context, bitstreamUuid);
+        if (mimeType != null) {
+            thumbnail.put("format", mimeType);
         }
     }
 
