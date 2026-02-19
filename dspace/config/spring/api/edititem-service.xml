@@ -544,7 +544,7 @@
                                     </value>
                                 </list>
                             </property>
-                            <property name="submissionDefinition" value="story_edit" />
+                            <property name="submissionDefinition" value="story-edit" />
                         </bean>
                     </list>
                 </entry>

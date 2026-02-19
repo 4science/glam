@@ -7884,7 +7884,7 @@
           <dc-element>title</dc-element>
           <label>Titolo</label>
           <input-type>onebox</input-type>
-          <repeatable>true</repeatable>
+          <repeatable>false</repeatable>
           <required>Inserire il titolo della storia.</required>
           <hint>Inserire il titolo della storia.</hint>
         </field>
