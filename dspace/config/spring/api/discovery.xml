@@ -1866,6 +1866,16 @@
 
     <!-- Story of a OrgUnit -->
     <bean id="relationOrgUnitAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="sidebarFacets">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
+        <property name="searchFilters">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
         <!--The sort filters for the discovery search-->
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
@@ -2176,6 +2186,16 @@
     </bean>
 
     <bean id="relationEventAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="sidebarFacets">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
+        <property name="searchFilters">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
                 <!--<property name="defaultSort" ref="sortDateIssued"/>-->
@@ -2199,6 +2219,16 @@
     </bean>
 
     <bean id="relationFamilyAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="sidebarFacets">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
+        <property name="searchFilters">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
                 <!--<property name="defaultSort" ref="sortDateIssued"/>-->
@@ -2219,6 +2249,16 @@
     </bean>
 
     <bean id="relationPersonAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="sidebarFacets">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
+        <property name="searchFilters">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
                 <!--<property name="defaultSort" ref="sortDateIssued"/>-->
@@ -2239,6 +2279,16 @@
     </bean>
 
     <bean id="relationPlaceAnnotationsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <property name="sidebarFacets">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
+        <property name="searchFilters">
+            <list>
+                <ref bean="searchFilterEntityType"/>
+            </list>
+        </property>
         <property name="searchSortConfiguration">
             <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
                 <!--<property name="defaultSort" ref="sortDateIssued"/>-->
@@ -2545,7 +2595,7 @@
             <list>
                 <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
                 <value>dc.relation.place_authority:{0} OR dc.coverage.spatialpvcs_authority:{0} OR dc.coverage.spatialpvcr_authority:{0} OR dc.coverage.spatialpvcn_authority:{0} OR dc.coverage.spatialpvcc_authority:{0}</value>
-                <value>search.resourcetype:Item -entityType_keyword:WebAnnotation -entityType_keyword:Fonds -entityType_keyword:JournalFonds -entityType_keyword:Aggregation -entityType_keyword:Path -entityType_keyword:StaticPage -entityType_keyword:News -entityType_keyword:Place</value>
+                <value>search.resourcetype:Item -entityType_keyword:WebAnnotation -entityType_keyword:Fonds -entityType_keyword:JournalFonds -entityType_keyword:Aggregation -entityType_keyword:Path -entityType_keyword:StaticPage -entityType_keyword:News -entityType_keyword:Place -entityType_keyword:Story</value>
                 <value>-withdrawn:true AND -discoverable:false</value>
             </list>
         </property>
