@@ -7877,6 +7877,32 @@
         </field>
       </row>
     </form>
+    <form name="story_id-glam-bitstream-name">
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>name</dc-qualifier>
+          <label>Canvas Name</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il nome del canvas</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>canvasid</dc-qualifier>
+          <label>Canvas ID</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire ID del canvas</hint>
+        </field>
+      </row>
+    </form>
     <form name="story">
       <row>
         <field>
@@ -8002,12 +8028,12 @@
         <field>
           <dc-schema>glam</dc-schema>
           <dc-element>bitstream</dc-element>
-          <dc-qualifier></dc-qualifier>
-          <label>Canvas ID</label>
-          <input-type>onebox</input-type>
+          <dc-qualifier>name</dc-qualifier>
+          <label>Canvas Name</label>
+          <input-type>group</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il canvas ID da associare</hint>
+          <hint>Inserire il nome del canvas</hint>
         </field>
       </row>
     </form>
