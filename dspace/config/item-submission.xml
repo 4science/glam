@@ -540,6 +540,7 @@
     <submission-process name="story">
       <step id="collection" />
       <step id="story" />
+      <step id="story_id" />
       <step id="upload" />
       <step id="license" />
     </submission-process>
