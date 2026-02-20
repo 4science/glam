@@ -1384,8 +1384,15 @@
 
     <dc-type>
         <schema>glam</schema>
-        <element>relation</element>
-        <qualifier>relatedDocument</qualifier>
+        <element>bitstream</element>
+        <qualifier>canvasid</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glam</schema>
+        <element>bitstream</element>
+        <qualifier>name</qualifier>
         <scope_note></scope_note>
     </dc-type>
 
