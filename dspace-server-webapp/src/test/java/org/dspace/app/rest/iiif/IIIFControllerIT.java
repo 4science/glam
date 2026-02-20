@@ -1570,14 +1570,14 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                          .build();
         }
 
-        // Create a Story item referencing the two bitstreams via glam.bitstream with authority
+        // Create a Story item referencing the two bitstreams via glam.bitstream.canvasid
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withMetadata("dc", "description", "abstract", "Story description")
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas from Item 1", bitstream1.getID().toString(), 600)
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas from Item 2", bitstream2.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "name", "Canvas from Item 1")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas from Item 2")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -1684,8 +1684,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withEntityType("Story")
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas Label", bitstream1.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "name", "Canvas Label")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -1800,6 +1800,5 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                 .andExpect(jsonPath("$[0]", is("all")))
                 .andExpect(jsonPath("$[1]", is("single-image")));
     }
-
 
 }

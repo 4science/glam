@@ -110,11 +110,16 @@ public class StorytellingService {
     }
 
     private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
-        List<MetadataValue> canvasMetadata = itemService.getMetadata(item, "glam", "bitstream", null, Item.ANY);
+        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", Item.ANY);
+        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", Item.ANY);
+        if (canvasIDs.size() != canvasTitles.size()) {
+            log.error("Mismatch in number of canvas titles and canvas IDs for story {}. Titles: {}, IDs: {}",
+                      storyId, canvasTitles.size(), canvasIDs.size());
+        }
 
-        for (MetadataValue mv : canvasMetadata) {
-            String canvasLabel = mv.getValue();
-            String bitstreamUuid = mv.getAuthority();
+        for (int i = 0; i < canvasIDs.size(); i++) {
+            String canvasLabel = canvasTitles.get(i).getValue();
+            String bitstreamUuid = canvasIDs.get(i).getValue();
 
             if (StringUtils.isBlank(bitstreamUuid)) {
                 log.warn("Skipping canvas with missing bitstream UUID for story {}", storyId);
