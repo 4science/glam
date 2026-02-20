@@ -79,8 +79,7 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
 
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("My Story")
-                                    .withMetadata("glam", "bitstream", null, null, "canvas-title",
-                                                  bitstream.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -107,8 +106,7 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
 
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("My Story")
-                                    .withMetadata("glam", "bitstream", null, null,"canvas-value",
-                                                  bitstream.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -144,18 +142,17 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
         Bitstream bitstream;
         try (InputStream is = new ByteArrayInputStream("test content".getBytes())) {
             bitstream = BitstreamBuilder.createBitstream(context, pubblicationItem, is)
-                    .withName("image.jpg")
-                    .withMimeType("image/jpeg")
-                    .build();
+                                        .withName("image.jpg")
+                                        .withMimeType("image/jpeg")
+                                        .build();
         }
 
-        // Create a non-Story item with glam.bitstream
+        // Create a non-Story item with glam.bitstream.canvasid
         ItemBuilder.createItem(context, pubblicationCol)
-                    .withTitle("Publication Item")
-                    .withEntityType("Publication")
-                    .withMetadata("glam", "bitstream", null, null, "canvas-value",
-                                  bitstream.getID().toString(), 600)
-                    .build();
+                   .withTitle("Publication Item")
+                   .withEntityType("Publication")
+                   .withMetadata("glam", "bitstream", "canvasid", bitstream.getID().toString())
+                   .build();
 
         context.restoreAuthSystemState();
         pubblicationItem = context.reloadEntity(pubblicationItem);
@@ -164,24 +161,16 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
     }
 
     @Test
-    public void testStoryConsumerIgnoresCanvasWithBlankAuthority() throws Exception {
+    public void testStoryConsumerWrongValue() throws Exception {
         context.turnOffAuthorisationSystem();
         Item pubblicationItem = ItemBuilder.createItem(context, pubblicationCol)
                                            .withTitle("Pubblication Item")
                                            .build();
 
-        Bitstream bitstream;
-        try (InputStream is = new ByteArrayInputStream("test content".getBytes())) {
-            bitstream = BitstreamBuilder.createBitstream(context, pubblicationItem, is)
-                    .withName("image.jpg")
-                    .withMimeType("image/jpeg")
-                    .build();
-        }
-
-        // Story with glam.bitstream but no authority (blank)
+        // Story with glam.bitstream.canvasid but wrong value (not a bitstream UUID)
         ItemBuilder.createItem(context, storyCol)
                    .withTitle("Story Without Authority")
-                   .withMetadata("glam", "bitstream", null, null, "canvas-value", null, -1)
+                   .withMetadata("glam", "bitstream", "canvasid", "wrong-value")
                    .build();
 
         context.restoreAuthSystemState();
@@ -221,10 +210,8 @@ public class StoryCanvasConsumerIT extends AbstractIntegrationTestWithDatabase {
         // Story referencing two canvases (bitstreams from different items)
         Item storyItem = ItemBuilder.createItem(context, storyCol)
                                     .withTitle("Multi Canvas Story")
-                                    .withMetadata("glam", "bitstream", null, null, "canvas-1",
-                                                  bitstream1.getID().toString(), 600)
-                                    .withMetadata("glam", "bitstream", null, null, "canvas-2",
-                                                  bitstream2.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();

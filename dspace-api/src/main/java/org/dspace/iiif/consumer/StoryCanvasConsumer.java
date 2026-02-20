@@ -7,6 +7,8 @@
  */
 package org.dspace.iiif.consumer;
 
+import static org.dspace.content.Item.ANY;
+
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +26,7 @@ import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.event.Consumer;
 import org.dspace.event.Event;
+import org.dspace.util.UUIDUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,10 +76,10 @@ public class StoryCanvasConsumer implements Consumer {
 
     private void processStory(Context context, Item story) {
         try {
-            List<MetadataValue> canvasMetadata = itemService.getMetadata(story, "glam", "bitstream", null, Item.ANY);
+            List<MetadataValue> canvasMetadata = itemService.getMetadata(story, "glam", "bitstream", "canvasid", ANY);
             for (MetadataValue mv : canvasMetadata) {
-                String bitstreamUuid = mv.getAuthority();
-                if (StringUtils.isBlank(bitstreamUuid)) {
+                String bitstreamUuid = mv.getValue();
+                if (StringUtils.isBlank(bitstreamUuid) || !UUIDUtils.isUUID(bitstreamUuid)) {
                     continue;
                 }
                 processCanvas(context, bitstreamUuid, story.getName(), story.getID());
@@ -94,7 +97,7 @@ public class StoryCanvasConsumer implements Consumer {
             return;
         }
 
-        List<MetadataValue> existingRelations = itemService.getMetadata(ownerItem, "dc", "relation", "story", Item.ANY);
+        List<MetadataValue> existingRelations = itemService.getMetadata(ownerItem, "dc", "relation", "story", ANY);
         boolean isExist = existingRelations.stream()
                                            .filter(mv -> StringUtils.equals(mv.getAuthority(), storyUUID.toString()))
                                            .findFirst()
