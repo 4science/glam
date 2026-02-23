@@ -326,6 +326,29 @@ public class CrisLayoutBoxServiceImplTest {
     }
 
     @Test
+    public void testAnnonaBoxHasContentWithMetadataTrue() {
+      Item item = item();
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn("test_uuid");
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertTrue(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
+    public void testAnnonaBoxHasNoContentWithMetadataFalse() {
+      Item item = item();
+
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn(null);
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertFalse(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
     public void testSingleMetadataboxBitstreamWithoutField() throws SQLException {
 
         CrisLayoutBox singleBitstreamBox = new CrisLayoutBox();
