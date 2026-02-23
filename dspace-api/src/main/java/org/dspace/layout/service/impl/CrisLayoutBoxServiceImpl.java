@@ -309,9 +309,15 @@ public class CrisLayoutBoxServiceImpl implements CrisLayoutBoxService {
     }
 
     private boolean isAnnonaEnabled(Item item) {
-        String value = itemService.getMetadataFirstValue(item,
-              new MetadataFieldName("glam.bitstream.canvasid"), Item.ANY);
-        return StringUtils.isNotBlank(value) && (Objects.equals(itemService.getEntityType(item), "Story"));
+        if (!isStory(item)) {
+            return false;
+        }
+        String value = itemService.getMetadataFirstValue(item, "glam", "bitstream"," canvasid", Item.ANY);
+        return StringUtils.isNotBlank(value);
+    }
+
+    private boolean isStory(Item item) {
+        return StringUtils.equals(itemService.getEntityType(item), "Story");
     }
 
     private boolean isNetworkLabEnabled(Item item) {
