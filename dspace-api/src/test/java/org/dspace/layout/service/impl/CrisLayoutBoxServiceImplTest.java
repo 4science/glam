@@ -327,9 +327,10 @@ public class CrisLayoutBoxServiceImplTest {
 
     @Test
     public void testAnnonaBoxHasContentWithMetadataTrue() {
-      Item item = item();
+      MetadataField entity = metadataField("dspace", "entity", "type");
+      Item item = item(metadataValue(entity, "Story"));
       when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
-        Item.ANY)).thenReturn("test_uuid");
+        Item.ANY)).thenReturn("test-uuid");
 
       CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
 
@@ -338,10 +339,21 @@ public class CrisLayoutBoxServiceImplTest {
 
     @Test
     public void testAnnonaBoxHasNoContentWithMetadataFalse() {
-      Item item = item();
-
+      MetadataField entity = metadataField("dspace", "entity", "type");
+      Item item = item(metadataValue(entity, "Story"));
       when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
         Item.ANY)).thenReturn(null);
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertFalse(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
+    public void testAnnonaBoxIsNotStoryFalse() {
+      Item item = item();
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn("test-uuid");
 
       CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
 
