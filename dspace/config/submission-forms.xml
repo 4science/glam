@@ -7929,17 +7929,6 @@
       </row>
       <row>
         <field>
-          <dc-schema>cris</dc-schema>
-          <dc-element>priority</dc-element>
-          <label>Ordine</label>
-          <input-type>number</input-type>
-          <repeatable>false</repeatable>
-          <required />
-          <hint>Inserire l'ordine</hint>
-        </field>
-      </row>
-      <row>
-        <field>
           <dc-schema>glam</dc-schema>
           <dc-element>entity</dc-element>
           <dc-qualifier>enabled</dc-qualifier>
@@ -7948,6 +7937,17 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Scegliere se da mostrare in home page</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>cris</dc-schema>
+          <dc-element>priority</dc-element>
+          <label>Ordine</label>
+          <input-type>number</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'ordine</hint>
         </field>
       </row>
       <row>
