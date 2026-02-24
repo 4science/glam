@@ -267,6 +267,27 @@
                 </bean>
             </list>
             <list>
+              <bean class="org.dspace.layout.CrisLayoutAdvancedTopComponent">
+                <property name="discoveryConfigurationName">
+                  <list>
+                    <value>storiesHomePage</value>
+                  </list>
+                </property>
+                <property name="sortField" value="cris.priority" />
+                <property name="order" value="asc" />
+                <property name="style" value="py-4"/>
+                <property name="numberOfItems" value="8"/>
+                <property name="showAsCard" value="true"/>
+                <property name="showLayoutSwitch" value="true"/>
+                <property name="defaultLayoutMode" value="CARD"/>
+                <property name="cardStyle" value="storytelling"/>
+                <property name="cardColumnStyle" value="col-6 col-lg-3"/>
+                <property name="itemListStyle" value=""/>
+                <property name="showAllResults" value="true"/>
+                <property name="template" value="SLIDER"/>
+              </bean>
+            </list>
+            <list>
                 <bean class="org.dspace.layout.CrisGridComponent">
                     <property name="discoveryConfigurationName" value="path"/>
                     <property name="style" value="py-4"/>
