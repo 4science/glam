@@ -7899,7 +7899,8 @@
           <input-type>onebox</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire ID del canvas</hint>
+          <hint>È necessario inserire il canvasId. Per recuperare l'id, visualizzare l'item in Mirador, posizionarsi sull'immagine da collegare alla storia e selezionare la stringa alfanumerica presente nella url dopo "canvasId=", es. a1a3f12-8d1a-4bf8-a222-1df0f4f70fe0</hint>
+          <regex>^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$</regex>
         </field>
       </row>
     </form>
