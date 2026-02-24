@@ -312,7 +312,8 @@ public class CrisLayoutBoxServiceImpl implements CrisLayoutBoxService {
         if (!isStory(item)) {
             return false;
         }
-        String value = itemService.getMetadataFirstValue(item, "glam", "bitstream"," canvasid", Item.ANY);
+        String value = itemService.getMetadataFirstValue(item,
+            new MetadataFieldName("glam", "bitstream", "canvasid"), Item.ANY);
         return StringUtils.isNotBlank(value);
     }
 
