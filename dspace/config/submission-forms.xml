@@ -7877,6 +7877,167 @@
         </field>
       </row>
     </form>
+    <form name="story_id-glam-bitstream-name">
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>name</dc-qualifier>
+          <label>Canvas Name</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire il nome del canvas</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>canvasid</dc-qualifier>
+          <label>Canvas ID</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>È necessario inserire il canvasId. Per recuperare l'id, visualizzare l'item in Mirador, posizionarsi sull'immagine da collegare alla storia e selezionare la stringa alfanumerica presente nella url dopo "canvasId=", es. a1a3f12-8d1a-4bf8-a222-1df0f4f70fe0</hint>
+          <regex>^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$</regex>
+        </field>
+      </row>
+    </form>
+    <form name="story">
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>title</dc-element>
+          <label>Titolo</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Inserire il titolo della storia.</required>
+          <hint>Inserire il titolo della storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>description</dc-element>
+          <dc-qualifier>abstract</dc-qualifier>
+          <label>Abstract</label>
+          <input-type>textarea</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'abstract della storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>entity</dc-element>
+          <dc-qualifier>enabled</dc-qualifier>
+          <label>Visibile in Home Page</label>
+          <input-type value-pairs-name="truefalse">dropdown</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Scegliere se da mostrare in home page</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>cris</dc-schema>
+          <dc-element>priority</dc-element>
+          <label>Ordine</label>
+          <input-type>number</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l'ordine</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>person</dc-qualifier>
+          <label>Persona</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il nome della persona cui è connessa la storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>event</dc-qualifier>
+          <label>Evento collegato</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'evento collegato.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Luogo</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il nome del luogo cui è connessa la storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>family</dc-qualifier>
+          <label>Famiglia</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire la famiglia collegata alla storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>orgunit</dc-qualifier>
+          <label>Organizzazione</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire l'organizzazione collegata alla storia.</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>relation</dc-element>
+          <dc-qualifier>relatedDocument</dc-qualifier>
+          <label>Documenti collegati</label>
+          <input-type>onebox</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire collegamenti con altri Item della digital library</hint>
+        </field>
+      </row>
+    </form>
+    <form name="story_id">
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>name</dc-qualifier>
+          <label>Canvas Name</label>
+          <input-type>group</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Inserire il nome del canvas</hint>
+        </field>
+      </row>
+    </form>
   </form-definitions>
   <form-value-pairs>
     <value-pairs value-pairs-name="common_iso_countries" dc-term="common_iso_countries">
@@ -10659,6 +10820,16 @@
       <pair>
         <displayed-value>unità documentaria</displayed-value>
         <stored-value>d</stored-value>
+      </pair>
+    </value-pairs>
+    <value-pairs value-pairs-name="composition_type" dc-term="composition_type">
+      <pair>
+        <displayed-value>Composito</displayed-value>
+        <stored-value>Composito</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Unitario</displayed-value>
+        <stored-value>Unitario</stored-value>
       </pair>
     </value-pairs>
   </form-value-pairs>
