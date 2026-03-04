@@ -17,5 +17,6 @@ public enum CrisLayoutBoxTypes {
     COLLECTIONS,
     VERSIONING,
     HIERARCHY,
-    NETWORKLAB
+    NETWORKLAB,
+    ANNONA
 }

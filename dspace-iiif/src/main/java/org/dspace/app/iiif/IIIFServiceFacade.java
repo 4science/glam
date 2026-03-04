@@ -11,10 +11,12 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dspace.app.iiif.service.AnnotationListService;
 import org.dspace.app.iiif.service.CanvasLookupService;
 import org.dspace.app.iiif.service.ManifestService;
 import org.dspace.app.iiif.service.SearchService;
+import org.dspace.app.iiif.service.StorytellingService;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
 import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamService;
@@ -37,9 +39,10 @@ public class IIIFServiceFacade {
 
     @Autowired
     ItemService itemService;
-
     @Autowired
-    BitstreamService bitstreamService;
+    private BitstreamService bitstreamService;
+    @Autowired
+    private StorytellingService storytellingService;
 
     @Autowired
     ManifestService manifestService;
@@ -70,18 +73,30 @@ public class IIIFServiceFacade {
      */
     @Cacheable(key = "#id.toString()", cacheNames = "manifests")
     @PreAuthorize("hasPermission(#id, 'ITEM', 'READ')")
-    public String getManifest(Context context, UUID id)
-            throws ResourceNotFoundException {
+    public String getManifest(Context context, UUID id) throws ResourceNotFoundException {
         Item item;
         try {
             item = itemService.find(context, id);
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        if (item == null || !utils.isIIIFEnabled(item)) {
+        if (item == null) {
+            throw new ResourceNotFoundException("IIIF manifest for  id " + id + " not found");
+        }
+
+        if (isStory(item)) {
+            return storytellingService.getManifest(item, context);
+        }
+
+        if (!utils.isIIIFEnabled(item)) {
             throw new ResourceNotFoundException("IIIF manifest for  id " + id + " not found");
         }
         return manifestService.getManifest(item, context);
+    }
+
+    private boolean isStory(Item item) {
+        var entityType = itemService.getMetadataFirstValue(item, "dspace", "entity", "type", Item.ANY);
+        return StringUtils.equals("Story", entityType);
     }
 
     /**
@@ -94,8 +109,7 @@ public class IIIFServiceFacade {
      * @return canvas as JSON
      */
     @PreAuthorize("hasPermission(#id, 'ITEM', 'READ')")
-    public String getCanvas(Context context, UUID id, String canvasId)
-            throws ResourceNotFoundException {
+    public String getCanvas(Context context, UUID id, String canvasId) throws ResourceNotFoundException {
         Item item;
         try {
             item = itemService.find(context, id);
@@ -105,7 +119,22 @@ public class IIIFServiceFacade {
         if (item == null) {
             throw new ResourceNotFoundException("IIIF canvas for  id " + id + " not found");
         }
+        if (isStory(item)) {
+            Item originItem = findOriginItemOfCanvas(context, canvasId);
+            if (originItem == null) {
+                throw new ResourceNotFoundException("IIIF canvas for  id " + id + " not found");
+            }
+            item = originItem;
+        }
         return canvasLookupService.generateCanvas(context, item, canvasId);
+    }
+
+    private Item findOriginItemOfCanvas(Context context, String canvasId) {
+        try {
+            return bitstreamService.findItemByBitstreamId(context, UUID.fromString(canvasId));
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     /**

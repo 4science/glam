@@ -75,4 +75,14 @@ public interface BitstreamDAO extends DSpaceObjectLegacySupportDAO<Bitstream> {
     public Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
                                                            String metadataField, String metadataValue)
         throws SQLException;
+
+    /**
+     * Find the Item that owns a specific Bitstream.
+     *
+     * @param context       The relevant DSpace Context
+     * @param bitstreamId   The UUID of the bitstream
+     * @return The Item that contains the bitstream, or null if not found
+     * @throws SQLException if database error occurs
+     */
+    public Item findItemByBitstreamId(Context context, UUID bitstreamId) throws SQLException;
 }
