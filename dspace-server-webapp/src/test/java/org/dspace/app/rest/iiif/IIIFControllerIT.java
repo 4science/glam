@@ -1570,14 +1570,14 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                          .build();
         }
 
-        // Create a Story item referencing the two bitstreams via glam.bitstream with authority
+        // Create a Story item referencing the two bitstreams via glam.bitstream.canvasid
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withMetadata("dc", "description", "abstract", "Story description")
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas from Item 1", bitstream1.getID().toString(), 600)
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas from Item 2", bitstream2.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "name", "Canvas from Item 1")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas from Item 2")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -1597,10 +1597,32 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$.sequences[0].canvases[0].label", is("Canvas from Item 1")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(800)))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(1200)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.@id",
+                              containsString("/iiif-server/" + bitstream1.getID().toString()
+                                             + "/full/90,/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.service.@context",
+                              is("http://iiif.io/api/image/2/context.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.service.@id",
+                              containsString("/iiif-server/" + bitstream1.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.service.profile",
+                              is("http://iiif.io/api/image/2/level0.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.service.protocol",
+                              is("http://iiif.io/api/image")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.format", is("image/jpeg")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].@type", is("oa:Annotation")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].motivation", is("sc:painting")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.@id",
-                              containsString(bitstream1.getID().toString() + "/content")))
+                              containsString("/iiif-server/" + bitstream1.getID().toString()
+                                             + "/full/full/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.format", is("image/jpeg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.@context",
+                              is("http://iiif.io/api/image/2/context.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.@id",
+                              containsString("/iiif-server/" + bitstream1.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.profile",
+                              is("http://iiif.io/api/image/2/level1.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].images[0].resource.service.protocol",
+                              is("http://iiif.io/api/image")))
                    // second canvas
                    .andExpect(jsonPath("$.sequences[0].canvases[1].@id",
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
@@ -1608,8 +1630,24 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$.sequences[0].canvases[1].label", is("Canvas from Item 2")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(800)))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(1200)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.@id",
+                              containsString("/iiif-server/" + bitstream2.getID().toString()
+                                             + "/full/90,/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.service.@context",
+                              is("http://iiif.io/api/image/2/context.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.service.@id",
+                              containsString("/iiif-server/" + bitstream2.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.service.profile",
+                              is("http://iiif.io/api/image/2/level0.json")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.service.protocol",
+                              is("http://iiif.io/api/image")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.format", is("image/jpeg")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.@id",
-                              containsString(bitstream2.getID().toString() + "/content")));
+                              containsString("/iiif-server/" + bitstream2.getID().toString()
+                                             + "/full/full/0/default.jpg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.format", is("image/jpeg")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.service.@id",
+                              containsString("/iiif-server/" + bitstream2.getID().toString())));
     }
 
     @Test
@@ -1646,8 +1684,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
         Item storyItem = ItemBuilder.createItem(context, col2)
                                     .withTitle("Test Story")
                                     .withEntityType("Story")
-                                    .withMetadata("glam", "bitstream", null, null,
-                                            "Canvas Label", bitstream1.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "name", "Canvas Label")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
                                     .build();
 
         context.restoreAuthSystemState();
@@ -1762,6 +1800,5 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                 .andExpect(jsonPath("$[0]", is("all")))
                 .andExpect(jsonPath("$[1]", is("single-image")));
     }
-
 
 }

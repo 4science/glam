@@ -177,6 +177,8 @@ public class CrisLayoutBoxServiceImpl implements CrisLayoutBoxService {
             case "IIIFVIEWER":
             case "IIIFTOOLBAR":
                 return isIiifEnabled(item);
+            case "ANNONA":
+                return isAnnonaEnabled(item);
             case "HIERARCHY":
                 return hasHierarchicBoxContent(context, box, item);
             case "VIDEOVIEWER":
@@ -304,6 +306,19 @@ public class CrisLayoutBoxServiceImpl implements CrisLayoutBoxService {
     private boolean isIiifEnabled(Item item) {
         return BooleanUtils.toBoolean(itemService.getMetadataFirstValue(item,
             new MetadataFieldName("dspace.iiif.enabled"), Item.ANY));
+    }
+
+    private boolean isAnnonaEnabled(Item item) {
+        if (!isStory(item)) {
+            return false;
+        }
+        String value = itemService.getMetadataFirstValue(item,
+            new MetadataFieldName("glam", "bitstream", "canvasid"), Item.ANY);
+        return StringUtils.isNotBlank(value);
+    }
+
+    private boolean isStory(Item item) {
+        return StringUtils.equals(itemService.getEntityType(item), "Story");
     }
 
     private boolean isNetworkLabEnabled(Item item) {

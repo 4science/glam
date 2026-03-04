@@ -110,11 +110,16 @@ public class StorytellingService {
     }
 
     private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
-        List<MetadataValue> canvasMetadata = itemService.getMetadata(item, "glam", "bitstream", null, Item.ANY);
+        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", Item.ANY);
+        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", Item.ANY);
+        if (canvasIDs.size() != canvasTitles.size()) {
+            log.error("Mismatch in number of canvas titles and canvas IDs for story {}. Titles: {}, IDs: {}",
+                      storyId, canvasTitles.size(), canvasIDs.size());
+        }
 
-        for (MetadataValue mv : canvasMetadata) {
-            String canvasLabel = mv.getValue();
-            String bitstreamUuid = mv.getAuthority();
+        for (int i = 0; i < canvasIDs.size(); i++) {
+            String canvasLabel = canvasTitles.get(i).getValue();
+            String bitstreamUuid = canvasIDs.get(i).getValue();
 
             if (StringUtils.isBlank(bitstreamUuid)) {
                 log.warn("Skipping canvas with missing bitstream UUID for story {}", storyId);
@@ -139,28 +144,63 @@ public class StorytellingService {
                 canvas.put("height", dimensions[1]);
             }
 
+            // Thumbnail
+            buildThumbnail(canvas, bitstreamUuid, context);
+
             // Images array
-            buildImages(canvas, canvasId, bitstreamUuid, serverUrl);
+            buildImages(canvas, canvasId, bitstreamUuid, context);
 
             // otherContent - annotation list
             buildOtherContent(canvas, canvasId, serverUrl);
         }
     }
 
-    private void buildImages(ObjectNode canvas, String canvasId, String bitstreamUuid, String serverUrl) {
+    private void buildThumbnail(ObjectNode canvas, String bitstreamUuid, Context context) {
+        var imageServer = configurationService.getProperty("iiif.image.server");
+        String imageServiceId = imageServer + bitstreamUuid;
+
+        ObjectNode thumbnail = canvas.putObject("thumbnail");
+        thumbnail.put("@id", imageServiceId + "/full/90,/0/default.jpg");
+
+        ObjectNode service = thumbnail.putObject("service");
+        service.put("@context", "http://iiif.io/api/image/2/context.json");
+        service.put("@id", imageServiceId);
+        service.put("profile", "http://iiif.io/api/image/2/level0.json");
+        service.put("protocol", "http://iiif.io/api/image");
+
+        String mimeType = getBitstreamMimeType(context, bitstreamUuid);
+        if (mimeType != null) {
+            thumbnail.put("format", mimeType);
+        }
+    }
+
+    private void buildImages(ObjectNode canvas, String canvasId, String bitstreamUuid, Context context) {
         ArrayNode images = canvas.putArray("images");
         ObjectNode annotation = images.addObject();
 
-        annotation.put("@id", canvasId + "/painting/annotation");
         annotation.put("@type", OA_ANNOTATION);
         annotation.put("motivation", MOTIVATION_PAINTING);
-        annotation.put("on", canvasId);
 
-        // Resource - bitstream download URL, NO service
+        var imageServer = configurationService.getProperty("iiif.image.server");
+        String imageServiceId = imageServer + bitstreamUuid;
+
+        // Resource with IIIF Image API service
         ObjectNode resource = annotation.putObject("resource");
-        resource.put("@id", serverUrl + "/api/core/bitstreams/" + bitstreamUuid + "/content");
+        resource.put("@id", imageServiceId + "/full/full/0/default.jpg");
         resource.put("@type", DCTYPES_IMAGE);
-        resource.put("format", "image/jpeg");
+
+        ObjectNode service = resource.putObject("service");
+        service.put("@context", "http://iiif.io/api/image/2/context.json");
+        service.put("@id", imageServiceId);
+        service.put("profile", "http://iiif.io/api/image/2/level1.json");
+        service.put("protocol", "http://iiif.io/api/image");
+
+        String mimeType = getBitstreamMimeType(context, bitstreamUuid);
+        if (mimeType != null) {
+            resource.put("format", mimeType);
+        }
+
+        annotation.put("on", canvasId);
     }
 
     private void buildOtherContent(ObjectNode canvas, String canvasId, String serverUrl) {
@@ -213,6 +253,18 @@ public class StorytellingService {
             }
         } catch (SQLException e) {
             log.warn("Could not retrieve bitstream {} for dimensions: {}", bitstreamUuid, e.getMessage());
+        }
+        return null;
+    }
+
+    private String getBitstreamMimeType(Context context, String bitstreamUuid) {
+        try {
+            Bitstream bitstream = bitstreamService.find(context, UUID.fromString(bitstreamUuid));
+            if (bitstream != null) {
+                return iiifUtils.getBitstreamMimeType(bitstream, context);
+            }
+        } catch (SQLException e) {
+            log.warn("Could not retrieve mimetype for bitstream {}: {}", bitstreamUuid, e.getMessage());
         }
         return null;
     }
