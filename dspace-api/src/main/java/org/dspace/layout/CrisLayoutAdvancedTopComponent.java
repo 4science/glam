@@ -47,6 +47,9 @@ public class CrisLayoutAdvancedTopComponent implements CrisLayoutSectionComponen
 
     private TemplateTypeEnum template;
 
+    private String bundle;
+
+
     /**
      * @return the discoveryConfigurationName
      */
@@ -240,6 +243,19 @@ public class CrisLayoutAdvancedTopComponent implements CrisLayoutSectionComponen
      */
     public void setTemplate(TemplateTypeEnum template) {
         this.template = template;
+    }
+
+    /**
+     * @return the bundle
+     */
+    public String getBundle() {
+      return bundle;
+    }
+    /**
+     * @param bundle the bundle to set
+     */
+    public void setBundle(String bundle) {
+      this.bundle = bundle;
     }
 
     /**

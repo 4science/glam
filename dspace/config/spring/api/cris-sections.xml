@@ -264,6 +264,7 @@
                     <property name="itemListStyle" value=""/>
                     <property name="showAllResults" value="true"/>
                     <property name="template" value="SLIDER"/>
+                    <property name="bundle" value="ORIGINAL" />
                 </bean>
             </list>
             <list>
@@ -285,6 +286,7 @@
                 <property name="itemListStyle" value=""/>
                 <property name="showAllResults" value="true"/>
                 <property name="template" value="SLIDER"/>
+                <property name="bundle" value="BRANDED_PREVIEW" />
               </bean>
             </list>
             <list>

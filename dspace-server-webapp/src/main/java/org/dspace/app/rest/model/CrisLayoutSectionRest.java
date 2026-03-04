@@ -376,6 +376,8 @@ public class CrisLayoutSectionRest extends BaseObjectRest<String> {
 
         private String template;
 
+        private String bundle;
+
         public List<String> getDiscoveryConfigurationName() {
             return discoveryConfigurationName;
         }
@@ -556,6 +558,20 @@ public class CrisLayoutSectionRest extends BaseObjectRest<String> {
         public void setTemplate(String template) {
             this.template = template;
         }
+
+        /**
+         * @param bundle the bundle to set
+         */
+        public void setBundle(String bundle) {
+          this.bundle = bundle;
+        }
+
+      /**
+       * @return the bundle
+       */
+      public String getBundle() {
+        return bundle;
+      }
 
     }
 
