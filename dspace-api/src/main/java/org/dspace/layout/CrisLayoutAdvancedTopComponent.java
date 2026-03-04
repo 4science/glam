@@ -249,13 +249,14 @@ public class CrisLayoutAdvancedTopComponent implements CrisLayoutSectionComponen
      * @return the bundle
      */
     public String getBundle() {
-      return bundle;
+        return bundle;
     }
+
     /**
      * @param bundle the bundle to set
      */
     public void setBundle(String bundle) {
-      this.bundle = bundle;
+        this.bundle = bundle;
     }
 
     /**

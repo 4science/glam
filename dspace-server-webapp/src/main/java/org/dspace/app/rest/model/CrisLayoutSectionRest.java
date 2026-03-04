@@ -563,15 +563,15 @@ public class CrisLayoutSectionRest extends BaseObjectRest<String> {
          * @param bundle the bundle to set
          */
         public void setBundle(String bundle) {
-          this.bundle = bundle;
+            this.bundle = bundle;
         }
 
-      /**
-       * @return the bundle
-       */
-      public String getBundle() {
-        return bundle;
-      }
+        /**
+         * @return the bundle
+         */
+        public String getBundle() {
+            return bundle;
+        }
 
     }
 
