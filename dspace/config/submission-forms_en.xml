@@ -68,11 +68,12 @@
           <dc-schema>bitstream</dc-schema>
           <dc-element>curation</dc-element>
           <dc-qualifier>exclude</dc-qualifier>
-          <label />
+          <label>Exclude curation tasks</label>
           <input-type value-pairs-name="bitstream_curation_tasks">dropdown</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint />
+          <hint>Select the curation tasks to exclude for this bitstream</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -3342,6 +3343,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Indicate the elements of the path</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -7809,7 +7811,7 @@
           <input-type>markdown</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+          <hint>Enter the abstract of the resource content.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7822,7 +7824,7 @@
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire il tipo dell’annotazione creata</hint>
+          <hint>Enter the type of annotation created.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7835,7 +7837,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Specificare le indicazioni sull'annotazione.</hint>
+          <hint>Specify the annotation details.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7848,7 +7850,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il nome della persona cui è eventualmente connessa la risorsa.</hint>
+          <hint>Enter the name of the person to whom the resource may be connected.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7861,7 +7863,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il luogo collegato alla risorsa.</hint>
+          <hint>Enter the location connected to the resource.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7874,7 +7876,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Titolo dell’eventuale evento cui è connessa la risorsa.</hint>
+          <hint>Title of any event to which the resource is connected.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7887,7 +7889,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire il percorso.</hint>
+          <hint>Enter the path.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7900,7 +7902,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Entering an Aggregation value linked to an existing authority will trigger the pre-fill functionality (item template), if a template is set on the corrensponding Aggregation.</hint>
+          <hint>Entering an Aggregation value linked to an existing authority will trigger the pre-fill functionality (item template), if a template is set on the corresponding Aggregation.</hint>
           <vocabulary closed="true">aggregationsTree</vocabulary>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
@@ -7914,7 +7916,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire la famiglia collegata alla risorsa.</hint>
+          <hint>Enter the family connected to the resource.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7927,7 +7929,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire l'eventuale collegamento della risorsa ad altri documenti.</hint>
+          <hint>Enter any links between the resource and other documents.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7940,7 +7942,7 @@
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint>Inserire l'eventuale collegamento con altre annotazioni</hint>
+          <hint>Enter any links to other annotations.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7955,7 +7957,7 @@
           <input-type>markdown</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire l'abstract del contenuto della risorsa.</hint>
+          <hint>Enter the abstract of the resource content.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7968,7 +7970,7 @@
           <input-type>textarea</input-type>
           <repeatable>false</repeatable>
           <required />
-          <hint>Inserire il tipo dell’annotazione creata</hint>
+          <hint>Enter the type of annotation created.</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
@@ -7979,11 +7981,11 @@
           <dc-schema>cris</dc-schema>
           <dc-element>curation</dc-element>
           <dc-qualifier>task</dc-qualifier>
-          <label />
+          <label>Type of curation task to be performed during the deposit phase</label>
           <input-type value-pairs-name="curation_tasks">dropdown</input-type>
           <repeatable>true</repeatable>
           <required />
-          <hint />
+          <hint>Select curation task</hint>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>

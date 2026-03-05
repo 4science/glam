@@ -73,6 +73,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Seleziona i curation-task da escludere per questo bitstream</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -3342,6 +3343,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Indicare gli elementi del percorso</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
