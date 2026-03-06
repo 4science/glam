@@ -11491,5 +11491,15 @@
         <stored-value>d</stored-value>
       </pair>
     </value-pairs>
+    <value-pairs value-pairs-name="common_18n_languages" dc-term="common_18n_languages">
+      <pair>
+        <displayed-value>Italiano</displayed-value>
+        <stored-value>it</stored-value>
+      </pair>
+      <pair>
+        <displayed-value>Inglese</displayed-value>
+        <stored-value>en</stored-value>
+      </pair>
+    </value-pairs>
   </form-value-pairs>
 </input-forms>
