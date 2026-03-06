@@ -7,6 +7,8 @@
  */
 package org.dspace.app.iiif.service;
 
+import static org.dspace.content.Item.ANY;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +49,7 @@ public class StorytellingService {
     private static final String OA_ANNOTATION = "oa:Annotation";
     private static final String DCTYPES_IMAGE = "dctypes:Image";
     private static final String MOTIVATION_PAINTING = "sc:painting";
+    private static final String RELATED_ITEM_FORMAT = "text/html";
 
     @Autowired
     private ItemService itemService;
@@ -110,8 +113,10 @@ public class StorytellingService {
     }
 
     private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
-        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", Item.ANY);
-        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", Item.ANY);
+        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", ANY);
+        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", ANY);
+        List<MetadataValue> relatedItems = itemService.getMetadata(item, "glam", "bitstream", "relatedItem", ANY);
+
         if (canvasIDs.size() != canvasTitles.size()) {
             log.error("Mismatch in number of canvas titles and canvas IDs for story {}. Titles: {}, IDs: {}",
                       storyId, canvasTitles.size(), canvasIDs.size());
@@ -120,6 +125,8 @@ public class StorytellingService {
         for (int i = 0; i < canvasIDs.size(); i++) {
             String canvasLabel = canvasTitles.get(i).getValue();
             String bitstreamUuid = canvasIDs.get(i).getValue();
+            String relatedItemTitle = relatedItems.get(i).getValue();
+            String relatedItemUUID = relatedItems.get(i).getAuthority();
 
             if (StringUtils.isBlank(bitstreamUuid)) {
                 log.warn("Skipping canvas with missing bitstream UUID for story {}", storyId);
@@ -150,9 +157,24 @@ public class StorytellingService {
             // Images array
             buildImages(canvas, canvasId, bitstreamUuid, context);
 
+            // related - link to the original HTML page
+            if (StringUtils.isNotBlank(relatedItemUUID)) {
+                var relatedItemUrl = serverUrl + "/items/" + relatedItemUUID;
+                buildRelated(canvas, relatedItemTitle, relatedItemUrl);
+            } else {
+                log.error("Missing related item UUID for canvas {} in story {}", canvasId, storyId);
+            }
+
             // otherContent - annotation list
             buildOtherContent(canvas, canvasId, serverUrl);
         }
+    }
+
+    private void buildRelated(ObjectNode canvas, String relatedItemTitle, String relatedItemUrl) {
+        ObjectNode related = canvas.putObject("related");
+        related.put("@id", relatedItemUrl);
+        related.put("format", RELATED_ITEM_FORMAT);
+        related.put("label", relatedItemTitle);
     }
 
     private void buildThumbnail(ObjectNode canvas, String bitstreamUuid, Context context) {
