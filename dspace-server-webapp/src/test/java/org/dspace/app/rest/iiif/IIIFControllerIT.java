@@ -1578,6 +1578,10 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                     .withMetadata("glam", "bitstream", "name", "Canvas from Item 2")
                                     .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
                                     .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 1", item1.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 2", item2.getID().toString(), 600)
                                     .build();
 
         context.restoreAuthSystemState();
@@ -1647,7 +1651,16 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                              + "/full/full/0/default.jpg")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.format", is("image/jpeg")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].images[0].resource.service.@id",
-                              containsString("/iiif-server/" + bitstream2.getID().toString())));
+                              containsString("/iiif-server/" + bitstream2.getID().toString())))
+                   // related fields
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].related.@id",
+                              containsString("/items/" + item1.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].related.format", is("text/html")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].related.label", is("Publication 1")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].related.@id",
+                              containsString("/items/" + item2.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].related.format", is("text/html")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].related.label", is("Publication 2")));
     }
 
     @Test
