@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
@@ -125,8 +126,8 @@ public class StorytellingService {
         for (int i = 0; i < canvasIDs.size(); i++) {
             String canvasLabel = canvasTitles.get(i).getValue();
             String bitstreamUuid = canvasIDs.get(i).getValue();
-            String relatedItemTitle = relatedItems.get(i).getValue();
-            String relatedItemUUID = relatedItems.get(i).getAuthority();
+            String relatedItemTitle = CollectionUtils.isEmpty(relatedItems) ? null : relatedItems.get(i).getValue();
+            String relatedItemUUID = CollectionUtils.isEmpty(relatedItems) ? null : relatedItems.get(i).getAuthority();
 
             if (StringUtils.isBlank(bitstreamUuid)) {
                 log.warn("Skipping canvas with missing bitstream UUID for story {}", storyId);
