@@ -160,7 +160,8 @@ public class StorytellingService {
 
             // related - link to the original HTML page
             if (StringUtils.isNotBlank(relatedItemUUID)) {
-                var relatedItemUrl = serverUrl + "/items/" + relatedItemUUID;
+                var uiUrl = configurationService.getProperty("dspace.ui.url");
+                var relatedItemUrl = uiUrl + "/items/" + relatedItemUUID;
                 buildRelated(canvas, relatedItemTitle, relatedItemUrl);
             } else {
                 log.error("Missing related item UUID for canvas {} in story {}", canvasId, storyId);
