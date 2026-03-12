@@ -145,7 +145,7 @@ public class StorytellingService {
                 canvas.put("label", canvasLabel);
             }
 
-            // Canvas dimensions - retrieve from bitstream or use configured defaults
+            // Canvas dimensions - retrieve from bitstream
             int[] dimensions = getCanvasDimensions(context, bitstreamUuid);
             if (dimensions != null && dimensions.length == 2) {
                 canvas.put("width", dimensions[0]);
