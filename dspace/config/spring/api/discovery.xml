@@ -2877,6 +2877,7 @@
     </bean>
 
     <bean id="fondsHomePage" class="org.dspace.discovery.configuration.DiscoveryConfiguration" parent="fonds">
+        <property name="id" value="fondshomepage"/>
         <property name="defaultFilterQueries">
             <list>
                 <!--Only find items, communities and collections-->
@@ -2972,6 +2973,7 @@
     </bean>
 
     <bean id="journalfondsHomePage" class="org.dspace.discovery.configuration.DiscoveryConfiguration" parent="journalfonds">
+        <property name="id" value="journalfondshomepage"/>
         <property name="defaultFilterQueries">
             <list>
                 <!--Only find items, communities and collections-->
@@ -3064,6 +3066,7 @@
     </bean>
 
     <bean id="aggregationsHomePage" class="org.dspace.discovery.configuration.DiscoveryConfiguration" parent="aggregations">
+        <property name="id" value="aggregationshomepage"/>
         <property name="defaultFilterQueries">
             <list>
                 <!--Only find items, communities and collections-->
