@@ -1599,8 +1599,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].@type", is("sc:Canvas")))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].label", is("Canvas from Item 1")))
-                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(800)))
-                   .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(1200)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(64)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(64)))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.@id",
                               containsString("/iiif-server/" + bitstream1.getID().toString()
                                              + "/full/90,/0/default.jpg")))
@@ -1632,8 +1632,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].@type", is("sc:Canvas")))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].label", is("Canvas from Item 2")))
-                   .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(800)))
-                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(1200)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(64)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(64)))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.@id",
                               containsString("/iiif-server/" + bitstream2.getID().toString()
                                              + "/full/90,/0/default.jpg")))
@@ -1880,8 +1880,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID().toString())))
                 .andExpect(jsonPath("$.sequences[0].canvases[0].@type", is("sc:Canvas")))
                 .andExpect(jsonPath("$.sequences[0].canvases[0].label", is("Canvas from Item 1")))
-                .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(800)))
-                .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(1200)))
+                .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(64)))
+                .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(64)))
                 .andExpect(jsonPath("$.sequences[0].canvases[0].thumbnail.@id",
                         containsString("/iiif-server/" + bitstream1.getID().toString()
                                 + "/full/90,/0/default.jpg")))
@@ -1913,8 +1913,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                         containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
                 .andExpect(jsonPath("$.sequences[0].canvases[1].@type", is("sc:Canvas")))
                 .andExpect(jsonPath("$.sequences[0].canvases[1].label", is("Canvas from Item 2")))
-                .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(800)))
-                .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(1200)))
+                .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(64)))
+                .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(64)))
                 .andExpect(jsonPath("$.sequences[0].canvases[1].thumbnail.@id",
                         containsString("/iiif-server/" + bitstream2.getID().toString()
                                 + "/full/90,/0/default.jpg")))

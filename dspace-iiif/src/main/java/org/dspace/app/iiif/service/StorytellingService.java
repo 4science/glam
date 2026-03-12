@@ -150,6 +150,8 @@ public class StorytellingService {
             if (dimensions != null && dimensions.length == 2) {
                 canvas.put("width", dimensions[0]);
                 canvas.put("height", dimensions[1]);
+            } else {
+                log.error("Could not retrieve dimensions for canvas:{} in story:{}.", canvasId, storyId);
             }
 
             // Thumbnail
@@ -256,20 +258,11 @@ public class StorytellingService {
     }
 
     /**
-     * Gets canvas dimensions from bitstream or configuration.
-     * If default dimensions are configured, use them. Otherwise, retrieve from image server.
+     * Gets canvas dimensions from bitstream.
+     * Retrieve from image server.
      */
     private int[] getCanvasDimensions(Context context, String bitstreamUuid) {
-        // Check if default dimensions are configured
-        String configWidth = configurationService.getProperty("iiif.canvas.default-width");
-        String configHeight = configurationService.getProperty("iiif.canvas.default-height");
-
-        // If configured, use configuration values
-        if (configWidth != null && configHeight != null) {
-            return new int[] { Integer.parseInt(configWidth), Integer.parseInt(configHeight) };
-        }
-
-        // Otherwise, try to get dimensions from the bitstream via IIIF image server
+        // try to get dimensions from the bitstream via IIIF image server
         try {
             Bitstream bitstream = bitstreamService.find(context, UUID.fromString(bitstreamUuid));
             if (bitstream != null) {
