@@ -745,4 +745,9 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
         return bitstreamDAO.findByMetadataValueInBundle(context, itemId, bundleName, metadataField, metadataValue);
     }
 
+    @Override
+    public Item findItemByBitstreamId(Context context, UUID bitstreamId) throws SQLException {
+        return bitstreamDAO.findItemByBitstreamId(context, bitstreamId);
+    }
+
 }

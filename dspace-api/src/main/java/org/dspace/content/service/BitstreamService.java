@@ -270,4 +270,15 @@ public interface BitstreamService extends DSpaceObjectService<Bitstream>, DSpace
     Bitstream getPrimaryBitstream(Context context, Bundle bundle);
 
     Bitstream getPrimaryBitstream(Context context, Item item);
+
+    /**
+     * Find the Item that owns a specific Bitstream.
+     *
+     * @param context       The relevant DSpace Context
+     * @param bitstreamId   The UUID of the bitstream
+     * @return The Item that contains the bitstream, or null if not found
+     * @throws SQLException if database error occurs
+     */
+    Item findItemByBitstreamId(Context context, UUID bitstreamId) throws SQLException;
+
 }
