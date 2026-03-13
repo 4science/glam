@@ -1531,8 +1531,6 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
 
     @Test
     public void findOneStoryManifestIT() throws Exception {
-        configurationService.setProperty("iiif.canvas.default-width", "800");
-        configurationService.setProperty("iiif.canvas.default-height", "1200");
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context)
                                           .withName("Parent Community")
@@ -1816,8 +1814,6 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
 
     @Test
     public void findOneStoryManifestWithoutRelatedItemIT() throws Exception {
-        configurationService.setProperty("iiif.canvas.default-width", "800");
-        configurationService.setProperty("iiif.canvas.default-height", "1200");
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context)
                                           .withName("Parent Community")
@@ -1940,6 +1936,86 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                 .andExpect(jsonPath("$.sequences[0].canvases[1].related.@id").doesNotExist())
                 .andExpect(jsonPath("$.sequences[0].canvases[1].related.format").doesNotExist())
                 .andExpect(jsonPath("$.sequences[0].canvases[1].related.label").doesNotExist());
+    }
+
+    /**
+     * Verifies that canvas width and height in a Story manifest are resolved
+     * from {@code iiif.image.width} and {@code iiif.image.height} bitstream metadata,
+     * without querying the IIIF image server.
+     */
+    @Test
+    public void findOneStoryManifest_shouldReadCanvasDimensionsFromBitstreamMetadataIT() throws Exception {
+        context.turnOffAuthorisationSystem();
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Publication Collection")
+                                           .withEntityType("Publication")
+                                           .build();
+        Collection col2 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Story Collection")
+                                           .withEntityType("Story")
+                                           .build();
+
+        Item item1 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 1")
+                                .enableIIIF()
+                                .build();
+        Item item2 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 2")
+                                .enableIIIF()
+                                .build();
+
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream("ThisIsSomeDummyText", CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, item1, is)
+                                         .withName("Image1.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .withIIIFCanvasWidth(333)
+                                         .withIIIFCanvasHeight(444)
+                                         .build();
+        }
+        Bitstream bitstream2;
+        try (InputStream is = IOUtils.toInputStream("ThisIsSomeDummyText 2", CharEncoding.UTF_8)) {
+            bitstream2 = BitstreamBuilder.createBitstream(context, item2, is)
+                                         .withName("Image2.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .withIIIFCanvasWidth(677)
+                                         .withIIIFCanvasHeight(899)
+                                         .build();
+        }
+
+        // Create a Story item referencing the two bitstreams via glam.bitstream.canvasid
+        Item storyItem = ItemBuilder.createItem(context, col2)
+                .withTitle("Test Story")
+                .withMetadata("dc", "description", "abstract", "Story description")
+                .withMetadata("glam", "bitstream", "name", "Canvas from Item 1")
+                .withMetadata("glam", "bitstream", "name", "Canvas from Item 2")
+                .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
+                .withMetadata("glam", "bitstream", "relatedItem", null,
+                        "Publication 1", item1.getID().toString(), 600)
+                .withMetadata("glam", "bitstream", "relatedItem", null,
+                        "Publication 2", item2.getID().toString(), 600)
+                .build();
+        context.restoreAuthSystemState();
+
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.@id", containsString("/iiif/" + storyItem.getID() + "/manifest")))
+                   .andExpect(jsonPath("$.label", is("Test Story")))
+                   .andExpect(jsonPath("$.sequences[0].canvases", Matchers.hasSize(2)))
+                   // first canvas
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].@id",
+                             containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(333)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(444)))
+                   // second canvas
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].@id",
+                             containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(677)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(899)));
     }
 
 }
