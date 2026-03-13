@@ -61,6 +61,11 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
 
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
         itemService = ContentServiceFactory.getInstance().getItemService();
+        searchService = serviceManager.getServiceByName(null, SolrSearchCore.class);
+        configurationService = DSpaceServicesFactory.getInstance()
+                .getConfigurationService();
+        metadataAuthorityService = ContentAuthorityServiceFactory.getInstance()
+                .getMetadataAuthorityService();
         eventService = EventServiceFactory.getInstance().getEventService();
         searchService = serviceManager.getServiceByName(null, SolrSearchCore.class);
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();

@@ -155,6 +155,27 @@ public class SolrLoggerServiceImpl implements SolrLoggerService, InitializingBea
     protected SolrLoggerServiceImpl() {
     }
 
+    /**
+     * Possible values of the {@code type} field of a usage event document.
+     */
+    public static enum StatisticsType {
+        VIEW("view"),
+        SEARCH("search"),
+        SEARCH_RESULT("search_result"),
+        WORKFLOW("workflow"),
+        LOGIN("login");
+
+        private final String text;
+
+        StatisticsType(String text) {
+            this.text = text;
+        }
+
+        public String text() {
+            return text;
+        }
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         String statisticsCoreURL = configurationService.getProperty("solr-statistics.server");
@@ -1597,27 +1618,6 @@ public class SolrLoggerServiceImpl implements SolrLoggerService, InitializingBea
         }
 
         throw new UnknownHostException("unknown ip format");
-    }
-
-    /**
-     * Possible values of the {@code type} field of a usage event document.
-     */
-    public static enum StatisticsType {
-        VIEW("view"),
-        SEARCH("search"),
-        SEARCH_RESULT("search_result"),
-        WORKFLOW("workflow"),
-        LOGIN("login");
-
-        private final String text;
-
-        StatisticsType(String text) {
-            this.text = text;
-        }
-
-        public String text() {
-            return text;
-        }
     }
 
     public class ResultProcessor {
