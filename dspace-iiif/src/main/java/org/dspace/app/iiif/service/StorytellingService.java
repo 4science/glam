@@ -11,6 +11,7 @@ import static org.dspace.content.Item.ANY;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,6 +52,8 @@ public class StorytellingService {
     private static final String DCTYPES_IMAGE = "dctypes:Image";
     private static final String MOTIVATION_PAINTING = "sc:painting";
     private static final String RELATED_ITEM_FORMAT = "text/html";
+    private static final String IIIF_IMAGE_WIDTH = "iiif.image.width";
+    private static final String IIIF_IMAGE_HEIGHT = "iiif.image.height";
 
     @Autowired
     private ItemService itemService;
@@ -258,20 +261,50 @@ public class StorytellingService {
     }
 
     /**
-     * Gets canvas dimensions from bitstream.
-     * Retrieve from image server.
+     * Returns the canvas dimensions {@code [width, height]} for the given bitstream UUID.
+     * If the bitstream has {@code iiif.image.width} metadata, dimensions are read directly
+     * from the bitstream metadata via {@link #obtainDimensionsFromMetadata(Bitstream)}.
+     * Otherwise they are fetched from the IIIF image server ({@code info.json}).
+     *
+     * @param context       the DSpace context
+     * @param bitstreamUuid the UUID of the bitstream
+     * @return              an array {@code [width, height]}, or {@code null} if the bitstream is not found
+     *                      or dimensions cannot be determined
      */
     private int[] getCanvasDimensions(Context context, String bitstreamUuid) {
-        // try to get dimensions from the bitstream via IIIF image server
         try {
             Bitstream bitstream = bitstreamService.find(context, UUID.fromString(bitstreamUuid));
             if (bitstream != null) {
-                return iiifUtils.getImageDimensions(bitstream);
+                var hasWidthMetadata = iiifUtils.hasWidthMetadata(bitstream);
+                return hasWidthMetadata ? obtainDimensionsFromMetadata(bitstream)
+                                        : iiifUtils.getImageDimensions(bitstream);
             }
         } catch (SQLException e) {
             log.warn("Could not retrieve bitstream {} for dimensions: {}", bitstreamUuid, e.getMessage());
         }
         return null;
+    }
+
+    private int[] obtainDimensionsFromMetadata(Bitstream bitstream) {
+        try {
+            Optional<String> widthStr  = getMetadataValue(bitstream, IIIF_IMAGE_WIDTH);
+            Optional<String> heightStr = getMetadataValue(bitstream, IIIF_IMAGE_HEIGHT);
+            if (widthStr.isPresent() && heightStr.isPresent()) {
+                return new int[] { Integer.parseInt(widthStr.get()), Integer.parseInt(heightStr.get()) };
+            }
+        } catch (NumberFormatException e) {
+            var errMsg = "Could not retrieve dimensions from metadata for bitstream {}: {}";
+            log.error(errMsg, bitstream.getID(), e.getMessage());
+        }
+        return null;
+    }
+
+    private Optional<String> getMetadataValue(Bitstream bitstream, String field) {
+        return bitstream.getMetadata()
+                        .stream()
+                        .filter(m -> m.getMetadataField().toString('.').contentEquals(field))
+                        .findFirst()
+                        .map(MetadataValue::getValue);
     }
 
     private String getBitstreamMimeType(Context context, String bitstreamUuid) {
