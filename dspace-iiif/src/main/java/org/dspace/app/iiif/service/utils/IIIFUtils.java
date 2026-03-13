@@ -39,6 +39,7 @@ import org.dspace.iiif.IIIFApiQueryService;
 import org.dspace.iiif.util.IIIFSharedUtils;
 import org.dspace.services.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Component;
 
@@ -301,7 +302,7 @@ public class IIIFUtils {
      * @param bitstream the bitstream DSO
      * @return image dimensions
      */
-    //@Cacheable(key = "#bitstream.getID().toString()", cacheNames = "canvasdimensions")
+    @Cacheable(key = "#bitstream.getID().toString()", cacheNames = "canvasdimensions")
     public int[] getImageDimensions(Bitstream bitstream) {
         return iiifApiQueryService.getImageDimensions(bitstream);
     }
