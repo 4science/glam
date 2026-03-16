@@ -40,8 +40,10 @@ if [ "$1" = "classpath" ]; then
   exit 0
 fi
 
+# THIS UNSET HAS BEEN REMOVED BECAUSE THE JAVA_TOOL_OPTIONS IS SET ON OUR DOCKERFILE.BUILD AND NEEDS
+# TO BE SET IN ORDER TO CONTROL THE MEMORY OF THE PROCESS IN OUR EKS ENVIRONMENTS.
 # Unset JAVA_TOOL_OPTIONS (exported by Dockerfile) so that any debug ports don't conflict
-unset JAVA_TOOL_OPTIONS
+# unset JAVA_TOOL_OPTIONS
 # Note, if you wish to also debug the CLI launcher, the following line is an
 # example of how to do so - note the different port number and 'suspend=y' which
 # means the JVM will not begin execution until a debugger is attached.

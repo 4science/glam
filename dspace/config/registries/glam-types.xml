@@ -64,6 +64,11 @@
         <namespace>https://www.4science.it/dspace-glam/glamcoin</namespace>
     </dc-schema>
 
+    <dc-schema>
+        <name>glammanuscript</name>
+        <namespace>https://www.4science.it/dspace-glam/glammanuscript</namespace>
+    </dc-schema>
+
     <dc-type>
         <schema>glamevent</schema>
         <element>variants</element>
@@ -1307,6 +1312,88 @@
         <element>annotation</element>
         <qualifier>type</qualifier>
         <scope_note>The textual type of the annotation</scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glam</schema>
+        <element>description</element>
+        <qualifier>incipit</qualifier>
+    </dc-type>
+
+    <dc-type>
+        <schema>glam</schema>
+        <element>description</element>
+        <qualifier>explicit</qualifier>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>contributor</element>
+        <qualifier>insecure</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>contributor</element>
+        <qualifier>anonym</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>type</element>
+        <qualifier>manuscript</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>type</element>
+        <qualifier></qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>description</element>
+        <qualifier></qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>bibliography</element>
+        <qualifier></qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>composite</element>
+        <qualifier></qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glammanuscript</schema>
+        <element>description</element>
+        <qualifier>decoration</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glam</schema>
+        <element>bitstream</element>
+        <qualifier>canvasid</qualifier>
+        <scope_note></scope_note>
+    </dc-type>
+
+    <dc-type>
+        <schema>glam</schema>
+        <element>bitstream</element>
+        <qualifier>name</qualifier>
+        <scope_note></scope_note>
     </dc-type>
 
 </dspace-dc-types>

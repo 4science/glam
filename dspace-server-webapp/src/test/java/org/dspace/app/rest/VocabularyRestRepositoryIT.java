@@ -51,7 +51,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * This class handles all Authority related IT. It alters some config to run the tests, but it gets cleared again
@@ -170,8 +169,6 @@ public class VocabularyRestRepositoryIT extends AbstractControllerIntegrationTes
     @Test
     public void findAllTest() throws Exception {
         String token = getAuthToken(admin.getEmail(), password);
-        MvcResult mvcResult = getClient(token).perform(get("/api/submission/vocabularies")).andReturn();
-        String contentAsString = mvcResult.getResponse().getContentAsString();
         int size = cas.getChoiceAuthoritiesNames().size();
         getClient(token).perform(get("/api/submission/vocabularies")
                      .param("size", String.valueOf(size)))
@@ -218,8 +215,11 @@ public class VocabularyRestRepositoryIT extends AbstractControllerIntegrationTes
                      VocabularyMatcher.matchProperties("samplerate", "samplerate", true, false),
                      VocabularyMatcher.matchProperties("bitsample", "bitsample", true, false),
                      VocabularyMatcher.matchProperties("framing_type", "framing_type", true, false),
-                     VocabularyMatcher.matchProperties("currency", "currency", true, false)
-                 )))
+                     VocabularyMatcher.matchProperties("currency", "currency", true, false),
+                     VocabularyMatcher.matchProperties("event_types", "event_types", true, false),
+                     VocabularyMatcher.matchProperties("funding_types", "funding_types", true, false),
+                     VocabularyMatcher.matchProperties("product-coar-types", "product-coar-types", false, true)
+                     )))
                 .andExpect(jsonPath("$._links.self.href",
                     Matchers.containsString("api/submission/vocabularies")))
                 .andExpect(jsonPath("$.page.totalElements", is(size)));

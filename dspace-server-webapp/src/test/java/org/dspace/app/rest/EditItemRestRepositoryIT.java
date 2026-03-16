@@ -140,6 +140,36 @@ public class EditItemRestRepositoryIT extends AbstractControllerIntegrationTest 
     }
 
     @Test
+    public void findOneManuscriptEditAllDetailsConfigurationExistsTest() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                .withName("Parent Community")
+                .build();
+
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                .withEntityType("Manuscript")
+                .withName("Collection 1")
+                .build();
+
+        Item itemA = ItemBuilder.createItem(context, col1)
+                .withTitle("Title item A")
+                .withIssueDate("2015-06-25")
+                .withAuthor("Smith, Maria")
+                .build();
+
+        EditItem editItem = new EditItem(context, itemA);
+
+        context.restoreAuthSystemState();
+
+        String tokenAdmin = getAuthToken(admin.getEmail(), password);
+
+        getClient(tokenAdmin).perform(get("/api/core/edititems/" + editItem.getID() + ":FULL"))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
     public void findOneModeConfigurationNotExistTest() throws Exception {
         context.turnOffAuthorisationSystem();
 

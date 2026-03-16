@@ -7,8 +7,6 @@
  */
 package org.dspace.app.sitemap;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -44,15 +42,12 @@ public class SitemapsOrgGenerator extends AbstractGenerator {
      * given directory, and with the sitemaps eventually exposed at starting
      * with the given URL stem and tail.
      *
-     * @param outputDirIn Directory to write sitemap files to
      * @param urlStem     start of URL that sitemap files will appear at, e.g.
      *                    {@code http://dspace.myu.edu/sitemap?sitemap=}
      * @param urlTail     end of URL that sitemap files will appear at, e.g.
      *                    {@code .html} or {@code null}
      */
-    public SitemapsOrgGenerator(File outputDirIn, String urlStem, String urlTail) {
-        super(outputDirIn);
-
+    public SitemapsOrgGenerator(String urlStem, String urlTail) {
         indexURLStem = urlStem;
         indexURLTail = (urlTail == null ? "" : urlTail);
     }
@@ -109,8 +104,7 @@ public class SitemapsOrgGenerator extends AbstractGenerator {
     }
 
     @Override
-    public void writeIndex(PrintStream output, int sitemapCount)
-        throws IOException {
+    public void writeIndex(PrintStream output, int sitemapCount) {
         String now = w3dtfFormat.format(new Date());
 
         output.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");

@@ -1,19 +1,10 @@
 # Set the JDK version and DSpace version
 ARG JDK_VERSION=17
 ARG DOCKER_REGISTRY=docker.io
-ARG BASE_IMAGE_REGISTRY=891377365430.dkr.ecr.eu-west-1.amazonaws.com
-ARG BASE_IMAGE=dspace-cris/base:arm64
 
-# Stage 1 - Define base image and java one
-FROM ${BASE_IMAGE_REGISTRY}/${BASE_IMAGE} AS base
-FROM ${DOCKER_REGISTRY}/eclipse-temurin:${JDK_VERSION}-jre as jre
-
-# Stage 2 - Copy java from jre and artifacts from build
-FROM base as install
+# Stage 1 - Copy artifacts
+FROM ${DOCKER_REGISTRY}/eclipse-temurin:${JDK_VERSION}-jre AS install
 EXPOSE 8080
-COPY --from=jre /opt/java/openjdk /usr/local/java
-ENV JAVA_HOME=/usr/local/java
-ENV PATH="$JAVA_HOME/bin:$PATH"
 ENV DATA_FOLDER=/data \
     DSPACE_INSTALL=/dspace \
     ASSETSTORE=/dspace/assetstore \
@@ -23,11 +14,27 @@ ENV DATA_FOLDER=/data \
     UPLOAD_DIR=/dspace/upload \
     VAR_DIR=/dspace/var \
     OAI_DIR=/dspace/var/oai \
-    TEMP_DIR=/dspace/temp
+    TEMP_DIR=/dspace/temp \
+    CUSTOMER_DIR=/data/config \
+    CUSTOMER_CFG=conf/local-customer.cfg \
+    CUSTOMER_SPRING_DIR=/data/config/spring
 
-RUN useradd -m -d /home/dspace -s /bin/bash dspace
+RUN curl -L -o /tmp/certificate.crt https://www.tbs-x509.com/Comodo_AAA_Certificate_Services.crt && \
+    keytool -import -trustcacerts -alias comodo -file /tmp/certificate.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt && \
+    rm /tmp/certificate.crt
 
-COPY --chown=dspace ./dspace/modules/server-boot/target/server-boot-*.jar /home/dspace/server-boot.jar
+ENV BASE_GROUP_GID=1000 BASE_GROUP_NAME=ubuntu
+RUN if [ "$(getent group $BASE_GROUP_GID)" ]; then \
+        echo "Group with GID $BASE_GROUP_GID already exists, skipping group creation"; \
+        BASE_GROUP_NAME="$(getent group $BASE_GROUP_GID | cut -d: -f1)"; \
+        echo "Using existing group '$BASE_GROUP_NAME' with GID $BASE_GROUP_GID for dspace user"; \
+    else \
+        groupadd -g $BASE_GROUP_GID $BASE_GROUP_NAME; \
+    fi && \
+    groupadd -g 1001 dspace && \
+    useradd -m -d /home/dspace -s /bin/bash -u 1001 -g dspace -G $BASE_GROUP_NAME dspace
+
+COPY --chown=dspace server-boot.jar /home/dspace/server-boot.jar
 RUN java -Djarmode=tools -jar /home/dspace/server-boot.jar extract --destination $DSPACE_INSTALL --libraries lib
 
 RUN install -g dspace -o dspace -d $DATA_FOLDER $ASSETSTORE $DSPACE_INSTALL $HANDLE_DIR $TRIPLESTORE_DIR $DOWNLOAD_DIR $UPLOAD_DIR $VAR_DIR $OAI_DIR $TEMP_DIR

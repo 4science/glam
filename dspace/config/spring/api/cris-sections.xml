@@ -200,7 +200,7 @@
                     <property name="fitHeight" value="false" />
                     <property name="showBlurryBackdrop" value="true" />
                     <property name="keepAspectRatio" value="false" />
-                    <property name="carouselHeightPx" value="500" />
+                    <property name="carouselHeightPx" value="300" />
                     <property name="captionStyle" value="text-justify" />
                     <property name="titleStyle" value="text-center" />
                 </bean>
@@ -310,7 +310,27 @@
                         </list>
                     </property>
                 </bean>
-            </list> -->
+            </list>-->
+            <!--<list>
+	            <bean class="org.dspace.layout.CrisLayoutCarouselComponent">
+				    <property name="discoveryConfigurationName" value="person" />
+				    <property name="style" value="col-md-12" />
+				    <property name="title" value="dc.title" />
+				    <property name="bundle" value="ORIGINAL" />
+				    <property name="link" value="oairecerif.identifier.url" />
+				    <property name="description" value="dc.description.abstract" />
+				    <property name="order" value="desc" />
+                    <property name="targetBlank" value="true" />
+                    <property name="fitWidth" value="false" />
+                    <property name="fitHeight" value="false" />
+                    <property name="showBlurryBackdrop" value="false" />
+                    <property name="keepAspectRatio" value="false" />
+                    <property name="carouselHeightPx" value="500" />
+                    <property name="captionStyle" value="text-justify" />
+                    <property name="titleStyle" value="text-center" />
+                    <property name="numberOfItems" value="20" />
+                </bean>
+            </list>-->
           </list>
         </constructor-arg>
     </bean>
