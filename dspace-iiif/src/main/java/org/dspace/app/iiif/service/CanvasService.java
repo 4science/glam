@@ -180,7 +180,7 @@ public class CanvasService extends AbstractResourceService {
      * @param bitstream DSpace bitstream
      * @param bundle  DSpace bundle
      * @param item  DSpace item
-     * @param canvasID  the canvas identifier
+     * @param canvasId  the canvas identifier
      * @param mimeType  bitstream mimetype
      * @param index  the index (1-based)
      * @return a canvas generator
