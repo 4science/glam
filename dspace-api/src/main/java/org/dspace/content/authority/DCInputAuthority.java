@@ -184,6 +184,9 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
         Locale currentLocale = I18nUtil.getSupportedLocale(locale);
         String[] valuesLocale = values.get(currentLocale.getLanguage());
         String[] labelsLocale = labels.get(currentLocale.getLanguage());
+        if (valuesLocale == null) {
+            return new Choices(Choices.CF_NOTFOUND);
+        }
         for (int i = 0; i < valuesLocale.length; ++i) {
             if (text.equalsIgnoreCase(valuesLocale[i])) {
                 Choice v[] = new Choice[1];

@@ -309,4 +309,22 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
 
         return new UUIDIterator<Bitstream>(context, query.getResultList(), Bitstream.class, this);
     }
+
+    @Override
+    public Item findItemByBitstreamId(Context context, UUID bitstreamId) throws SQLException {
+        CriteriaBuilder criteriaBuilder = getCriteriaBuilder(context);
+        CriteriaQuery<Item> criteriaQuery = criteriaBuilder.createQuery(Item.class);
+
+        Root<Bitstream> bitstreamRoot = criteriaQuery.from(Bitstream.class);
+        Join<Bitstream, Bundle> joinBundle = bitstreamRoot.join(Bitstream_.bundles);
+        Join<Bundle, Item> joinItem = joinBundle.join(Bundle_.items);
+
+        criteriaQuery.select(joinItem);
+        criteriaQuery.where(criteriaBuilder.equal(bitstreamRoot.get(Bitstream_.id), bitstreamId));
+
+        Query query = createQuery(context, criteriaQuery);
+        query.setMaxResults(1);
+        List<Item> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
 }
