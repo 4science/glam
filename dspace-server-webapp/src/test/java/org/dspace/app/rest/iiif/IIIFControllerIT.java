@@ -1663,8 +1663,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
 
     @Test
     public void findOneStoryCanvasIT() throws Exception {
-        configurationService.setProperty("iiif.canvas.default-width", "2200");
-        configurationService.setProperty("iiif.canvas.default-height", "1600");
+        configurationService.setProperty("iiif.canvas.default-width", "4400");
+        configurationService.setProperty("iiif.canvas.default-height", "3200");
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context)
                                           .withName("Parent Community")
@@ -1729,8 +1729,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$.images[0].on", containsString("/iiif/" + item1.getID() + "/canvas/"
                                        + bitstream1.getID().toString())))
                    .andExpect(jsonPath("$.thumbnail").exists())
-                   .andExpect(jsonPath("$.width", is(2200)))
-                   .andExpect(jsonPath("$.height", is(1600)));
+                   .andExpect(jsonPath("$.width", is(4400)))
+                   .andExpect(jsonPath("$.height", is(3200)));
     }
 
     @Test
