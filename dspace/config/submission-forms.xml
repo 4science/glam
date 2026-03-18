@@ -8564,6 +8564,17 @@
           <regex>^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$</regex>
           <language value-pairs-name="common_18n_languages">true</language>
         </field>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bitstream</dc-element>
+          <dc-qualifier>relatedItem</dc-qualifier>
+          <label>Item</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required />
+          <hint>Inserire l’item da cui proviene il canvas</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
+        </field>
       </row>
     </form>
     <form name="story">
