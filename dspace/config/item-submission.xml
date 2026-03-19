@@ -512,7 +512,6 @@
     </submission-process>
     <submission-process name="web_annotation-edit">
       <step id="web_annotation" />
-      <step id="license" />
     </submission-process>
     <submission-process name="personal_annotation">
       <step id="collection" />
@@ -521,7 +520,6 @@
     </submission-process>
     <submission-process name="personal_annotation-edit">
       <step id="personal_annotation" />
-      <step id="license" />
     </submission-process>
     <submission-process name="manuscript">
       <step id="collection" />
