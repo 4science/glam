@@ -100,6 +100,12 @@
 				<entry key="coin-csv" value-ref="csvCrosswalkCoin"/>
 				<entry key="coin-xls" value-ref="xlsCrosswalkCoin"/>
 
+				<entry key="scientificMaterial-json" value-ref="referCrosswalkScientificMaterialJson"/>
+				<entry key="scientificMaterial-pdf" value-ref="pdfCrosswalkScientificMaterial"/>
+				<entry key="scientificMaterial-xml" value-ref="referCrosswalkScientificMaterialXml"/>
+				<entry key="scientificMaterial-csv" value-ref="csvCrosswalkScientificMaterial"/>
+				<entry key="scientificMaterial-xls" value-ref="xlsCrosswalkScientificMaterial"/>
+
 				<!--
 				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
@@ -822,6 +828,50 @@
 		<property name="fileName" value="coin.xls"/>
 		<property name="sheetName" value="Coin"/>
 		<property name="entityType" value="Coin"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkScientificMaterialXml">
+		<property name="templateFileName" value="crosswalks/template/scientificMaterial-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="scientificMaterial.xml"/>
+		<property name="entityType" value="ScientificMaterial"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyScientificMaterials-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkScientificMaterialJson">
+		<property name="templateFileName" value="crosswalks/template/scientificMaterial-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="scientificMaterial.json"/>
+		<property name="entityType" value="ScientificMaterial"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/scientificMaterial-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkScientificMaterial">
+		<property name="templateFileName" value="crosswalks/template/scientificMaterial-template.xsl"/>
+		<property name="fileName" value="scientificMaterial.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="ScientificMaterial"/>
+		<property name="referCrosswalk" ref="referCrosswalkScientificMaterialXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkScientificMaterial">
+		<property name="templateFileName" value="crosswalks/template/scientificMaterial-table.template"/>
+		<property name="fileName" value="scientificMaterial.csv"/>
+		<property name="entityType" value="ScientificMaterial"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkScientificMaterial">
+		<property name="templateFileName" value="crosswalks/template/scientificMaterial-table.template"/>
+		<property name="fileName" value="scientificMaterial.xls"/>
+		<property name="sheetName" value="ScientificMaterial"/>
+		<property name="entityType" value="ScientificMaterial"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
