@@ -1,0 +1,10 @@
+Title = dc.title
+Subjects = group.glam-subject
+Type = dc.type
+Authors = group.dc-contributor-author
+Date issued = dc.date.issued
+Coverage shelfmark = dc.coverage.shelfmark
+Is picture of = group.dc-relation-isPictureOf
+Description = dc.description
+License = dc.rights.license
+Other links = group.dc-relation-otherlinks
