@@ -1,0 +1,7 @@
+Title = dc.title
+Authors = group.dc-contributor-author
+Date issued = dc.date.issued
+Source content = dc.source.content
+Abstract = dc.description.abstract
+Other links = group.dc-relation-otherlinks
+License = dc.rights.license
