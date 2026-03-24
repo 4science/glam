@@ -7,7 +7,7 @@
     <xsl:param name="imageDir" />
     <xsl:param name="fontFamily" />
 
-    <xsl:template match="JournalFond">
+    <xsl:template match="News">
         <fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format">
             <xsl:attribute name="font-family">
                 <xsl:value-of select="$fontFamily" />
@@ -29,6 +29,11 @@
 
                     <xsl:call-template name="section-title">
                         <xsl:with-param name="label" select="'Basic informations'" />
+                    </xsl:call-template>
+
+                    <xsl:call-template name="print-value">
+                        <xsl:with-param name="label" select="'Link'" />
+                        <xsl:with-param name="value" select="Link" />
                     </xsl:call-template>
 
                 </fo:flow>

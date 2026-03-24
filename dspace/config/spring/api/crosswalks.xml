@@ -136,18 +136,6 @@
 				<entry key="personalAnnotation-csv" value-ref="csvCrosswalkPersonalAnnotation"/>
 				<entry key="personalAnnotation-xls" value-ref="xlsCrosswalkPersonalAnnotation"/>
 
-				<!--
-				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="coin-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="scientificMaterial-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="audioVideo-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="musicalLibrettos-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="webAnnotation-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="personalAnnotation-json" value-ref="referCrosswalkJournalFondJson"/>
-				<entry key="artwork-json" value-ref="referCrosswalkJournalFondJson"/>
-				-->
-
 				<entry key="collection-xls" value-ref="xlsCrosswalkCollection"/>
                 <entry key="item-zip" value-ref="zipCrosswalk"/>
 			</map>
