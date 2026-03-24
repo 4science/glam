@@ -732,7 +732,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="path.json"/>
 		<property name="entityType" value="Path"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/path-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/paths-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -776,7 +776,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="opera.json"/>
 		<property name="entityType" value="Opera"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/opera-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/operas-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -820,7 +820,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="coin.json"/>
 		<property name="entityType" value="Coin"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/coin-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/coins-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -864,7 +864,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="scientificMaterial.json"/>
 		<property name="entityType" value="ScientificMaterial"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/scientificMaterial-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/scientificMaterials-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -908,7 +908,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="audioVideo.json"/>
 		<property name="entityType" value="AudioVideo"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/audioVideo-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/audioVideos-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -952,7 +952,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="artwork.json"/>
 		<property name="entityType" value="Artwork"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/artwork-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/artworks-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -996,7 +996,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="musicalLibrettos.json"/>
 		<property name="entityType" value="MusicalLibrettos"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/musicalLibrettos-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/musicalLibrettosList-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -1040,7 +1040,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="webAnnotation.json"/>
 		<property name="entityType" value="WebAnnotation"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/webAnnotation-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/webAnnotations-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
@@ -1084,7 +1084,7 @@
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
 		<property name="fileName" value="personalAnnotation.json"/>
 		<property name="entityType" value="PersonalAnnotation"/>
-		<property name="multipleItemsTemplateFileName" value="crosswalks/template/personalAnnotation-json.template"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/personalAnnotations-json.template"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
