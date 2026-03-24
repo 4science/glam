@@ -106,6 +106,12 @@
 				<entry key="scientificMaterial-csv" value-ref="csvCrosswalkScientificMaterial"/>
 				<entry key="scientificMaterial-xls" value-ref="xlsCrosswalkScientificMaterial"/>
 
+				<entry key="audioVideo-json" value-ref="referCrosswalkAudioVideoJson"/>
+				<entry key="audioVideo-pdf" value-ref="pdfCrosswalkAudioVideo"/>
+				<entry key="audioVideo-xml" value-ref="referCrosswalkAudioVideoXml"/>
+				<entry key="audioVideo-csv" value-ref="csvCrosswalkAudioVideo"/>
+				<entry key="audioVideo-xls" value-ref="xlsCrosswalkAudioVideo"/>
+
 				<!--
 				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
@@ -872,6 +878,50 @@
 		<property name="fileName" value="scientificMaterial.xls"/>
 		<property name="sheetName" value="ScientificMaterial"/>
 		<property name="entityType" value="ScientificMaterial"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkAudioVideoXml">
+		<property name="templateFileName" value="crosswalks/template/audioVideo-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="audioVideo.xml"/>
+		<property name="entityType" value="AudioVideo"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyAudioVideos-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkAudioVideoJson">
+		<property name="templateFileName" value="crosswalks/template/audioVideo-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="audioVideo.json"/>
+		<property name="entityType" value="AudioVideo"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/audioVideo-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkAudioVideo">
+		<property name="templateFileName" value="crosswalks/template/audioVideo-template.xsl"/>
+		<property name="fileName" value="audioVideo.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="AudioVideo"/>
+		<property name="referCrosswalk" ref="referCrosswalkAudioVideoXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkAudioVideo">
+		<property name="templateFileName" value="crosswalks/template/audioVideo-table.template"/>
+		<property name="fileName" value="audioVideo.csv"/>
+		<property name="entityType" value="AudioVideo"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkAudioVideo">
+		<property name="templateFileName" value="crosswalks/template/audioVideo-table.template"/>
+		<property name="fileName" value="audioVideo.xls"/>
+		<property name="sheetName" value="AudioVideo"/>
+		<property name="entityType" value="AudioVideo"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
