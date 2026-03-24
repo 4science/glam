@@ -88,6 +88,12 @@
 				<entry key="path-csv" value-ref="csvCrosswalkPath"/>
 				<entry key="path-xls" value-ref="xlsCrosswalkPath"/>
 
+				<entry key="opera-json" value-ref="referCrosswalkOperaJson"/>
+				<entry key="opera-pdf" value-ref="pdfCrosswalkOpera"/>
+				<entry key="opera-xml" value-ref="referCrosswalkOperaXml"/>
+				<entry key="opera-csv" value-ref="csvCrosswalkOpera"/>
+				<entry key="opera-xls" value-ref="xlsCrosswalkOpera"/>
+
 				<!--
 				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
@@ -722,6 +728,50 @@
 		<property name="fileName" value="path.xls"/>
 		<property name="sheetName" value="Path"/>
 		<property name="entityType" value="Path"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkOperaXml">
+		<property name="templateFileName" value="crosswalks/template/opera-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="opera.xml"/>
+		<property name="entityType" value="Opera"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyOpera-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkOperaJson">
+		<property name="templateFileName" value="crosswalks/template/opera-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="opera.json"/>
+		<property name="entityType" value="Opera"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/opera-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkOpera">
+		<property name="templateFileName" value="crosswalks/template/opera-template.xsl"/>
+		<property name="fileName" value="opera.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="Opera"/>
+		<property name="referCrosswalk" ref="referCrosswalkOperaXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkOpera">
+		<property name="templateFileName" value="crosswalks/template/opera-table.template"/>
+		<property name="fileName" value="opera.csv"/>
+		<property name="entityType" value="Opera"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkOpera">
+		<property name="templateFileName" value="crosswalks/template/opera-table.template"/>
+		<property name="fileName" value="opera.xls"/>
+		<property name="sheetName" value="Opera"/>
+		<property name="entityType" value="Opera"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 

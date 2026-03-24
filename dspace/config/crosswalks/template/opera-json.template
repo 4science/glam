@@ -1,0 +1,25 @@
+{
+    "title": "@dc.title@",
+    "dateIssued": "@dc.date.issued@",
+    "authors": [
+        @group.dc-contributor-author.start@
+        {
+            "name": "@dc.contributor.author@"
+        },
+        @group.dc-contributor-author.end@
+    ],
+    "authorRoles": [
+        @group.dc-contributor-authorrole.start@
+        {
+            "role": "@dc.contributor.authorrole@"
+        },
+        @group.dc-contributor-authorrole.end@
+    ],
+    "otherLinks": [
+        @group.dc-relation-otherlinks.start@
+        {
+            "link": "@dc.relation.otherlinks@"
+        },
+        @group.dc-relation-otherlinks.end@
+    ]
+}
