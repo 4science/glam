@@ -1,0 +1,20 @@
+{
+    "identifierInternal": "@dc.identifier.internal@",
+    "identifierNote": "@dc.identifier.note@",
+    "title": "@dc.title@",
+    "coverageTemporal": "@dc.coverage.temporal@",
+    "mint": "@glamcoin.mint@",
+    "materialAndTechnique": "@dc.type.materialandtechnique@",
+    "formatMisd": "@dc.format.misd@",
+    "formatMisg": "@dc.format.misg@",
+    "obverse": "@glamcoin.obverse@",
+    "reverse": "@glamcoin.reverse@",
+    "otherLinks": [
+        @group.dc-relation-otherlink.start@
+        {
+            "link": "@dc.relation.otherlink@"
+        },
+        @group.dc-relation-otherlink.end@
+    ],
+    "license": "@dc.rights.license@"
+}

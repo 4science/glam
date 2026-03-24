@@ -94,6 +94,12 @@
 				<entry key="opera-csv" value-ref="csvCrosswalkOpera"/>
 				<entry key="opera-xls" value-ref="xlsCrosswalkOpera"/>
 
+				<entry key="coin-json" value-ref="referCrosswalkCoinJson"/>
+				<entry key="coin-pdf" value-ref="pdfCrosswalkCoin"/>
+				<entry key="coin-xml" value-ref="referCrosswalkCoinXml"/>
+				<entry key="coin-csv" value-ref="csvCrosswalkCoin"/>
+				<entry key="coin-xls" value-ref="xlsCrosswalkCoin"/>
+
 				<!--
 				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
@@ -772,6 +778,50 @@
 		<property name="fileName" value="opera.xls"/>
 		<property name="sheetName" value="Opera"/>
 		<property name="entityType" value="Opera"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkCoinXml">
+		<property name="templateFileName" value="crosswalks/template/coin-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="coin.xml"/>
+		<property name="entityType" value="Coin"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyCoins-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkCoinJson">
+		<property name="templateFileName" value="crosswalks/template/coin-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="coin.json"/>
+		<property name="entityType" value="Coin"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/coin-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkCoin">
+		<property name="templateFileName" value="crosswalks/template/coin-template.xsl"/>
+		<property name="fileName" value="coin.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="Coin"/>
+		<property name="referCrosswalk" ref="referCrosswalkCoinXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkCoin">
+		<property name="templateFileName" value="crosswalks/template/coin-table.template"/>
+		<property name="fileName" value="coin.csv"/>
+		<property name="entityType" value="Coin"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkCoin">
+		<property name="templateFileName" value="crosswalks/template/coin-table.template"/>
+		<property name="fileName" value="coin.xls"/>
+		<property name="sheetName" value="Coin"/>
+		<property name="entityType" value="Coin"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
