@@ -1,0 +1,18 @@
+{
+    "abstract": "@dc.description.abstract@",
+    "annotationType": "@glam.annotation.type@",
+    "subjectAnnotations": [
+        @group.glam-subject-annotation.start@
+        {
+            "name": "@glam.subject.annotation@"
+        },
+        @group.glam-subject-annotation.end@
+    ],
+    "relatedDocuments": [
+        @group.dc-relation-relatedDocument.start@
+        {
+            "name": "@dc.relation.relatedDocument@"
+        },
+        @group.dc-relation-relatedDocument.end@
+    ]
+}

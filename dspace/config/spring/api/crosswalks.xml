@@ -124,6 +124,18 @@
 				<entry key="musicalLibrettos-csv" value-ref="csvCrosswalkMusicalLibrettos"/>
 				<entry key="musicalLibrettos-xls" value-ref="xlsCrosswalkMusicalLibrettos"/>
 
+				<entry key="webAnnotation-json" value-ref="referCrosswalkWebAnnotationJson"/>
+				<entry key="webAnnotation-pdf" value-ref="pdfCrosswalkWebAnnotation"/>
+				<entry key="webAnnotation-xml" value-ref="referCrosswalkWebAnnotationXml"/>
+				<entry key="webAnnotation-csv" value-ref="csvCrosswalkWebAnnotation"/>
+				<entry key="webAnnotation-xls" value-ref="xlsCrosswalkWebAnnotation"/>
+
+				<entry key="personalAnnotation-json" value-ref="referCrosswalkPersonalAnnotationJson"/>
+				<entry key="personalAnnotation-pdf" value-ref="pdfCrosswalkPersonalAnnotation"/>
+				<entry key="personalAnnotation-xml" value-ref="referCrosswalkPersonalAnnotationXml"/>
+				<entry key="personalAnnotation-csv" value-ref="csvCrosswalkPersonalAnnotation"/>
+				<entry key="personalAnnotation-xls" value-ref="xlsCrosswalkPersonalAnnotation"/>
+
 				<!--
 				<entry key="path-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="opera-json" value-ref="referCrosswalkJournalFondJson"/>
@@ -1022,6 +1034,94 @@
 		<property name="fileName" value="musicalLibrettos.xls"/>
 		<property name="sheetName" value="MusicalLibrettos"/>
 		<property name="entityType" value="MusicalLibrettos"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkWebAnnotationXml">
+		<property name="templateFileName" value="crosswalks/template/webAnnotation-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="webAnnotation.xml"/>
+		<property name="entityType" value="WebAnnotation"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyWebAnnotations-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkWebAnnotationJson">
+		<property name="templateFileName" value="crosswalks/template/webAnnotation-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="webAnnotation.json"/>
+		<property name="entityType" value="WebAnnotation"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/webAnnotation-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkWebAnnotation">
+		<property name="templateFileName" value="crosswalks/template/webAnnotation-template.xsl"/>
+		<property name="fileName" value="webAnnotation.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="WebAnnotation"/>
+		<property name="referCrosswalk" ref="referCrosswalkWebAnnotationXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkWebAnnotation">
+		<property name="templateFileName" value="crosswalks/template/webAnnotation-table.template"/>
+		<property name="fileName" value="webAnnotation.csv"/>
+		<property name="entityType" value="WebAnnotation"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkWebAnnotation">
+		<property name="templateFileName" value="crosswalks/template/webAnnotation-table.template"/>
+		<property name="fileName" value="webAnnotation.xls"/>
+		<property name="sheetName" value="WebAnnotation"/>
+		<property name="entityType" value="WebAnnotation"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkPersonalAnnotationXml">
+		<property name="templateFileName" value="crosswalks/template/personalAnnotation-xml.template"/>
+		<property name="mimeType" value="application/xml; charset=UTF-8"/>
+		<property name="fileName" value="personalAnnotation.xml"/>
+		<property name="entityType" value="PersonalAnnotation"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/manyPersonalAnnotations-xml.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="xmlValueConverter" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkPersonalAnnotationJson">
+		<property name="templateFileName" value="crosswalks/template/personalAnnotation-json.template"/>
+		<property name="mimeType" value="application/json; charset=UTF-8"/>
+		<property name="fileName" value="personalAnnotation.json"/>
+		<property name="entityType" value="PersonalAnnotation"/>
+		<property name="multipleItemsTemplateFileName" value="crosswalks/template/personalAnnotation-json.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
+		<property name="converter" ref="jsonValueConverter" />
+		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkPersonalAnnotation">
+		<property name="templateFileName" value="crosswalks/template/personalAnnotation-template.xsl"/>
+		<property name="fileName" value="personalAnnotation.pdf"/>
+		<property name="mimeType" value="application/pdf"/>
+		<property name="entityType" value="PersonalAnnotation"/>
+		<property name="referCrosswalk" ref="referCrosswalkPersonalAnnotationXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkPersonalAnnotation">
+		<property name="templateFileName" value="crosswalks/template/personalAnnotation-table.template"/>
+		<property name="fileName" value="personalAnnotation.csv"/>
+		<property name="entityType" value="PersonalAnnotation"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkPersonalAnnotation">
+		<property name="templateFileName" value="crosswalks/template/personalAnnotation-table.template"/>
+		<property name="fileName" value="personalAnnotation.xls"/>
+		<property name="sheetName" value="PersonalAnnotation"/>
+		<property name="entityType" value="PersonalAnnotation"/>
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 

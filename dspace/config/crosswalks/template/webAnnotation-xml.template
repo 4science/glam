@@ -1,0 +1,18 @@
+<WebAnnotation id="@virtual.id@">
+    <Abstract>@dc.description.abstract@</Abstract>
+    <AnnotationType>@glam.annotation.type@</AnnotationType>
+    <SubjectAnnotations>
+        @group.glam-subject-annotation.start@
+        <SubjectAnnotation>
+            <DisplayName>@glam.subject.annotation@</DisplayName>
+        </SubjectAnnotation>
+        @group.glam-subject-annotation.end@
+    </SubjectAnnotations>
+    <RelatedDocuments>
+        @group.dc-relation-relatedDocument.start@
+        <RelatedDocument>
+            <DisplayName>@dc.relation.relatedDocument@</DisplayName>
+        </RelatedDocument>
+        @group.dc-relation-relatedDocument.end@
+    </RelatedDocuments>
+</WebAnnotation>
