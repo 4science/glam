@@ -42,13 +42,6 @@
         },
         @group.dcterms-bibliographicCitation.end@
     ],
-	"bibliographicLinks": [
-    	@group.dcterms-bibliographicCitation.start@
-        {
-        	"name": "@dcterms.bibliographicCitation@"
-        },
-        @group.dcterms-bibliographicCitation.end@
-    ],
     "uses": {
     	"aggregation": [
     		"@dc.relation.aggregation@",
