@@ -61,6 +61,8 @@
 				<entry key="place-xml" value-ref="referCrosswalkPlaceXml"/>
 				<entry key="place-json" value-ref="referCrosswalkPlaceJson"/>
 				<entry key="place-pdf" value-ref="pdfCrosswalkPlace"/>
+				<entry key="place-csv" value-ref="csvCrosswalkPlace"/>
+				<entry key="place-xls" value-ref="xlsCrosswalkPlace"/>
 
 				<entry key="fond-xml" value-ref="referCrosswalkFondXml"/>
 				<entry key="fond-json" value-ref="referCrosswalkFondJson"/>
@@ -440,6 +442,21 @@
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkPlace">
+		<property name="templateFileName" value="crosswalks/template/place-table.template"/>
+		<property name="fileName" value="places.csv"/>
+		<property name="entityType" value="Place"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkPlace">
+		<property name="templateFileName" value="crosswalks/template/place-table.template"/>
+		<property name="fileName" value="places.xls"/>
+		<property name="sheetName" value="Places"/>
+		<property name="entityType" value="Place"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkPlace">
