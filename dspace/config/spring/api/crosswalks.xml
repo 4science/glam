@@ -67,6 +67,8 @@
 				<entry key="fond-xml" value-ref="referCrosswalkFondXml"/>
 				<entry key="fond-json" value-ref="referCrosswalkFondJson"/>
 				<entry key="fond-pdf" value-ref="pdfCrosswalkFond"/>
+				<entry key="fond-csv" value-ref="csvCrosswalkFond"/>
+				<entry key="fond-xls" value-ref="xlsCrosswalkFond"/>
 
 				<entry key="aggregation-xml" value-ref="referCrosswalkAggregationXml"/>
 				<entry key="aggregation-json" value-ref="referCrosswalkAggregationJson"/>
@@ -486,6 +488,21 @@
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkFond">
+		<property name="templateFileName" value="crosswalks/template/fond-table.template"/>
+		<property name="fileName" value="fonds.csv"/>
+		<property name="entityType" value="Fonds"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkFond">
+		<property name="templateFileName" value="crosswalks/template/fond-table.template"/>
+		<property name="fileName" value="fonds.xls"/>
+		<property name="sheetName" value="Fonds"/>
+		<property name="entityType" value="Fonds"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkFond">
