@@ -21,6 +21,12 @@
             </fo:layout-master-set>
             <fo:page-sequence master-reference="simpleA4">
                 <fo:flow flow-name="xsl-region-body">
+                    <fo:block margin-bottom="5mm" padding="2mm">
+                        <fo:block font-size="26pt" font-weight="bold" text-align="center">
+                            <xsl:value-of select="Title" />
+                        </fo:block>
+                    </fo:block>
+
                     <fo:block font-size="10pt" space-after="5mm" text-align="justify" margin-top="5mm">
                         <xsl:value-of select="Abstract" />
                     </fo:block>
