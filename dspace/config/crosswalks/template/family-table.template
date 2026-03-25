@@ -1,0 +1,7 @@
+Name = dc.title
+Name alternative = dc.title.alternative
+Description = dc.description
+National = glamfamily.nationality
+Events = group.dc-relation-event
+Editors = group.glamfamily-editor
+Aggregations = group.dc-relation-aggregation
