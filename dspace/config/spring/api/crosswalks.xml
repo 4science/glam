@@ -55,6 +55,8 @@
 				<entry key="archival-xml" value-ref="referCrosswalkArchivalXml"/>
 				<entry key="archival-json" value-ref="referCrosswalkArchivalJson"/>
 				<entry key="archival-pdf" value-ref="pdfCrosswalkArchival"/>
+				<entry key="archival-csv" value-ref="csvCrosswalkArchival"/>
+				<entry key="archival-xls" value-ref="xlsCrosswalkArchival"/>
 
 				<entry key="place-xml" value-ref="referCrosswalkPlaceXml"/>
 				<entry key="place-json" value-ref="referCrosswalkPlaceJson"/>
@@ -394,6 +396,21 @@
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkArchival">
+		<property name="templateFileName" value="crosswalks/template/archival-table.template"/>
+		<property name="fileName" value="archivals.csv"/>
+		<property name="entityType" value="ArchivalMaterial"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkArchival">
+		<property name="templateFileName" value="crosswalks/template/archival-table.template"/>
+		<property name="fileName" value="archivals.xls"/>
+		<property name="sheetName" value="Archivals"/>
+		<property name="entityType" value="ArchivalMaterial"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkArchival">
