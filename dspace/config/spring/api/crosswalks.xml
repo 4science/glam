@@ -43,10 +43,14 @@
 				<entry key="event-xml" value-ref="referCrosswalkEventXml"/>
 				<entry key="event-json" value-ref="referCrosswalkEventJson"/>
 				<entry key="event-pdf" value-ref="pdfCrosswalkEvent"/>
+				<entry key="event-csv" value-ref="csvCrosswalkEvent"/>
+				<entry key="event-xls" value-ref="xlsCrosswalkEvent"/>
 
 				<entry key="picture-xml" value-ref="referCrosswalkPictureXml"/>
 				<entry key="picture-json" value-ref="referCrosswalkPictureJson"/>
 				<entry key="picture-pdf" value-ref="pdfCrosswalkPicture"/>
+				<entry key="picture-csv" value-ref="csvCrosswalkPicture"/>
+				<entry key="picture-xls" value-ref="xlsCrosswalkPicture"/>
 
 				<entry key="archival-xml" value-ref="referCrosswalkArchivalXml"/>
 				<entry key="archival-json" value-ref="referCrosswalkArchivalJson"/>
@@ -301,6 +305,21 @@
 		<property name="referCrosswalk" ref="referCrosswalkEventXml"/>
 	</bean>
 
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkEvent">
+		<property name="templateFileName" value="crosswalks/template/event-table.template"/>
+		<property name="fileName" value="events.csv"/>
+		<property name="entityType" value="Event"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkEvent">
+		<property name="templateFileName" value="crosswalks/template/event-table.template"/>
+		<property name="fileName" value="events.xls"/>
+		<property name="sheetName" value="Events"/>
+		<property name="entityType" value="Event"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
 	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkEventJson">
 		<property name="templateFileName" value="crosswalks/template/event-json.template"/>
 		<property name="mimeType" value="application/json; charset=UTF-8"/>
@@ -328,6 +347,21 @@
 		<property name="mimeType" value="application/pdf"/>
 		<property name="entityType" value="Picture"/>
 		<property name="referCrosswalk" ref="referCrosswalkPictureXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkPicture">
+		<property name="templateFileName" value="crosswalks/template/picture-table.template"/>
+		<property name="fileName" value="pictures.csv"/>
+		<property name="entityType" value="Picture"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkPicture">
+		<property name="templateFileName" value="crosswalks/template/picture-table.template"/>
+		<property name="fileName" value="pictures.xls"/>
+		<property name="sheetName" value="Pictures"/>
+		<property name="entityType" value="Picture"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.ReferCrosswalk" id="referCrosswalkPictureJson">
