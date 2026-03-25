@@ -91,6 +91,8 @@
 				<entry key="journalFond-xml" value-ref="referCrosswalkJournalFondXml"/>
 				<entry key="journalFond-json" value-ref="referCrosswalkJournalFondJson"/>
 				<entry key="journalFond-pdf" value-ref="pdfCrosswalkJournalFond"/>
+				<entry key="journalFond-csv" value-ref="csvCrosswalkJournalFond"/>
+				<entry key="journalFond-xls" value-ref="xlsCrosswalkJournalFond"/>
 
 				<entry key="news-json" value-ref="referCrosswalkNewsJson"/>
 				<entry key="news-pdf" value-ref="referCrosswalkNewsPdf"/>
@@ -707,6 +709,21 @@
 		<property name="mimeType" value="application/pdf"/>
 		<property name="entityType" value="JournalFonds"/>
 		<property name="referCrosswalk" ref="referCrosswalkJournalFondXml"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkJournalFond">
+		<property name="entityType" value="JournalFonds"/>
+		<property name="fileName" value="journalFond.csv"/>
+		<property name="templateFileName" value="crosswalks/template/journalFond-table.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkJournalFond">
+		<property name="entityType" value="JournalFonds"/>
+		<property name="fileName" value="journalFond.xls"/>
+		<property name="templateFileName" value="crosswalks/template/journalFond-table.template"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+		<property name="sheetName" value="JournalFond"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkPerson">
