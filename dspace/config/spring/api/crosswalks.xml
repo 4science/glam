@@ -73,6 +73,8 @@
 				<entry key="aggregation-xml" value-ref="referCrosswalkAggregationXml"/>
 				<entry key="aggregation-json" value-ref="referCrosswalkAggregationJson"/>
 				<entry key="aggregation-pdf" value-ref="pdfCrosswalkAggregation"/>
+				<entry key="aggregation-csv" value-ref="csvCrosswalkAggregation"/>
+				<entry key="aggregation-xls" value-ref="xlsCrosswalkAggregation"/>
 
 				<entry key="family-xml" value-ref="referCrosswalkFamilyXml"/>
 				<entry key="family-json" value-ref="referCrosswalkFamilyJson"/>
@@ -532,6 +534,21 @@
 		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).SINGLE_AND_MULTIPLE}"/>
 		<property name="converter" ref="jsonValueConverter" />
 		<property name="linesPostProcessor" ref="jsonPostProcessor" />
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.CsvCrosswalk" id="csvCrosswalkAggregation">
+		<property name="templateFileName" value="crosswalks/template/aggregation-table.template"/>
+		<property name="fileName" value="aggregations.csv"/>
+		<property name="entityType" value="Aggregation"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
+	</bean>
+
+	<bean class="org.dspace.content.integration.crosswalks.XlsCrosswalk" id="xlsCrosswalkAggregation">
+		<property name="templateFileName" value="crosswalks/template/aggregation-table.template"/>
+		<property name="fileName" value="aggregations.xls"/>
+		<property name="sheetName" value="Aggregations"/>
+		<property name="entityType" value="Aggregation"/>
+		<property name="crosswalkMode" value="#{T(org.dspace.content.crosswalk.CrosswalkMode).MULTIPLE}"/>
 	</bean>
 
 	<bean class="org.dspace.content.integration.crosswalks.DocumentCrosswalk" id="pdfCrosswalkAggregation">
