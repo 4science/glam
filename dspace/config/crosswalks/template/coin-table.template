@@ -1,0 +1,12 @@
+Identifier internal = dc.identifier.internal
+Identifier note = dc.identifier.note
+Title = dc.title
+Coverage temporal = dc.coverage.temporal
+Mint = glamcoin.mint
+Material and technique = dc.type.materialandtechnique
+Format MISD = dc.format.misd
+Format MISG = dc.format.misg
+Obverse = glamcoin.obverse
+Reverse = glamcoin.reverse
+Other links = group.dc-relation-otherlink
+License = dc.rights.license

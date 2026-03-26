@@ -1,0 +1,5 @@
+Title = dc.title
+Abstract = dc.description.abstract
+Annotation type = glam.annotation.type
+Subject annotations = group.glam-subject-annotation
+Related documents = group.dc-relation-relatedDocument

@@ -1,0 +1,36 @@
+{
+    "title": "@dc.title@",
+    "subjects": [
+        @group.glam-subject.start@
+        {
+            "name": "@glam.subject@"
+        },
+        @group.glam-subject.end@
+    ],
+    "type": "@dc.type@",
+    "authors": [
+        @group.dc-contributor-author.start@
+        {
+            "name": "@dc.contributor.author@"
+        },
+        @group.dc-contributor-author.end@
+    ],
+    "dateIssued": "@dc.date.issued@",
+    "coverageShelfmark": "@dc.coverage.shelfmark@",
+    "isPictureOf": [
+        @group.dc-relation-isPictureOf.start@
+        {
+            "name": "@dc.relation.isPictureOf@"
+        },
+        @group.dc-relation-isPictureOf.end@
+    ],
+    "description": "@dc.description@",
+    "license": "@dc.rights.license@",
+    "otherLinks": [
+        @group.dc-relation-otherlinks.start@
+        {
+            "link": "@dc.relation.otherlinks@"
+        },
+        @group.dc-relation-otherlinks.end@
+    ]
+}

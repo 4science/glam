@@ -1,0 +1,11 @@
+{
+    "title": "@dc.title@",
+    "description": "@dc.description@",
+    "parts": [
+        @group.dc-relation-haspartofpath.start@
+        {
+            "name": "@dc.relation.haspartofpath@"
+        },
+        @group.dc-relation-haspartofpath.end@
+    ]
+}
