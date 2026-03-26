@@ -1,0 +1,7 @@
+Name = dc.title
+Name alternative = dc.title.alternative
+Latitude = glamplace.lat
+Longitude = glamplace.long
+DBpedia link = glam.link.dbpedia
+Wikipedia link = glam.link.wikipedia
+Aggregations = group.dc-relation-aggregation

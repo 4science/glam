@@ -1,0 +1,3 @@
+Title = dc.title
+Description = dc.description
+Parts = dc.relation.haspartofpath

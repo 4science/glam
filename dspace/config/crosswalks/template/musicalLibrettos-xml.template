@@ -1,0 +1,21 @@
+<MusicalLibrettos id="@virtual.id@">
+    <Title>@dc.title@</Title>
+    <Authors>
+        @group.dc-contributor-author.start@
+        <Author>
+            <DisplayName>@dc.contributor.author@</DisplayName>
+        </Author>
+        @group.dc-contributor-author.end@
+    </Authors>
+    <DateIssued>@dc.date.issued@</DateIssued>
+    <SourceContent>@dc.source.content@</SourceContent>
+    <Abstract>@dc.description.abstract@</Abstract>
+    <OtherLinks>
+        @group.dc-relation-otherlinks.start@
+        <OtherLink>
+            <DisplayName>@dc.relation.otherlinks@</DisplayName>
+        </OtherLink>
+        @group.dc-relation-otherlinks.end@
+    </OtherLinks>
+    <License>@dc.rights.license@</License>
+</MusicalLibrettos>

@@ -7,6 +7,8 @@
  */
 package org.dspace.app.iiif.service;
 
+import static org.dspace.content.Item.ANY;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
@@ -47,6 +50,9 @@ public class StorytellingService {
     private static final String OA_ANNOTATION = "oa:Annotation";
     private static final String DCTYPES_IMAGE = "dctypes:Image";
     private static final String MOTIVATION_PAINTING = "sc:painting";
+    private static final String RELATED_ITEM_FORMAT = "text/html";
+    private static final String IIIF_IMAGE_WIDTH = "iiif.image.width";
+    private static final String IIIF_IMAGE_HEIGHT = "iiif.image.height";
 
     @Autowired
     private ItemService itemService;
@@ -56,6 +62,8 @@ public class StorytellingService {
     private BitstreamService bitstreamService;
     @Autowired
     private IIIFUtils iiifUtils;
+    @Autowired
+    private CanvasService canvasService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -110,8 +118,10 @@ public class StorytellingService {
     }
 
     private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
-        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", Item.ANY);
-        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", Item.ANY);
+        List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", ANY);
+        List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", ANY);
+        List<MetadataValue> relatedItems = itemService.getMetadata(item, "glam", "bitstream", "relatedItem", ANY);
+
         if (canvasIDs.size() != canvasTitles.size()) {
             log.error("Mismatch in number of canvas titles and canvas IDs for story {}. Titles: {}, IDs: {}",
                       storyId, canvasTitles.size(), canvasIDs.size());
@@ -120,6 +130,8 @@ public class StorytellingService {
         for (int i = 0; i < canvasIDs.size(); i++) {
             String canvasLabel = canvasTitles.get(i).getValue();
             String bitstreamUuid = canvasIDs.get(i).getValue();
+            String relatedItemTitle = CollectionUtils.isEmpty(relatedItems) ? null : relatedItems.get(i).getValue();
+            String relatedItemUUID = CollectionUtils.isEmpty(relatedItems) ? null : relatedItems.get(i).getAuthority();
 
             if (StringUtils.isBlank(bitstreamUuid)) {
                 log.warn("Skipping canvas with missing bitstream UUID for story {}", storyId);
@@ -137,11 +149,13 @@ public class StorytellingService {
                 canvas.put("label", canvasLabel);
             }
 
-            // Canvas dimensions - retrieve from bitstream or use configured defaults
-            int[] dimensions = getCanvasDimensions(context, bitstreamUuid);
+            // Canvas dimensions - retrieve from bitstream
+            int[] dimensions = getCanvasDimensions(context, item, bitstreamUuid);
             if (dimensions != null && dimensions.length == 2) {
                 canvas.put("width", dimensions[0]);
                 canvas.put("height", dimensions[1]);
+            } else {
+                log.error("Could not retrieve dimensions for canvas:{} in story:{}.", canvasId, storyId);
             }
 
             // Thumbnail
@@ -150,9 +164,25 @@ public class StorytellingService {
             // Images array
             buildImages(canvas, canvasId, bitstreamUuid, context);
 
+            // related - link to the original HTML page
+            if (StringUtils.isNotBlank(relatedItemUUID)) {
+                var uiUrl = configurationService.getProperty("dspace.ui.url");
+                var relatedItemUrl = uiUrl + "/items/" + relatedItemUUID;
+                buildRelated(canvas, relatedItemTitle, relatedItemUrl);
+            } else {
+                log.error("Missing related item UUID for canvas {} in story {}", canvasId, storyId);
+            }
+
             // otherContent - annotation list
             buildOtherContent(canvas, canvasId, serverUrl);
         }
+    }
+
+    private void buildRelated(ObjectNode canvas, String relatedItemTitle, String relatedItemUrl) {
+        ObjectNode related = canvas.putObject("related");
+        related.put("@id", relatedItemUrl);
+        related.put("format", RELATED_ITEM_FORMAT);
+        related.put("label", relatedItemTitle);
     }
 
     private void buildThumbnail(ObjectNode canvas, String bitstreamUuid, Context context) {
@@ -232,25 +262,23 @@ public class StorytellingService {
     }
 
     /**
-     * Gets canvas dimensions from bitstream or configuration.
-     * If default dimensions are configured, use them. Otherwise, retrieve from image server.
+     * Returns the canvas dimensions {@code [width, height]} for the given bitstream UUID.
+     * If the bitstream has {@code iiif.image.width} metadata, dimensions are read directly from the metadata.
+     * Otherwise they are computed using the {@link CanvasService#computeDynamicDefaultSizes(Bitstream)} method.
+     *
+     * @param context       the DSpace context
+     * @param bitstreamUuid the UUID of the bitstream
+     * @return              an array {@code [width, height]}, or {@code null} if the bitstream is not found
+     *                      or dimensions cannot be determined
      */
-    private int[] getCanvasDimensions(Context context, String bitstreamUuid) {
-        // Check if default dimensions are configured
-        String configWidth = configurationService.getProperty("iiif.canvas.default-width");
-        String configHeight = configurationService.getProperty("iiif.canvas.default-height");
-
-        // If configured, use configuration values
-        if (configWidth != null && configHeight != null) {
-            return new int[] { Integer.parseInt(configWidth), Integer.parseInt(configHeight) };
-        }
-
-        // Otherwise, try to get dimensions from the bitstream via IIIF image server
+    private int[] getCanvasDimensions(Context context, Item item, String bitstreamUuid) {
         try {
             Bitstream bitstream = bitstreamService.find(context, UUID.fromString(bitstreamUuid));
-            if (bitstream != null) {
-                return iiifUtils.getImageDimensions(bitstream);
-            }
+            int[] defaultDims = canvasService.computeDynamicDefaultSizes(bitstream);
+            return new int[] {
+                iiifUtils.getCanvasWidth(bitstream, null, item, defaultDims[0]),
+                iiifUtils.getCanvasHeight(bitstream, null, item, defaultDims[1])
+            };
         } catch (SQLException e) {
             log.warn("Could not retrieve bitstream {} for dimensions: {}", bitstreamUuid, e.getMessage());
         }

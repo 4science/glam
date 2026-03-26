@@ -1,0 +1,15 @@
+Name = dc.title
+Name alternative = dc.title.alternative
+Authors = group.dc-contributor-author
+Organizations = group.dc-contributor-corporatebody
+Families = group.dc-contributor-family
+Custodian = glamfonds.custodian
+Shelfmark = glamfonds.shelfmark
+Description = dc.description.abstract
+Document quantity = glamfonds.quantity
+Notes = group.glamfonds-arrangement-note
+Documents = group.glamfonds-relation-materials
+Storage status = glamfonds.preservation
+Bibliographics = group.glamfonds-bibliography
+Identifier URI = dc.identifier.uri
+Editors = group.glamfonds-editor

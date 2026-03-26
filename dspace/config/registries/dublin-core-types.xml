@@ -640,6 +640,12 @@
   </dc-type>
 
   <dc-type>
+    <schema>dc</schema>
+    <element>relation</element>
+    <qualifier>webannotation</qualifier>
+  </dc-type>
+
+  <dc-type>
 	<schema>dc</schema>
     <element>rights</element>
     <!-- unqualified -->
@@ -1609,7 +1615,7 @@
   <dc-type>
     <schema>dc</schema>
     <element>relation</element>
-    <qualifier>annotation</qualifier>
+    <qualifier>webannotation</qualifier>
     <scope_note></scope_note>
   </dc-type>
 

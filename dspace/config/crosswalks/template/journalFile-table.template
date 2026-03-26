@@ -1,0 +1,9 @@
+Title = dc.title
+Details = dc.relation.issue
+Details other = dc.relation.issueother
+Date = dc.date.issued
+Edition = dc.relation.edition
+Description = dc.description
+Journal fonds = group.dc-relation-journalfonds
+Documents = group.dc-relation-isreferencedby
+Aggregations = group.dc-relation-aggregation

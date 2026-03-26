@@ -7,10 +7,9 @@
  */
 package org.dspace.app.iiif.service;
 
-import static org.dspace.app.iiif.service.utils.IIIFUtils.METADATA_IMAGE_WIDTH;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -88,32 +87,41 @@ public class CanvasService extends AbstractResourceService {
      * @param bundles IIIF bundles for this item
      */
     protected void guessCanvasDimensions(Context context, List<Bundle> bundles) {
-        // prevent redundant updates.
-        boolean dimensionUpdated = false;
+        int[] imageDims = computeDynamicDimensions(context, bundles);
+        // update the fallback dimensions
+        defaultCanvasWidthFallback = imageDims[0];
+        defaultCanvasHeightFallback = imageDims[1];
+        setDefaultCanvasDimensions();
+    }
 
-        for (Bundle bundle : bundles) {
-            if (!dimensionUpdated) {
-                for (Bitstream bitstream : bundle.getBitstreams()) {
-                    if (utils.isIIIFBitstream(context, bitstream)) {
-                        // check for width dimension
-                        if (!utils.hasWidthMetadata(bitstream)) {
-                            // get the dimensions of the image.
-                            int[] imageDims = utils.getImageDimensions(bitstream);
-                            if (imageDims != null && imageDims.length == 2) {
-                                // update the fallback dimensions
-                                defaultCanvasWidthFallback = imageDims[0];
-                                defaultCanvasHeightFallback = imageDims[1];
-                            }
-                            setDefaultCanvasDimensions();
-                            // stop processing the bundles
-                            dimensionUpdated = true;
-                        }
-                        // check only the first image
-                        break;
-                    }
-                }
-            }
+    public int[] computeDynamicDimensions(Context context, List<Bundle> bundles) {
+        // find the first bitstream in the bundles that is an IIIF bitstream and does not have width metadata.
+        // if found, guess the image dimensions and return them. If not found, return the fallback defaults.
+        return bundles.stream()
+                      .map(bundle -> computeDynamicDimensions(context, bundle))
+                      .filter(Optional::isPresent)
+                      .map(Optional::get)
+                      .findFirst()
+                      .orElseGet(() -> new int[] {defaultCanvasWidthFallback, defaultCanvasHeightFallback});
+    }
+
+    private Optional<int[]> computeDynamicDimensions(Context context, Bundle bundle) {
+        // find the first bitstream in the bundle that is an IIIF bitstream and does not have width metadata.
+        // if found, guess the image dimensions and return them.
+        return bundle.getBitstreams()
+                     .stream()
+                     .filter(bitstream -> utils.isIIIFBitstream(context, bitstream))
+                     .findFirst()
+                     .filter(bitstream -> !utils.hasWidthMetadata(bitstream))
+                     .map(this::guessImageDims);
+    }
+
+    private int[] guessImageDims(Bitstream bitstream) {
+        int[] imageDims = utils.getImageDimensions(bitstream);
+        if (imageDims != null && imageDims.length == 2) {
+            return imageDims;
         }
+        return null;
     }
 
     /**
@@ -123,26 +131,51 @@ public class CanvasService extends AbstractResourceService {
      * @param bitstream
      */
     private void setCanvasDimensions(Bitstream bitstream) {
-        if (DEFAULT_CANVAS_HEIGHT == -1 && DEFAULT_CANVAS_WIDTH == -1) {
-            // When the default dimension is -1, update default dimensions when the
-            // image has no width metadata.
-            if (bitstream.getMetadata().stream().noneMatch(m -> m.getMetadataField().toString('.')
-                                                                 .contentEquals(METADATA_IMAGE_WIDTH))) {
-                int[] imageDims = utils.getImageDimensions(bitstream);
-                if (imageDims != null && imageDims.length == 2) {
-                    // update the dynamic default dimensions for this bitstream
-                    dynamicDefaultWidth  = imageDims[0];
-                    dynamicDefaultHeight = imageDims[1];
-                }
-                if (imageDims == null) {
-                    // use fallback.
-                    dynamicDefaultWidth = defaultCanvasWidthFallback;
-                    dynamicDefaultHeight = defaultCanvasHeightFallback;
-                    log.error("Unable to retrieve dimensions from the image server for: " + bitstream.getID() +
-                        " Using default dimensions.");
-                }
-            }
+        int[] imageDims = computeDynamicDefaultSizes(bitstream);
+        dynamicDefaultWidth = imageDims[0];
+        dynamicDefaultHeight = imageDims[1];
+    }
+
+    /**
+     * Computes the default canvas dimensions based on the image dimensions retrieved from the image server.
+     * The dynamic defaults are used only when the configured defaults are set to -1
+     * and the bitstream does not have width metadata.
+     *
+     * @param bitstream the bitstream for which to compute the default dimensions.
+     * @return an array with the width and height dimensions. The first element is the width, the second is the height.
+     */
+    public int[] computeDynamicDefaultSizes(Bitstream bitstream) {
+        // if dynamic default is not enabled or the bitstream has width metadata, return the configured defaults.
+        if (!isDynamicComputeEnabled() || utils.hasWidthMetadata(bitstream)) {
+            return new int[] {DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_WIDTH};
         }
+
+        // get the dimensions of the image from the image server.
+        int[] imageDims = guessImageDims(bitstream);
+        // if the image server is not available or does not return dimensions,
+        // log an error and use the fallback defaults
+        if (imageDims == null) {
+            log.error(
+                "Unable to retrieve dimensions from the image server for: "
+                    + bitstream.getID() + " Using default dimensions."
+            );
+            return new int[] {defaultCanvasWidthFallback, defaultCanvasHeightFallback};
+        }
+
+        return imageDims;
+    }
+
+    private boolean isDynamicComputeEnabled() {
+        return !isDefaultCanvasSizeSet() || isDefaultCanvasDynamic();
+    }
+
+    private boolean isDefaultCanvasDynamic() {
+        return DEFAULT_CANVAS_HEIGHT == -1 && DEFAULT_CANVAS_WIDTH == -1;
+    }
+
+    private boolean isDefaultCanvasSizeSet() {
+        return configurationService.hasProperty("iiif.canvas.default-height") ||
+            configurationService.hasProperty("iiif.canvas.default-width");
     }
 
     /**
@@ -180,7 +213,7 @@ public class CanvasService extends AbstractResourceService {
      * @param bitstream DSpace bitstream
      * @param bundle  DSpace bundle
      * @param item  DSpace item
-     * @param canvasID  the canvas identifier
+     * @param canvasId  the canvas identifier
      * @param mimeType  bitstream mimetype
      * @param index  the index (1-based)
      * @return a canvas generator
@@ -267,7 +300,7 @@ public class CanvasService extends AbstractResourceService {
                         values.add(meta.getValue());
                     }
                 }
-                if (values.size() > 0) {
+                if (!values.isEmpty()) {
                     if (values.size() > 1) {
                         canvasGenerator.addMetadata("bitstream." + field, values.get(0),
                                 values.subList(1, values.size()).toArray(new String[values.size() - 1]));

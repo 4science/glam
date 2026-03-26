@@ -1,0 +1,12 @@
+Title = dc.title
+Type = dc.type
+History = glamfonds.history
+Language = dc.language.iso
+Description = dc.description.abstract
+Signature = glamfonds.shelfmark
+Identifier = dc.identifier.other
+Opac = dc.relation.opac
+Link = dc.relation.otherlinks
+Fonds history = group.glamjournalfonds-history
+Editor = dc.publisher
+Format = dc.format
