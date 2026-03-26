@@ -2577,7 +2577,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire il nome del compilatore della scheda</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -2886,7 +2885,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire il nome del compilatore della scheda</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -3693,7 +3691,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Indicare i diversi periodi che hanno caratterizzato la storia della testata</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -4468,7 +4465,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>in questo campo si inseriscono le informazioni di altezza non standard (non presenti quindi nel menu a tendina)</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -4481,7 +4477,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>in questo campo si inseriscono le informazioni di larghezza non standard (non presenti quindi nel menu a tendina)</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6002,7 +5997,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Specificare il Soggetto dell'opera</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6338,7 +6332,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'autore/gli autori della risorsa bibliografica</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6351,7 +6344,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire il curatore/i curatori della risorsa bibliografica</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6735,7 +6727,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire la licenza attribuita alla risorsa</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -6941,7 +6932,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Indicare l'ambito disciplinare cui è riconducibile l'oggetto</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7145,6 +7135,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire l'eventuale "contenuto" dell'oggetto</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7511,7 +7502,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la trascrizione dell'iscrizione</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7549,7 +7539,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire la bibliografia relativa alla fotografia catalogata</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7754,7 +7743,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Seleziona curation task</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -7905,7 +7893,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Selezionare la tipologia di testo dell'opera</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7917,7 +7904,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Selezionare il genere lettario</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7965,7 +7951,6 @@
           <repeatable>false</repeatable>
           <required>Inserire la natura della descrizione dell'oggetto</required>
           <hint>Inserire la natura della descrizione dell'oggetto</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7992,7 +7977,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Selezionare la licenza di utilizzo</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8091,7 +8075,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Selezionare la tipologia fisica</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8104,7 +8087,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Selezionare il tipo di supporto fisico</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8165,6 +8147,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Inserire il titolo uniforme dell'opera a cui la risorsa appartiene</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8202,6 +8185,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'incipit</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8214,6 +8198,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Inserire l'explicit</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
