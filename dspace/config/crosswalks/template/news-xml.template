@@ -1,0 +1,4 @@
+<News id="@virtual.id@">
+	<Title>@dc.title@</Title>
+	<Link>@cris.news.url@</Link>
+</News>

@@ -6,7 +6,7 @@
 	"event": [
 	    @group.dc-relation-event.start@
     	{
-    		"name": "@dc.relation.event.author@"
+    		"name": "@dc.relation.event@"
     	},
     	@group.dc-relation-event.end@
 	],

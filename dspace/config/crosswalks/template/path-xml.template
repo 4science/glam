@@ -1,0 +1,11 @@
+<Path id="@virtual.id@">
+    <Title>@dc.title@</Title>
+    <Description>@dc.description@</Description>
+    <Parts>
+        @group.dc-relation-haspartofpath.start@
+        <Part>
+            <DisplayName>@dc.relation.haspartofpath@</DisplayName>
+        </Part>
+        @group.dc-relation-haspartofpath.end@
+    </Parts>
+</Path>

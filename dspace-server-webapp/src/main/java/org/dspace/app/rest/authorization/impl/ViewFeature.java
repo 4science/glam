@@ -8,7 +8,6 @@
 package org.dspace.app.rest.authorization.impl;
 import java.sql.SQLException;
 
-import org.apache.commons.lang.StringUtils;
 import org.dspace.app.rest.authorization.AuthorizationFeature;
 import org.dspace.app.rest.authorization.AuthorizationFeatureDocumentation;
 import org.dspace.app.rest.authorization.AuthorizeServiceRestUtil;
@@ -17,11 +16,8 @@ import org.dspace.app.rest.model.BitstreamRest;
 import org.dspace.app.rest.security.BitstreamCrisSecurityService;
 import org.dspace.app.rest.security.DSpaceRestPermission;
 import org.dspace.app.rest.utils.Utils;
-import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.DSpaceObject;
-import org.dspace.content.Item;
-import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,26 +25,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * The download bitstream feature. It can be used to verify if a bitstream can be downloaded.
+ * The view bitstream feature. It can be used to verify if a bitstream can be viewed.
  * Authorization is granted if the current user has READ permissions on the given bitstream.
- * 
- * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.it)
+ * Unlike {@link DownloadFeature}, this does NOT check for nodownload metadata restriction.
+ *
+ * @author Mykhaylo Boychuk (mykhaylo.boychuk at 4science.com)
  */
 @Component
-@AuthorizationFeatureDocumentation(name = DownloadFeature.NAME,
-        description = "It can be used to verify if the user can download a bitstream")
-public class DownloadFeature implements AuthorizationFeature {
+@AuthorizationFeatureDocumentation(name = ViewFeature.NAME, description = ViewFeature.DESCRIPTION)
+public class ViewFeature implements AuthorizationFeature {
 
-    public final static String NAME = "canDownload";
+    public final static String NAME = "canView";
+    public final static String DESCRIPTION = "It can be used to verify if the user can view a bitstream";
 
-    private static final Logger log = LoggerFactory.getLogger(DownloadFeature.class);
+    private static final Logger log = LoggerFactory.getLogger(ViewFeature.class);
 
     @Autowired
     private Utils utils;
-    @Autowired
-    private AuthorizeService authorizeService;
-    @Autowired
-    private BitstreamService bitstreamService;
     @Autowired
     private AuthorizeServiceRestUtil authorizeServiceRestUtil;
     @Autowired
@@ -59,10 +52,6 @@ public class DownloadFeature implements AuthorizationFeature {
     public boolean isAuthorized(Context context, BaseObjectRest object) throws SQLException {
         if (object instanceof BitstreamRest) {
             if (authorizeServiceRestUtil.authorizeActionBoolean(context, object, DSpaceRestPermission.READ)) {
-                DSpaceObject dso = (DSpaceObject) utils.getDSpaceAPIObjectFromRest(context, object);
-                if (dso instanceof Bitstream && isNoDownload(context, (Bitstream) dso)) {
-                    return false;
-                }
                 return true;
             }
         }
@@ -73,31 +62,19 @@ public class DownloadFeature implements AuthorizationFeature {
             }
 
             if (dSpaceObject instanceof Bitstream && bitstreamCrisSecurityService
-                 .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), (Bitstream) dSpaceObject)) {
-                if (isNoDownload(context, (Bitstream) dSpaceObject)) {
-                    return false;
-                }
+                    .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(),
+                            (Bitstream) dSpaceObject)) {
                 return true;
             }
         } catch (Exception e) {
-            log.warn(
-                    "We got an exception during the cris security evaluation, safe fallback " +
-                    "ignoring extra grant given by cris",
-                    e);
+            log.warn("Exception during CRIS security evaluation, ignoring extra grant", e);
         }
         return false;
     }
 
-    private boolean isNoDownload(Context context, Bitstream bitstream) throws SQLException {
-        String value = bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "viewer", "provider", Item.ANY);
-        return StringUtils.equals("nodownload", value) && !authorizeService.isAdmin(context);
-    }
-
     @Override
     public String[] getSupportedTypes() {
-        return new String[]{
-            BitstreamRest.CATEGORY + "." + BitstreamRest.NAME,
-        };
+        return new String[] { BitstreamRest.CATEGORY + "." + BitstreamRest.NAME };
     }
 
 }

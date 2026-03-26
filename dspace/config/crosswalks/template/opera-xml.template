@@ -1,0 +1,25 @@
+<Opera id="@virtual.id@">
+    <Title>@dc.title@</Title>
+    <DateIssued>@dc.date.issued@</DateIssued>
+    <Authors>
+        @group.dc-contributor-author.start@
+        <Author>
+            <DisplayName>@dc.contributor.author@</DisplayName>
+        </Author>
+        @group.dc-contributor-author.end@
+    </Authors>
+    <AuthorRoles>
+        @group.dc-contributor-authorrole.start@
+        <AuthorRole>
+            <DisplayName>@dc.contributor.authorrole@</DisplayName>
+        </AuthorRole>
+        @group.dc-contributor-authorrole.end@
+    </AuthorRoles>
+    <OtherLinks>
+        @group.dc-relation-otherlinks.start@
+        <OtherLink>
+            <DisplayName>@dc.relation.otherlinks@</DisplayName>
+        </OtherLink>
+        @group.dc-relation-otherlinks.end@
+    </OtherLinks>
+</Opera>

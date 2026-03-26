@@ -1827,10 +1827,97 @@ public class BitstreamRestControllerIT extends AbstractControllerIntegrationTest
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    public void testNoDownloadBitstreamAsAnonymous() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Collection 1")
+                                           .build();
+
+        Item publicItem1 = ItemBuilder.createItem(context, col1)
+                                      .withTitle("Public item 1")
+                                      .build();
+
+        Bitstream noDownloadBitstream;
+        try (InputStream is = IOUtils.toInputStream("NoDownload content", CharEncoding.UTF_8)) {
+            noDownloadBitstream = BitstreamBuilder.createBitstream(context, publicItem1, is)
+                                                  .withName("No Download Bitstream")
+                                                  .withMimeType("text/plain")
+                                                  .withMetadata("bitstream", "viewer", "provider", "nodownload")
+                                                  .build();
+        }
+        context.restoreAuthSystemState();
+
+        getClient().perform(get("/api/core/bitstreams/" + noDownloadBitstream.getID() + "/content"))
+                   .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testNoDownloadBitstreamAsEperson() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Collection 1")
+                                           .build();
+        Item publicItem1 = ItemBuilder.createItem(context, col1)
+                                      .withTitle("Public item 1")
+                                      .build();
+
+        Bitstream noDownloadBitstream;
+        try (InputStream is = IOUtils.toInputStream("NoDownload content", CharEncoding.UTF_8)) {
+            noDownloadBitstream = BitstreamBuilder.createBitstream(context, publicItem1, is)
+                                                  .withName("No Download Bitstream")
+                                                  .withMimeType("text/plain")
+                                                  .withMetadata("bitstream", "viewer", "provider", "nodownload")
+                                                  .build();
+        }
+        context.restoreAuthSystemState();
+
+        String authToken = getAuthToken(eperson.getEmail(), password);
+        getClient(authToken).perform(get("/api/core/bitstreams/" + noDownloadBitstream.getID() + "/content"))
+                            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void testNoDownloadBitstreamAsAdmin() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Collection 1")
+                                           .build();
+        Item publicItem1 = ItemBuilder.createItem(context, col1)
+                                      .withTitle("Public item 1")
+                                      .build();
+
+        Bitstream noDownloadBitstream;
+        try (InputStream is = IOUtils.toInputStream("NoDownload content", CharEncoding.UTF_8)) {
+            noDownloadBitstream = BitstreamBuilder.createBitstream(context, publicItem1, is)
+                                                  .withName("No Download Bitstream")
+                                                  .withMimeType("text/plain")
+                                                  .withMetadata("bitstream", "viewer", "provider", "nodownload")
+                                                  .build();
+        }
+        context.restoreAuthSystemState();
+
+        String authToken = getAuthToken(admin.getEmail(), password);
+        getClient(authToken).perform(get("/api/core/bitstreams/" + noDownloadBitstream.getID() + "/content"))
+                            .andExpect(status().isOk());
+    }
+
     @FunctionalInterface
     interface ThrowingConsumer<T> {
         void accept(T t) throws Exception;
     }
-
 
 }
