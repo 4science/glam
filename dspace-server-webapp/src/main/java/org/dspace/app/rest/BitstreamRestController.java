@@ -101,11 +101,10 @@ public class BitstreamRestController {
     @Autowired
     private BitstreamStorageService bitstreamStorageService;
 
-    @PreAuthorize("hasPermission(#uuid, 'BITSTREAM', 'READ')")
+    @PreAuthorize("@iiifdownloadSecurity.isDownloadable(#request, #uuid) && hasPermission(#uuid, 'BITSTREAM', 'READ')")
     @RequestMapping( method = {RequestMethod.GET, RequestMethod.HEAD}, value = "content")
     public ResponseEntity retrieve(@PathVariable UUID uuid, HttpServletResponse response,
                          HttpServletRequest request) throws IOException, SQLException, AuthorizeException {
-
 
         Context context = ContextUtil.obtainContext(request);
 
