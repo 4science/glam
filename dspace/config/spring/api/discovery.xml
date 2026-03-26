@@ -2764,6 +2764,7 @@
                 <ref bean="searchFilterEvent"/>
                 <ref bean="searchFilterOrganizationalUnit"/>
                 <ref bean="searchFilterOpera"/>
+                <ref bean="searchFilterEntityType"/>
             </list>
         </property>
         <!--The sort filters for the discovery search-->
@@ -2835,6 +2836,7 @@
                 <ref bean="searchFilterProject"/>
                 <ref bean="searchFilterFamily"/>
                 <ref bean="searchFilterPath"/>
+                <ref bean="searchFilterEntityType"/>
             </list>
         </property>
         <!--The sort filters for the discovery search-->
@@ -2931,6 +2933,7 @@
                 <ref bean="searchFilterSubject" />
                 <ref bean="searchFilterPersonJournalFonds"/>
                 <ref bean="searchFilterJournalFoundsDate"/>
+                <ref bean="searchFilterEntityType"/>
             </list>
         </property>
         <!--The sort filters for the discovery search-->
@@ -3024,6 +3027,7 @@
                 <ref bean="searchFilterSubject" />
                 <ref bean="searchFilterType" />
                 <ref bean="searchFilterParent" />
+                <ref bean="searchFilterEntityType"/>
             </list>
         </property>
         <!--The sort filters for the discovery search-->
