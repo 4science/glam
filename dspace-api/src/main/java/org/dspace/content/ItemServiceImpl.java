@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.customurl.CustomUrlService;
 import org.dspace.app.metrics.service.CrisMetricsService;
@@ -126,7 +127,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
     /**
      * log4j category
      */
-    private static final Logger log = org.apache.logging.log4j.LogManager.getLogger();
+    private static final Logger log = LogManager.getLogger(ItemServiceImpl.class);
 
     @Autowired(required = true)
     protected ItemDAO itemDAO;
@@ -223,13 +224,10 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
     }
 
     @Override
-    public Thumbnail getThumbnail(Context context, Item item, boolean requireOriginal) throws SQLException {
+    public Thumbnail getThumbnail(Context context, Item item) throws SQLException {
         // Search the thumbnail using the configuration
-        Thumbnail thumbnail = thumbnailLayoutTabConfigurationStrategy(context, item, requireOriginal);
-        if (thumbnail != null) {
-            return thumbnail;
-        }
-        return null;
+        Thumbnail thumbnail = thumbnailLayoutTabConfigurationStrategy(context, item);
+        return thumbnail != null ? thumbnail : null;
     }
 
     /**
@@ -237,7 +235,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
      * @param item
      * @throws SQLException
      */
-    private Thumbnail thumbnailLayoutTabConfigurationStrategy(Context context, Item item, boolean requireOriginal)
+    private Thumbnail thumbnailLayoutTabConfigurationStrategy(Context context, Item item)
         throws SQLException {
         List<CrisLayoutTab> crisLayoutTabs = crisLayoutTabService.findByItem(context, String.valueOf(item.getID()));
 
@@ -246,21 +244,11 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
             // If no thumbnail is retrieved by the first strategy
             // then use the fallback strategy
             Bitstream thumbBitstream = null;
-            List<Bundle> originalBundles = getBundles(item, "ORIGINAL");
-            Bitstream primaryBitstream = null;
-            if (CollectionUtils.isNotEmpty(originalBundles)) {
-                primaryBitstream = originalBundles.get(0).getPrimaryBitstream();
-            }
-            if (primaryBitstream == null) {
-                if (requireOriginal) {
-                    primaryBitstream = bitstreamService.getFirstBitstream(item, "ORIGINAL");
-                }
-                thumbBitstream = bitstreamService.getFirstBitstream(item, "THUMBNAIL");
-            }
+            Bitstream primaryBitstream = bitstreamService.getPrimaryBitstream(context, item);
             if (primaryBitstream != null) {
-                thumbBitstream = bitstreamService.getThumbnail(context, primaryBitstream);
+                thumbBitstream = bitstreamService.getThumbnail(context, item, primaryBitstream);
                 if (thumbBitstream == null) {
-                    thumbBitstream = bitstreamService.getFirstBitstream(item, "THUMBNAIL");
+                    thumbBitstream = primaryBitstream;
                     if (!bitstreamService.isValidThumbnail(context, thumbBitstream)) {
                         thumbBitstream = null;
                     }
@@ -341,7 +329,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
             if (primaryBitstream.isEmpty()) {
                 return null;
             }
-            Bitstream thumbBitstream = bitstreamService.getThumbnail(context, primaryBitstream.get());
+            Bitstream thumbBitstream = bitstreamService.getThumbnail(context, item, primaryBitstream.get());
             // If the thumbnail is not available return the non thumbnail bitstream
             // retrieved in the previous steps
             if (thumbBitstream != null) {
@@ -2427,4 +2415,16 @@ prevent the generation of resource policy entry values with null dspace_object a
         return this.itemDAO.exists(context, Item.class, id);
     }
 
+    public Item findByBitstream(Context context, Bitstream bitstream) {
+        Iterator<Item> byBitstream;
+        try {
+            byBitstream = this.itemDAO.findByBitstream(context, bitstream.getID());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        if (byBitstream.hasNext()) {
+            return byBitstream.next();
+        }
+        return null;
+    }
 }

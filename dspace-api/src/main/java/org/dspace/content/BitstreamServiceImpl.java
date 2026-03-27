@@ -430,50 +430,57 @@ public class BitstreamServiceImpl extends DSpaceObjectServiceImpl<Bitstream> imp
             .collect(Collectors.toList());
     }
 
-    @Override
-    public Bitstream getFirstBitstream(Item item, String bundleName) throws SQLException {
-        List<Bundle> bundles = itemService.getBundles(item, bundleName);
-        if (CollectionUtils.isNotEmpty(bundles)) {
-            List<Bitstream> bitstreams = bundles.get(0).getBitstreams();
-            if (CollectionUtils.isNotEmpty(bitstreams)) {
-                return bitstreams.get(0);
-            }
+    public Bitstream getPrimaryBitstream(Context context, Bundle bundle) {
+        Iterator<Bitstream> primaryBitstream;
+        try {
+            primaryBitstream = bitstreamDAO.getPrimaryBitstream(context, bundle.getID());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (primaryBitstream.hasNext()) {
+            return primaryBitstream.next();
         }
         return null;
     }
 
-    @Override
-    public Bitstream getThumbnail(Context context, Bitstream bitstream) throws SQLException {
-        Pattern pattern = getBitstreamNamePattern(bitstream);
+    public Bitstream getPrimaryBitstream(Context context, Item item) {
+        Iterator<Bitstream> primaryBitstream;
+        try {
+            primaryBitstream = bitstreamDAO.getPrimaryBitstreamByItem(context, item.getID());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 
-        for (Bundle bundle : bitstream.getBundles()) {
-            for (Item item : bundle.getItems()) {
-                for (Bundle thumbnails : itemService.getBundles(item, "THUMBNAIL")) {
-                    for (Bitstream thumbnail : thumbnails.getBitstreams()) {
-                        if (pattern.matcher(thumbnail.getName()).matches() &&
-                            isValidThumbnail(context, thumbnail)) {
-                            return thumbnail;
-                        }
-                    }
-                }
+        if (primaryBitstream.hasNext()) {
+            return primaryBitstream.next();
+        }
+        return null;
+    }
 
-                for (Bundle thumbnails : itemService.getBundles(item, "PREVIEW")) {
-                    for (Bitstream thumbnail : thumbnails.getBitstreams()) {
-                        if (pattern.matcher(thumbnail.getName()).matches() &&
-                            isValidThumbnail(context, thumbnail)) {
-                            return thumbnail;
-                        }
-                    }
-                }
+    public Bitstream getThumbnail(Context context, Item item, Bitstream bitstream) throws SQLException {
+        Iterator<Bitstream> candidates = bitstreamDAO.getThumbnail(
+            context,
+            item.getID(),
+            bitstream.getName() + ".%"
+        );
 
-                if (isValidThumbnail(context, bitstream)) {
-                    return bitstream;
-                }
+        boolean valid = false;
+        Bitstream candidate;
+        while (candidates.hasNext() && !valid) {
+            candidate = candidates.next();
+            if (isValidThumbnail(context, candidate)) {
+                return candidate;
             }
+        }
+
+        if (isValidThumbnail(context, bitstream)) {
+            return bitstream;
         }
 
         return null;
     }
+
 
     protected Pattern getBitstreamNamePattern(Bitstream bitstream) {
         if (bitstream.getName() != null) {

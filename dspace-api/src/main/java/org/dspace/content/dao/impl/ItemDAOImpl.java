@@ -535,4 +535,18 @@ public class ItemDAOImpl extends AbstractHibernateDSODAO<Item> implements ItemDA
         return new UUIDIterator<Item>(context, ids, Item.class, this);
     }
 
+    public Iterator<Item> findByBitstream(Context context, UUID bitstreamId) throws SQLException {
+        String hql = "SELECT DISTINCT i.id FROM Item i " +
+            "JOIN i.bundles b " +
+            "JOIN b.bitstreams bs " +
+            "WHERE bs.id = :bitstreamId ";
+
+        Query query = createQuery(context, hql);
+        query.setParameter("bitstreamId", bitstreamId);
+        query.setMaxResults(1);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Item>(context, uuids, Item.class, this);
+    }
+
 }
