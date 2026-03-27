@@ -71,9 +71,9 @@ public class IIIFServiceFacade {
      * @param id DSpace Item uuid
      * @return manifest as JSON
      */
-    @Cacheable(key = "#id.toString()", cacheNames = "manifests")
+    @Cacheable(key = "#id.toString() + '_' + #includeAnnotations", cacheNames = "manifests")
     @PreAuthorize("hasPermission(#id, 'ITEM', 'READ')")
-    public String getManifest(Context context, UUID id) throws ResourceNotFoundException {
+    public String getManifest(Context context, UUID id, boolean includeAnnotations) throws ResourceNotFoundException {
         Item item;
         try {
             item = itemService.find(context, id);
@@ -85,7 +85,7 @@ public class IIIFServiceFacade {
         }
 
         if (isStory(item)) {
-            return storytellingService.getManifest(item, context);
+            return storytellingService.getManifest(item, context, includeAnnotations);
         }
 
         if (!utils.isIIIFEnabled(item)) {

@@ -74,17 +74,18 @@ public class StorytellingService {
      * @param context the DSpace context
      * @return manifest as JSON
      */
-    public String getManifest(Item item, Context context) {
+    public String getManifest(Item item, Context context, boolean includeAnnotations) {
         String serverUrl = configurationService.getProperty("dspace.server.url");
         String storyId = item.getID().toString();
 
         ObjectNode manifest = objectMapper.createObjectNode();
-        buildManifest(manifest, item, serverUrl, storyId, context);
+        buildManifest(manifest, item, serverUrl, storyId, context, includeAnnotations);
 
         return serializeManifest(manifest, storyId);
     }
 
-    private void buildManifest(ObjectNode manifest, Item item, String serverUrl, String storyId, Context context) {
+    private void buildManifest(ObjectNode manifest, Item item, String serverUrl, String storyId, Context context,
+                               boolean includeAnnotations) {
         manifest.put("@context", IIIF_CONTEXT);
         manifest.put("@id", serverUrl + "/iiif/" + storyId + "/manifest");
         manifest.put("@type", SC_MANIFEST);
@@ -114,10 +115,11 @@ public class StorytellingService {
 
         // Canvases
         ArrayNode canvases = sequence.putArray("canvases");
-        buildCanvases(canvases, item, serverUrl, storyId, context);
+        buildCanvases(canvases, item, serverUrl, storyId, context, includeAnnotations);
     }
 
-    private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context) {
+    private void buildCanvases(ArrayNode canvases, Item item, String serverUrl, String storyId, Context context,
+                                boolean includeAnnotations) {
         List<MetadataValue> canvasTitles = itemService.getMetadata(item, "glam", "bitstream", "name", ANY);
         List<MetadataValue> canvasIDs = itemService.getMetadata(item, "glam", "bitstream", "canvasid", ANY);
         List<MetadataValue> relatedItems = itemService.getMetadata(item, "glam", "bitstream", "relatedItem", ANY);
@@ -173,8 +175,10 @@ public class StorytellingService {
                 log.error("Missing related item UUID for canvas {} in story {}", canvasId, storyId);
             }
 
-            // otherContent - annotation list
-            buildOtherContent(canvas, canvasId, serverUrl);
+            // otherContent - annotation list (only when explicitly requested)
+            if (includeAnnotations) {
+                buildOtherContent(canvas, canvasId, serverUrl);
+            }
         }
     }
 
