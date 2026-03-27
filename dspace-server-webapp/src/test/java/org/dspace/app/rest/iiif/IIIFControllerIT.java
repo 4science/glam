@@ -1730,7 +1730,8 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                                        + bitstream1.getID().toString())))
                    .andExpect(jsonPath("$.thumbnail").exists())
                    .andExpect(jsonPath("$.width", is(4400)))
-                   .andExpect(jsonPath("$.height", is(3200)));
+                   .andExpect(jsonPath("$.height", is(3200)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].otherContent").doesNotExist());
     }
 
     @Test
@@ -2011,11 +2012,91 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                              containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(333)))
                    .andExpect(jsonPath("$.sequences[0].canvases[0].height", is(444)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].otherContent").doesNotExist())
                    // second canvas
                    .andExpect(jsonPath("$.sequences[0].canvases[1].@id",
                              containsString("/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID().toString())))
                    .andExpect(jsonPath("$.sequences[0].canvases[1].width", is(677)))
-                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(899)));
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].height", is(899)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].otherContent").doesNotExist());
+
+    }
+
+    /**
+     * Verifies that with {@code ?includeAnnotations=true} the Story manifest
+     * includes {@code otherContent} on each canvas with a valid annotation list URL
+     * (used by Annona).
+     */
+    @Test
+    public void findOneStoryManifest_withIncludeAnnotationsAddsOtherContentIT() throws Exception {
+        context.turnOffAuthorisationSystem();
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Publication Collection")
+                                           .withEntityType("Publication")
+                                           .build();
+        Collection col2 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Story Collection")
+                                           .withEntityType("Story")
+                                           .build();
+
+        Item item1 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 1")
+                                .enableIIIF()
+                                .build();
+        Item item2 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 2")
+                                .enableIIIF()
+                                .build();
+
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream("dummy1", CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, item1, is)
+                                         .withName("Image1.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .build();
+        }
+        Bitstream bitstream2;
+        try (InputStream is = IOUtils.toInputStream("dummy2", CharEncoding.UTF_8)) {
+            bitstream2 = BitstreamBuilder.createBitstream(context, item2, is)
+                                         .withName("Image2.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .build();
+        }
+
+        Item storyItem = ItemBuilder.createItem(context, col2)
+                                    .withTitle("Test Story")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas 1")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas 2")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream2.getID().toString())
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 1", item1.getID().toString(), 600)
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 2", item2.getID().toString(), 600)
+                                    .build();
+
+        context.restoreAuthSystemState();
+
+        String serverUrl = configurationService.getProperty("dspace.server.url");
+        String expectedCanvas0Id = serverUrl + "/iiif/" + storyItem.getID() + "/canvas/" + bitstream1.getID();
+        String expectedCanvas1Id = serverUrl + "/iiif/" + storyItem.getID() + "/canvas/" + bitstream2.getID();
+
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest")
+                   .param("includeAnnotations", "true"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].otherContent", Matchers.hasSize(1)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].otherContent[0].@id",
+                           is(serverUrl + "/annotation/search?uri=" + expectedCanvas0Id)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].otherContent[0].@type",
+                           is("sc:AnnotationList")))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].otherContent", Matchers.hasSize(1)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].otherContent[0].@id",
+                           is(serverUrl + "/annotation/search?uri=" + expectedCanvas1Id)))
+                   .andExpect(jsonPath("$.sequences[0].canvases[1].otherContent[0].@type",
+                           is("sc:AnnotationList")));
     }
 
 }
