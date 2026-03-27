@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.customurl.CustomUrlService;
 import org.dspace.app.metrics.service.CrisMetricsService;
@@ -126,7 +127,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
     /**
      * log4j category
      */
-    private static final Logger log = org.apache.logging.log4j.LogManager.getLogger();
+    private static final Logger log = LogManager.getLogger(ItemServiceImpl.class);
 
     @Autowired(required = true)
     protected ItemDAO itemDAO;
@@ -224,13 +225,9 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
 
     @Override
     public Thumbnail getThumbnail(Context context, Item item) throws SQLException {
-        boolean requireOriginal = false;
         // Search the thumbnail using the configuration
-        Thumbnail thumbnail = thumbnailLayoutTabConfigurationStrategy(context, item, requireOriginal);
-        if (thumbnail != null) {
-            return thumbnail;
-        }
-        return null;
+        Thumbnail thumbnail = thumbnailLayoutTabConfigurationStrategy(context, item);
+        return thumbnail != null ? thumbnail : null;
     }
 
     /**
@@ -238,7 +235,7 @@ public class ItemServiceImpl extends DSpaceObjectServiceImpl<Item> implements It
      * @param item
      * @throws SQLException
      */
-    private Thumbnail thumbnailLayoutTabConfigurationStrategy(Context context, Item item, boolean requireOriginal)
+    private Thumbnail thumbnailLayoutTabConfigurationStrategy(Context context, Item item)
         throws SQLException {
         List<CrisLayoutTab> crisLayoutTabs = crisLayoutTabService.findByItem(context, String.valueOf(item.getID()));
 
