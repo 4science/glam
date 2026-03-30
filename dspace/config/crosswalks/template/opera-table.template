@@ -1,0 +1,5 @@
+Title = dc.title
+Date issued = dc.date.issued
+Authors = group.dc-contributor-author
+Author roles = group.dc-contributor-authorrole
+Other links = group.dc-relation-otherlinks

@@ -199,6 +199,75 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
         return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
     }
 
+    public Iterator<Bitstream> getThumbnail(
+        Context context, UUID itemId, String namePattern
+    ) throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bitstream b " +
+            "JOIN b.bundles bundle " +
+            "JOIN bundle.items item " +
+            "JOIN bundle.metadata bundleMeta " +
+            "JOIN bundleMeta.metadataField bundleMF " +
+            "JOIN bundleMF.metadataSchema bundleMS " +
+            "JOIN b.metadata bitstreamMeta " +
+            "WHERE item.id = :itemId " +
+            "AND bundleMS.name = 'dc' " +
+            "AND bundleMF.element = 'title' " +
+            "AND bundleMF.qualifier IS NULL " +
+            "AND bundleMeta.value IN ('THUMBNAIL', 'PREVIEW') " +
+            "AND bitstreamMeta.value LIKE :namePattern";
+
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("itemId", itemId);
+        query.setParameter("namePattern", namePattern);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+    /**
+     * Corrected DAO version using proper Hibernate mapping for bundle names
+     */
+    public Iterator<Bitstream> getPrimaryBitstream(Context context, UUID bundleId)
+        throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bundle bundle " +
+            "JOIN bundle.bitstreams b " +
+            "WHERE bundle.id = :bundleId " +
+            "AND (bundle.primaryBitstream = b OR bundle.primaryBitstream IS NULL)";
+
+        // Note: Using entityManager instead of hibernateTemplate (modern approach)
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("bundleId", bundleId);
+        query.setMaxResults(1);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+    public Iterator<Bitstream> getPrimaryBitstreamByItem(Context context, UUID itemId)
+        throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bundle bundle " +
+            "JOIN bundle.bitstreams b " +
+            "JOIN bundle.items item " +
+            "JOIN bundle.metadata bundleMeta " +
+            "JOIN bundleMeta.metadataField mf " +
+            "JOIN mf.metadataSchema ms " +
+            "WHERE item.id = :itemId " +
+            "AND ms.name = 'dc' " +
+            "AND mf.element = 'title' " +
+            "AND mf.qualifier IS NULL " +
+            "AND bundleMeta.value = 'ORIGINAL' " +
+            "AND (bundle.primaryBitstream = b OR bundle.primaryBitstream IS NULL)";
+
+        // Note: Using entityManager instead of hibernateTemplate (modern approach)
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("itemId", itemId);
+        query.setMaxResults(1);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+
     @Override
     public Iterator<Bitstream> findByStoreNumber(Context context, Integer storeNumber) throws SQLException {
         Query query = createQuery(context, "select b.id from Bitstream b where b.storeNumber = :storeNumber");

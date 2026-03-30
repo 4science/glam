@@ -1,0 +1,39 @@
+{
+    "title": "@dc.title@",
+    "subjects": [
+        @group.glam-subject.start@
+        {
+            "name": "@glam.subject@"
+        },
+        @group.glam-subject.end@
+    ],
+    "corporateBodies": [
+        @group.dc-contributor-corporatebody.start@
+        {
+            "name": "@dc.contributor.corporatebody@"
+        },
+        @group.dc-contributor-corporatebody.end@
+    ],
+    "authors": [
+        @group.dc-contributor-author.start@
+        {
+            "name": "@dc.contributor.author@"
+        },
+        @group.dc-contributor-author.end@
+    ],
+    "places": [
+        @group.dc-relation-place.start@
+        {
+            "name": "@dc.relation.place@"
+        },
+        @group.dc-relation-place.end@
+    ],
+    "dateIssued": "@dc.date.issued@",
+    "audioVideos": [
+        @group.dc-relation-audiovideo.start@
+        {
+            "name": "@dc.relation.audiovideo@"
+        },
+        @group.dc-relation-audiovideo.end@
+    ]
+}

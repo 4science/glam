@@ -2577,7 +2577,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the name of the compiler of the record</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -2886,7 +2885,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the name of the compiler of the record</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -3693,7 +3691,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the different periods that have characterized the history of the journal</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -4468,7 +4465,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter in this field non-standard height information (not present in the drop-down menu)</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -4481,7 +4477,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter in this field non-standard width information (not present in the drop-down menu)</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6002,7 +5997,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Specify the subject of the item</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6338,7 +6332,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the author(s) of the bibliographic resource</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6351,7 +6344,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter editor(s) of the bibliographic resource</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -6735,7 +6727,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the terms of use attributed to this record</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -6941,7 +6932,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the disciplinary scope to which the object relates</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7145,6 +7135,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the ‘contents’ of the item, if any</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7511,7 +7502,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the transcription of the inscription</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7549,7 +7539,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the bibliography related to the resource</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7609,7 +7598,7 @@
           <dc-schema>glam</dc-schema>
           <dc-element>subject</dc-element>
           <dc-qualifier>annotation</dc-qualifier>
-          <label>Soggetto</label>
+          <label>Subject</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -7622,7 +7611,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>person</dc-qualifier>
-          <label>Persona</label>
+          <label>Person</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -7658,7 +7647,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>path</dc-qualifier>
-          <label>Percorso</label>
+          <label>Path</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -7683,7 +7672,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>family</dc-qualifier>
-          <label>Famiglia</label>
+          <label>Family</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -7707,7 +7696,7 @@
           <dc-schema>dc</dc-schema>
           <dc-element>relation</dc-element>
           <dc-qualifier>webannotation</dc-qualifier>
-          <label>Annotazione Collegata</label>
+          <label>Linked Anntation</label>
           <input-type>onebox</input-type>
           <repeatable>true</repeatable>
           <required />
@@ -7754,7 +7743,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Select the curation task</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
     </form>
@@ -7905,7 +7893,6 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Select the type of text of the work</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7917,7 +7904,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Select the literary genre</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7965,7 +7951,6 @@
           <repeatable>false</repeatable>
           <required>Enter the nature of the item description</required>
           <hint>Enter the nature of the object description</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -7992,7 +7977,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Select the licence for use</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8091,7 +8075,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Select the physical type</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8104,7 +8087,6 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Select the type of physical medium</hint>
-          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8165,6 +8147,7 @@
           <repeatable>true</repeatable>
           <required />
           <hint>Enter the uniform title of the work to which the resource belongs</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8202,6 +8185,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the incipit</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>
@@ -8214,6 +8198,7 @@
           <repeatable>false</repeatable>
           <required />
           <hint>Enter the explicit</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
         </field>
       </row>
       <row>

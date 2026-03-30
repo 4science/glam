@@ -1,0 +1,5 @@
+{
+	"operas": [
+		@item.template@,
+	]
+}

@@ -16,7 +16,7 @@
         <Fond>
             <DisplayName>@dc.relation.fonds@</DisplayName>
         </Fond>
-        @group.dc-contributor-author.end@
+        @group.dc-relation-fonds.end@
     </Fonds>
     <Description>@dc.description@</Description>
     <CollectionDescription>@dc.description.collection@</CollectionDescription>

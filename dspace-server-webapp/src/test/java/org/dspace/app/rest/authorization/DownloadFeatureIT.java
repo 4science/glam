@@ -75,6 +75,7 @@ public class DownloadFeatureIT extends AbstractControllerIntegrationTest {
     private Item itemA;
     private Bitstream bitstreamA;
     private Bitstream bitstreamB;
+    private Bitstream bitstreamNoDownload;
 
     @Override
     @Before
@@ -101,10 +102,14 @@ public class DownloadFeatureIT extends AbstractControllerIntegrationTest {
                                          .withDescription("Description2")
                                          .withMimeType("text/plain")
                                          .build();
+            bitstreamNoDownload = BitstreamBuilder.createBitstream(context, itemA, is)
+                                                  .withName("BitstreamNoDownload")
+                                                  .withDescription("No download bitstream")
+                                                  .withMimeType("text/plain")
+                                                  .withMetadata("bitstream", "viewer", "provider", "nodownload")
+                                                  .build();
         }
         resourcePolicyService.removePolicies(context, bitstreamB, Constants.READ);
-
-
         context.restoreAuthSystemState();
     }
 
@@ -408,4 +413,51 @@ public class DownloadFeatureIT extends AbstractControllerIntegrationTest {
                 .andExpect(jsonPath("$.page.totalElements", greaterThan(0)))
                 .andExpect(jsonPath("$._embedded.authorizations", contains(
                         Matchers.is(AuthorizationMatcher.matchAuthorization(authorizationFeature)))));    }
+
+    @Test
+    public void downloadOfNoDownloadBitstreamAsAdmin() throws Exception {
+        BitstreamRest bitstreamRest = bitstreamConverter.convert(bitstreamNoDownload, Projection.DEFAULT);
+        String bitstreamUri = utils.linkToSingleResource(bitstreamRest, "self").getHref();
+
+        Authorization authorizationFeature = new Authorization(admin, downloadFeature, bitstreamRest);
+
+        String token = getAuthToken(admin.getEmail(), password);
+
+        getClient(token).perform(get("/api/authz/authorizations/search/object")
+                        .param("uri", bitstreamUri)
+                        .param("feature", downloadFeature.getName()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.page.totalElements", greaterThan(0)))
+                        .andExpect(jsonPath("$._embedded.authorizations", contains(
+                                Matchers.is(AuthorizationMatcher.matchAuthorization(authorizationFeature)))));
+    }
+
+    @Test
+    public void downloadOfNoDownloadBitstreamAsEperson() throws Exception {
+        BitstreamRest bitstreamRest = bitstreamConverter.convert(bitstreamNoDownload, Projection.DEFAULT);
+        String bitstreamUri = utils.linkToSingleResource(bitstreamRest, "self").getHref();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+
+        getClient(token).perform(get("/api/authz/authorizations/search/object")
+                        .param("uri", bitstreamUri)
+                        .param("feature", downloadFeature.getName()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.page.totalElements", is(0)))
+                        .andExpect(jsonPath("$._embedded").doesNotExist());
+    }
+
+    @Test
+    public void downloadOfNoDownloadBitstreamAsAnonymous() throws Exception {
+        BitstreamRest bitstreamRest = bitstreamConverter.convert(bitstreamNoDownload, Projection.DEFAULT);
+        String bitstreamUri = utils.linkToSingleResource(bitstreamRest, "self").getHref();
+
+        getClient().perform(get("/api/authz/authorizations/search/object")
+                   .param("uri", bitstreamUri)
+                   .param("feature", downloadFeature.getName()))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.page.totalElements", is(0)))
+                   .andExpect(jsonPath("$._embedded").doesNotExist());
+    }
+
 }

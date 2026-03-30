@@ -1,0 +1,36 @@
+{
+    "title": "@dc.title@",
+    "authors": [
+        @group.dc-contributor-author.start@
+        {
+            "name": "@dc.contributor.author@"
+        },
+        @group.dc-contributor-author.end@
+    ],
+    "description": "@dc.description@",
+    "descriptionCollection": "@dc.description.collection@",
+    "isPartOf": [
+        @group.dc-relation-ispartof.start@
+        {
+            "name": "@dc.relation.ispartof@"
+        },
+        @group.dc-relation-ispartof.end@
+    ],
+    "hasPart": [
+        @group.dc-relation-haspart.start@
+        {
+            "name": "@dc.relation.haspart@"
+        },
+        @group.dc-relation-haspart.end@
+    ],
+    "type": "@dc.type@",
+    "coverageShelfmark": "@dc.coverage.shelfmark@",
+    "materialAndTechnique": "@dc.type.materialandtechnique@",
+    "otherLinks": [
+        @group.dc-relation-otherlink.start@
+        {
+            "link": "@dc.relation.otherlink@"
+        },
+        @group.dc-relation-otherlink.end@
+    ]
+}
