@@ -61,7 +61,7 @@ public class DownloadFeature implements AuthorizationFeature {
         if (object instanceof BitstreamRest) {
             if (authorizeServiceRestUtil.authorizeActionBoolean(context, object, DSpaceRestPermission.READ)) {
                 DSpaceObject dso = (DSpaceObject) utils.getDSpaceAPIObjectFromRest(context, object);
-                if (dso instanceof Bitstream && isNoDownload(context, (Bitstream) dso)) {
+                if (dso instanceof Bitstream  bitstream && isNoDownload(context, bitstream)) {
                     return false;
                 }
                 return true;
@@ -73,9 +73,9 @@ public class DownloadFeature implements AuthorizationFeature {
                 return false;
             }
 
-            if (dSpaceObject instanceof Bitstream && bitstreamCrisSecurityService
-                 .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), (Bitstream) dSpaceObject)) {
-                if (isNoDownload(context, (Bitstream) dSpaceObject)) {
+            if (dSpaceObject instanceof Bitstream bitstream && bitstreamCrisSecurityService
+                                .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), bitstream)) {
+                if (isNoDownload(context, bitstream)) {
                     return false;
                 }
                 return true;
@@ -89,12 +89,14 @@ public class DownloadFeature implements AuthorizationFeature {
         return false;
     }
 
+    /**
+     * Returns {@code true} if the bitstream has the {@code nodownload} metadata value
+     * and the current user is not an administrator.
+     */
     private boolean isNoDownload(Context context, Bitstream bitstream) throws SQLException {
         var hasNodownloadValue = bitstreamService.getMetadata(bitstream,"bitstream", "viewer", "provider", ANY)
                                                  .stream()
-                                                 .filter(mv -> mv.getValue().equals("nodownload"))
-                                                 .findFirst()
-                                                 .isPresent();
+                                                 .anyMatch(mv -> mv.getValue().equals("nodownload"));
         return hasNodownloadValue && !authorizeService.isAdmin(context);
     }
 
