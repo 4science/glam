@@ -6,9 +6,11 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.app.rest.authorization.impl;
+
+import static org.dspace.content.Item.ANY;
+
 import java.sql.SQLException;
 
-import org.apache.commons.lang.StringUtils;
 import org.dspace.app.rest.authorization.AuthorizationFeature;
 import org.dspace.app.rest.authorization.AuthorizationFeatureDocumentation;
 import org.dspace.app.rest.authorization.AuthorizeServiceRestUtil;
@@ -20,7 +22,6 @@ import org.dspace.app.rest.utils.Utils;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.DSpaceObject;
-import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.slf4j.Logger;
@@ -89,8 +90,12 @@ public class DownloadFeature implements AuthorizationFeature {
     }
 
     private boolean isNoDownload(Context context, Bitstream bitstream) throws SQLException {
-        String value = bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "viewer", "provider", Item.ANY);
-        return StringUtils.equals("nodownload", value) && !authorizeService.isAdmin(context);
+        var hasNodownloadValue = bitstreamService.getMetadata(bitstream,"bitstream", "viewer", "provider", ANY)
+                                                 .stream()
+                                                 .filter(mv -> mv.getValue().equals("nodownload"))
+                                                 .findFirst()
+                                                 .isPresent();
+        return hasNodownloadValue && !authorizeService.isAdmin(context);
     }
 
     @Override
