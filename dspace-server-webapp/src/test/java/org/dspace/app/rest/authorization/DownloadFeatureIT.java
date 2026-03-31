@@ -460,4 +460,53 @@ public class DownloadFeatureIT extends AbstractControllerIntegrationTest {
                    .andExpect(jsonPath("$._embedded").doesNotExist());
     }
 
+    @Test
+    public void downloadOfBitstreamWithMultipleProviderValuesIncludingNodownload() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        Bitstream bitstreamMultiProvider = null;
+        try (InputStream is = IOUtils.toInputStream("Multi provider content", CharEncoding.UTF_8)) {
+            bitstreamMultiProvider = BitstreamBuilder.createBitstream(context, itemA, is)
+                                                     .withName("BitstreamMultiProvider")
+                                                     .withDescription("Bitstream with multiple provider values")
+                                                     .withMimeType("text/plain")
+                                                     .withMetadata("bitstream", "viewer", "provider", "google")
+                                                     .withMetadata("bitstream", "viewer", "provider", "nodownload")
+                                                     .withMetadata("bitstream", "viewer", "provider", "other")
+                                                     .build();
+        }
+        context.restoreAuthSystemState();
+
+        BitstreamRest bitstreamRest = bitstreamConverter.convert(bitstreamMultiProvider, Projection.DEFAULT);
+        String bitstreamUri = utils.linkToSingleResource(bitstreamRest, "self").getHref();
+
+        // Admin should still be able to download
+        Authorization authorizationFeature = new Authorization(admin, downloadFeature, bitstreamRest);
+        String adminToken = getAuthToken(admin.getEmail(), password);
+        getClient(adminToken).perform(get("/api/authz/authorizations/search/object")
+                                              .param("uri", bitstreamUri)
+                                              .param("feature", downloadFeature.getName()))
+                             .andExpect(status().isOk())
+                             .andExpect(jsonPath("$.page.totalElements", greaterThan(0)))
+                             .andExpect(jsonPath("$._embedded.authorizations", contains(
+                                     Matchers.is(AuthorizationMatcher.matchAuthorization(authorizationFeature)))));
+
+        // Regular eperson should NOT be able to download (nodownload value present)
+        String epersonToken = getAuthToken(eperson.getEmail(), password);
+        getClient(epersonToken).perform(get("/api/authz/authorizations/search/object")
+                                                .param("uri", bitstreamUri)
+                                                .param("feature", downloadFeature.getName()))
+                               .andExpect(status().isOk())
+                               .andExpect(jsonPath("$.page.totalElements", is(0)))
+                               .andExpect(jsonPath("$._embedded").doesNotExist());
+
+        // Anonymous should NOT be able to download (nodownload value present)
+        getClient().perform(get("/api/authz/authorizations/search/object")
+                                    .param("uri", bitstreamUri)
+                                    .param("feature", downloadFeature.getName()))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.page.totalElements", is(0)))
+                   .andExpect(jsonPath("$._embedded").doesNotExist());
+    }
+
 }

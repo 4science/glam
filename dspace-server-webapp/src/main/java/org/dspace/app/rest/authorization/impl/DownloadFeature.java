@@ -75,10 +75,7 @@ public class DownloadFeature implements AuthorizationFeature {
 
             if (dSpaceObject instanceof Bitstream bitstream && bitstreamCrisSecurityService
                                 .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), bitstream)) {
-                if (isNoDownload(context, bitstream)) {
-                    return false;
-                }
-                return true;
+                return !isNoDownload(context, bitstream);
             }
         } catch (Exception e) {
             log.warn(
