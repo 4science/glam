@@ -6,9 +6,11 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.app.rest.authorization.impl;
+
+import static org.dspace.content.Item.ANY;
+
 import java.sql.SQLException;
 
-import org.apache.commons.lang.StringUtils;
 import org.dspace.app.rest.authorization.AuthorizationFeature;
 import org.dspace.app.rest.authorization.AuthorizationFeatureDocumentation;
 import org.dspace.app.rest.authorization.AuthorizeServiceRestUtil;
@@ -20,7 +22,6 @@ import org.dspace.app.rest.utils.Utils;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Bitstream;
 import org.dspace.content.DSpaceObject;
-import org.dspace.content.Item;
 import org.dspace.content.service.BitstreamService;
 import org.dspace.core.Context;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ public class DownloadFeature implements AuthorizationFeature {
         if (object instanceof BitstreamRest) {
             if (authorizeServiceRestUtil.authorizeActionBoolean(context, object, DSpaceRestPermission.READ)) {
                 DSpaceObject dso = (DSpaceObject) utils.getDSpaceAPIObjectFromRest(context, object);
-                if (dso instanceof Bitstream && isNoDownload(context, (Bitstream) dso)) {
+                if (dso instanceof Bitstream  bitstream && isNoDownload(context, bitstream)) {
                     return false;
                 }
                 return true;
@@ -72,12 +73,9 @@ public class DownloadFeature implements AuthorizationFeature {
                 return false;
             }
 
-            if (dSpaceObject instanceof Bitstream && bitstreamCrisSecurityService
-                 .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), (Bitstream) dSpaceObject)) {
-                if (isNoDownload(context, (Bitstream) dSpaceObject)) {
-                    return false;
-                }
-                return true;
+            if (dSpaceObject instanceof Bitstream bitstream && bitstreamCrisSecurityService
+                                .isBitstreamAccessAllowedByCrisSecurity(context, context.getCurrentUser(), bitstream)) {
+                return !isNoDownload(context, bitstream);
             }
         } catch (Exception e) {
             log.warn(
@@ -88,9 +86,15 @@ public class DownloadFeature implements AuthorizationFeature {
         return false;
     }
 
+    /**
+     * Returns {@code true} if the bitstream has the {@code nodownload} metadata value
+     * and the current user is not an administrator.
+     */
     private boolean isNoDownload(Context context, Bitstream bitstream) throws SQLException {
-        String value = bitstreamService.getMetadataFirstValue(bitstream, "bitstream", "viewer", "provider", Item.ANY);
-        return StringUtils.equals("nodownload", value) && !authorizeService.isAdmin(context);
+        var hasNodownloadValue = bitstreamService.getMetadata(bitstream,"bitstream", "viewer", "provider", ANY)
+                                                 .stream()
+                                                 .anyMatch(mv -> mv.getValue().equals("nodownload"));
+        return hasNodownloadValue && !authorizeService.isAdmin(context);
     }
 
     @Override
