@@ -242,5 +242,17 @@
         <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
     </bean>
 
+    <bean id="miradorLinkRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
+        <property name="name" value="miradorlink"/>
+        <property name="fieldType" value="METADATAGROUP"/>
+        <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
+    </bean>
+
+    <bean id="miradorButtonRenderValidator" class="org.dspace.layout.script.service.impl.CrisLayoutToolRenderValidatorImpl">
+        <property name="name" value="mirador"/>
+        <property name="fieldType" value="METADATA"/>
+        <property name="subTypeValidationRule" value="NOT_ALLOWED"/>
+    </bean>
+
 </beans>
 
