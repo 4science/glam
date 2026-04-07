@@ -339,7 +339,7 @@ definitions:
     - parallel: &parallel-build-and-push
           - step: *build-and-push
           - step: *build-and-push-orc
-          - step: *build-and-push-solr8
+          - step: *build-and-push-solr9
 
     - step: &merge-prod-into-test
         name: Merge prod into test
@@ -419,7 +419,7 @@ pipelines:
       - step: *build-and-push
       - step: *build-and-push-orc
       - step: *deploy-on-test
-    e2e-test:
+    build-images:
       - step: *install
       - parallel: *parallel-build-and-push
     turn-on-dev:
