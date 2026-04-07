@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import jakarta.ws.rs.core.MediaType;
+import org.dspace.app.deduplication.service.DedupService;
+import org.dspace.app.deduplication.service.impl.SolrDedupServiceImpl;
 import org.dspace.app.rest.matcher.WorkspaceItemMatcher;
 import org.dspace.app.rest.model.patch.AddOperation;
 import org.dspace.app.rest.model.patch.Operation;
@@ -48,7 +50,6 @@ import org.dspace.content.Item;
 import org.dspace.content.WorkspaceItem;
 import org.dspace.content.service.InstallItemService;
 import org.dspace.content.service.WorkspaceItemService;
-import org.dspace.deduplication.MockSolrDedupCore;
 import org.dspace.eperson.EPerson;
 import org.dspace.kernel.ServiceManager;
 import org.dspace.services.factory.DSpaceServicesFactory;
@@ -78,7 +79,7 @@ public class SubmissionDeduplicationRestIT extends AbstractControllerIntegration
     @Autowired
     private InstallItemService installItemService;
 
-    private MockSolrDedupCore dedupService;
+    private DedupService dedupService;
 
     private Collection collection;
 
@@ -90,7 +91,7 @@ public class SubmissionDeduplicationRestIT extends AbstractControllerIntegration
     public void setUp() throws Exception {
         super.setUp();
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
-        dedupService = serviceManager.getServiceByName(null, MockSolrDedupCore.class);
+        dedupService = serviceManager.getServiceByName(null, SolrDedupServiceImpl.class);
 
         context.turnOffAuthorisationSystem();
         parentCommunity = CommunityBuilder.createCommunity(context)

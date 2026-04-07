@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,10 +45,8 @@ import org.dspace.content.dto.MetadataValueDTO;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
 import org.dspace.core.exception.SQLRuntimeException;
-import org.dspace.service.impl.HttpConnectionPoolService;
-import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.solr.SolrClientFactory;
 import org.dspace.util.UUIDUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Service to deal with the local suggestion solr core used by the
@@ -63,28 +61,24 @@ public class SolrSuggestionStorageServiceImpl implements SolrSuggestionStorageSe
 
     protected SolrClient solrSuggestionClient;
 
-    @Autowired
+    @Inject
     private ItemService itemService;
 
-    @Autowired @Named("solrHttpConnectionPoolService")
-    protected HttpConnectionPoolService httpConnectionPoolService;
+    @Inject
+    @Named("suggestionSolrClientFactory")
+    private SolrClientFactory solrClientFactory;
 
     /**
      * Get solr client which use suggestion core
-     * 
+     *
      * @return solr client
      */
     public SolrClient getSolr() {
-        if (solrSuggestionClient == null) {
-            String solrService = DSpaceServicesFactory.getInstance().getConfigurationService()
-                    .getProperty("suggestion.solr.server", "http://localhost:8983/solr/suggestion");
-            solrSuggestionClient =
-                new HttpSolrClient.Builder(solrService)
-                    .withHttpClient(httpConnectionPoolService.getClient())
-                    .build();
-        }
-        return solrSuggestionClient;
+        return solrClientFactory
+            .getClient("suggestion.solr.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for statistics core"));
     }
+
 
     @Override
     public void addSuggestion(Suggestion suggestion, boolean force, boolean commit)

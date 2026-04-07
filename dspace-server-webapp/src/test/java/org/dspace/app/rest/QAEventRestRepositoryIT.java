@@ -400,38 +400,48 @@ public class QAEventRestRepositoryIT extends AbstractControllerIntegrationTest {
         Collection col1 = CollectionBuilder.createCollection(context, parentCommunity).withName("Collection 1").build();
         QAEvent event1 = QAEventBuilder.createTarget(context, col1, "Science and Freedom")
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(1.0)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144300\"}").build();
         QAEvent event2 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 2")
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+               .withTrust(0.9)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144301\"}").build();
         QAEvent event3 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 3")
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.8)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144302\"}").build();
         QAEvent event4 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 4")
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.7)
                 .withMessage("{\"pids[0].type\":\"pmc\",\"pids[0].value\":\"2144303\"}").build();
         QAEvent event5 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 5")
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.6)
                 .withMessage("{\"pids[0].type\":\"pmid\",\"pids[0].value\":\"2144304\"}").build();
         QAEvent event6 = QAEventBuilder.createTarget(context, col1, "Science and Freedom")
                 .withSource(OPENAIRE_SOURCE)
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.5)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144300\"}").build();
         QAEvent event7 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 2")
                 .withSource(OPENAIRE_SOURCE)
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.4)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144301\"}").build();
         QAEvent event8 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 3")
                 .withSource(OPENAIRE_SOURCE)
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.3)
                 .withMessage("{\"pids[0].type\":\"doi\",\"pids[0].value\":\"10.2307/2144302\"}").build();
         QAEvent event9 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 4")
                 .withSource(OPENAIRE_SOURCE)
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.2)
                 .withMessage("{\"pids[0].type\":\"pmc\",\"pids[0].value\":\"2144303\"}").build();
         QAEvent event10 = QAEventBuilder.createTarget(context, col1, "Science and Freedom 5")
                 .withSource(OPENAIRE_SOURCE)
                 .withTopic(QANotifyPatterns.TOPIC_ENRICH_MISSING_PID)
+                .withTrust(0.1)
                 .withMessage("{\"pids[0].type\":\"pmid\",\"pids[0].value\":\"2144304\"}").build();
         context.setCurrentUser(admin);
         // this event will be related to an item submitted by the admin

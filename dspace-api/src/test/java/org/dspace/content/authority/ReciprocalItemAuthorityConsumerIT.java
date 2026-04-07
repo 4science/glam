@@ -33,7 +33,7 @@ import org.dspace.content.authority.service.MetadataAuthorityService;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
-import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.event.ConsumerProfile;
 import org.dspace.event.Dispatcher;
 import org.dspace.event.factory.EventServiceFactory;
@@ -49,7 +49,7 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
 
     private ItemService itemService;
     private EventService eventService;
-    private MockSolrSearchCore searchService;
+    private SolrSearchCore searchService;
     private ConfigurationService configurationService;
     private MetadataAuthorityService metadataAuthorityService;
 
@@ -62,7 +62,7 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
         itemService = ContentServiceFactory.getInstance().getItemService();
         eventService = EventServiceFactory.getInstance().getEventService();
-        searchService = serviceManager.getServiceByName(null, MockSolrSearchCore.class);
+        searchService = serviceManager.getServiceByName(null, SolrSearchCore.class);
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
         metadataAuthorityService = ContentAuthorityServiceFactory.getInstance().getMetadataAuthorityService();
 

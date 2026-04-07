@@ -40,7 +40,7 @@ import org.dspace.content.Collection;
 import org.dspace.content.EntityType;
 import org.dspace.eperson.EPerson;
 import org.dspace.services.ConfigurationService;
-import org.dspace.statistics.MockSolrStatisticsCore;
+import org.dspace.statistics.SolrStatisticsCore;
 import org.dspace.xmlworkflow.storedcomponents.ClaimedTask;
 import org.dspace.xmlworkflow.storedcomponents.PoolTask;
 import org.dspace.xmlworkflow.storedcomponents.XmlWorkflowItem;
@@ -70,7 +70,7 @@ public class WorkflowStepStatisticsRestRepositoryIT extends AbstractControllerIn
     private XmlWorkflowItemService workflowItemService;
 
     @Autowired
-    private MockSolrStatisticsCore mockSolrStatisticsCore;
+    private SolrStatisticsCore solrStatisticsCore;
 
     private Collection collection;
 
@@ -104,7 +104,7 @@ public class WorkflowStepStatisticsRestRepositoryIT extends AbstractControllerIn
 
         context.setCurrentUser(eperson);
 
-        mockSolrStatisticsCore.getSolr().commit();
+        solrStatisticsCore.getSolr().commit();
 
         context.restoreAuthSystemState();
 

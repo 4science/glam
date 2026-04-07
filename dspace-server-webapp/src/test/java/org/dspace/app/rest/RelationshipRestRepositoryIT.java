@@ -76,7 +76,7 @@ import org.dspace.content.service.MetadataSchemaService;
 import org.dspace.content.service.RelationshipTypeService;
 import org.dspace.core.Constants;
 import org.dspace.core.I18nUtil;
-import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.eperson.EPerson;
 import org.junit.Before;
 import org.junit.Test;
@@ -106,7 +106,7 @@ public class RelationshipRestRepositoryIT extends AbstractEntityIntegrationTest 
     protected MetadataSchemaService metadataSchemaService;
 
     @Autowired
-    MockSolrSearchCore mockSolrSearchCore;
+    SolrSearchCore mockSolrSearchCore;
     protected Community parentCommunity;
     protected Community child1;
 

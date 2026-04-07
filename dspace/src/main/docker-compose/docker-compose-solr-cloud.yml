@@ -1,0 +1,106 @@
+#
+# The contents of this file are subject to the license and copyright
+# detailed in the LICENSE and NOTICE files at the root of the source
+# tree and available online at
+#
+# http://www.dspace.org/license/
+#
+
+networks:
+  # Default to using network named 'dspacenet' from docker-compose.yml.
+  # Its full name will be prepended with the project name (e.g. "-p dcris25" means it will be named "dcris25_dspacenet")
+  default:
+    name: ${COMPOSE_PROJECT_NAME}_dspacenet
+    external: true
+
+services:
+  zookeeper:
+    image: zookeeper:3.6
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    volumes:
+      - zk-data:/data
+      - zk-datalog:/datalog
+    restart: unless-stopped
+    networks:
+      - default
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,ruok,conf,stat"
+
+  dspacesolr:
+    image: "${DOCKER_REGISTRY:-docker.io}/${DOCKER_OWNER:-4science}/dspace-cris-solr:${DSPACE_VER:-dspace-cris-2024_02_x}"
+    container_name: dspacesolr
+    ports:
+      - "8983:8983"
+    entrypoint:
+      - /bin/bash
+      - '-c'
+      - |
+        solr start -f -cloud -z zookeeper:2181
+    depends_on:
+          - zookeeper
+    restart: unless-stopped
+    networks:
+      - default
+    environment:
+      - SOLR_OPTS=-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -Xms2g -Xmx4g
+
+  dspacesolr2:
+    image: "${DOCKER_REGISTRY:-docker.io}/${DOCKER_OWNER:-4science}/dspace-cris-solr:${DSPACE_VER:-dspace-cris-2024_02_x}"
+    container_name: dspacesolr2
+    ports:
+      - "8984:8983"
+    volumes:
+      - dspacesolr2-data:/var/solr/data
+    entrypoint:
+      - /bin/bash
+      - '-c'
+      - |
+        solr start -f -cloud -z zookeeper:2181
+    depends_on:
+      - zookeeper
+    restart: unless-stopped
+    networks:
+      - default
+    environment:
+      - SOLR_OPTS=-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -Xms2g -Xmx4g
+
+  create-collection:
+    image: "${DOCKER_REGISTRY:-docker.io}/${DOCKER_OWNER:-4science}/dspace-cris-solr:${DSPACE_VER:-dspace-cris-2024_02_x}"
+    container_name: create-collection
+    depends_on:
+      - dspacesolr
+    networks:
+      - default
+    environment:
+      SOLR_HOST: dspacesolr
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        wait-for-solr.sh --max-attempts 10 --wait-seconds 5 --solr-url http://$$SOLR_HOST:8983/ && \
+        solr zk upconfig -z zookeeper:2181 -n authority -d /opt/solr/server/solr/configsets/authority && \
+        solr create_collection -c authority -shards 2 -replicationFactor 2 -d authority -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n oai -d /opt/solr/server/solr/configsets/oai && \
+        solr create_collection -c oai -shards 2 -replicationFactor 2 -d oai -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n search -d /opt/solr/server/solr/configsets/search && \
+        solr create_collection -c search -shards 2 -replicationFactor 2 -d search -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n statistics -d /opt/solr/server/solr/configsets/statistics && \
+        solr create_collection -c statistics -shards 2 -replicationFactor 2 -d statistics -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n qaevent -d /opt/solr/server/solr/configsets/qaevent && \
+        solr create_collection -c qaevent -shards 2 -replicationFactor 2 -d qaevent -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n suggestion -d /opt/solr/server/solr/configsets/suggestion && \
+        solr create_collection -c suggestion -shards 2 -replicationFactor 2 -d suggestion -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n dedup -d /opt/solr/server/solr/configsets/dedup && \
+        solr create_collection -c dedup -shards 2 -replicationFactor 2 -d dedup -p 8983 && \
+        solr zk upconfig -z zookeeper:2181 -n audit -d /opt/solr/server/solr/configsets/audit && \
+        solr create_collection -c audit -shards 2 -replicationFactor 2 -d audit -p 8983
+    restart: "no"
+
+volumes:
+  zk-data:
+  zk-datalog:
+  dspacesolr-data:
+  dspacesolr2-data:

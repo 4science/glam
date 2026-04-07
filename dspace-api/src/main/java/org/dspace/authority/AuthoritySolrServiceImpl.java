@@ -19,14 +19,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.dspace.authority.indexer.AuthorityIndexingService;
-import org.dspace.service.impl.HttpConnectionPoolService;
-import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.solr.SolrClientFactory;
 
 /**
  * @author Antoine Snyers (antoine at atmire.com)
@@ -38,45 +35,18 @@ public class AuthoritySolrServiceImpl implements AuthorityIndexingService, Autho
 
     private static final Logger log = LogManager.getLogger(AuthoritySolrServiceImpl.class);
 
-    @Inject @Named("solrHttpConnectionPoolService")
-    private HttpConnectionPoolService httpConnectionPoolService;
+    @Inject
+    @Named("authoritySolrClientFactory")
+    private SolrClientFactory solrClientFactory;
 
     protected AuthoritySolrServiceImpl() {
 
     }
 
-    /**
-     * Non-Static CommonsHttpSolrServer for processing indexing events.
-     */
-    protected SolrClient solr = null;
-
-    public SolrClient getSolr()
-            throws MalformedURLException, SolrServerException, IOException {
-        if (solr == null) {
-
-            ConfigurationService configurationService
-                    = DSpaceServicesFactory.getInstance().getConfigurationService();
-            String solrService = configurationService.getProperty("solr.authority.server");
-
-            log.debug("Solr authority URL: " + solrService);
-
-            HttpSolrClient solrServer = new HttpSolrClient.Builder(solrService)
-                    .withHttpClient(httpConnectionPoolService.getClient())
-                    .build();
-            solrServer.setBaseURL(solrService);
-
-            SolrQuery solrQuery = new SolrQuery().setQuery("*:*");
-
-            try {
-                solrServer.query(solrQuery);
-            } catch (Exception ex) {
-                log.error("An error occurs querying authority solr core", ex);
-            }
-
-            solr = solrServer;
-        }
-
-        return solr;
+    public SolrClient getSolr() {
+        return solrClientFactory
+            .getClient("solr.authority.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for authority core"));
     }
 
     @Override
@@ -150,7 +120,7 @@ public class AuthoritySolrServiceImpl implements AuthorityIndexingService, Autho
 
     @Override
     public QueryResponse search(SolrQuery query)
-            throws SolrServerException, MalformedURLException, IOException {
+        throws SolrServerException, MalformedURLException, IOException {
         return getSolr().query(query);
     }
 

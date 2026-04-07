@@ -108,7 +108,7 @@
         <property name="filterTemplate">
             <!-- we need to escape the { as it as a special meaning for the message format -->
             <!-- argument {0} will be replaced with the uuid of the loggedin user -->
-            <value>'{'!join from=search.resourceid to=resource_uuid fromIndex=${solr.multicorePrefix}search}submitter_authority:{0}</value>
+            <value>'{'!join from=search.resourceid to=resource_uuid #{'${solr.cloud.enabled:-false}' == 'true' ? 'method=crossCollection ' : ''}fromIndex=${solr.multicorePrefix}search'}'submitter_authority:{0}</value>
         </property>
     </bean>
     <!--

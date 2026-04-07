@@ -97,32 +97,46 @@ public class SolrDatabaseResyncCli extends DSpaceRunnable<SolrDatabaseResyncCliS
     }
 
     private void performStatusUpdate(Context context) throws SearchServiceException, SolrServerException, IOException {
-        SolrQuery solrQuery = new SolrQuery();
-        solrQuery.setQuery("*:*");
-        solrQuery.addFilterQuery(STATUS_FIELD + ":" + STATUS_FIELD_PREDB);
-        solrQuery.addFilterQuery(SearchUtils.RESOURCE_TYPE_FIELD + ":" + IndexableItem.TYPE);
-        String dateRangeFilter = SearchUtils.LAST_INDEXED_FIELD + ":[* TO " + maxTime + "]";
-        logDebugAndOut("Date range filter used; " + dateRangeFilter);
-        solrQuery.addFilterQuery(dateRangeFilter);
-        solrQuery.addField(SearchUtils.RESOURCE_ID_FIELD);
-        solrQuery.addField(SearchUtils.RESOURCE_UNIQUE_ID);
-        solrQuery.setRows(0);
-        QueryResponse response = solrSearchCore.getSolr().query(solrQuery, solrSearchCore.REQUEST_METHOD);
-        if (response != null && response.getResults() != null) {
-            long nrOfPreDBResults = response.getResults().getNumFound();
-            if (nrOfPreDBResults > 0) {
-                logInfoAndOut(nrOfPreDBResults + " items found to process");
-                int batchSize = configurationService.getIntProperty("script.solr-database-resync.batch-size", 100);
-                for (int start = 0; start < nrOfPreDBResults; start += batchSize) {
-                    solrQuery.setStart(start);
-                    solrQuery.setRows(batchSize);
-                    performStatusUpdateOnNextBatch(context, solrQuery);
-                }
+        int batchSize = configurationService.getIntProperty("script.solr-database-resync.batch-size", 100);
+        int totalProcessed = 0;
+
+        while (true) {
+            SolrQuery solrQuery = new SolrQuery();
+            solrQuery.setQuery("*:*");
+            solrQuery.addFilterQuery(STATUS_FIELD + ":" + STATUS_FIELD_PREDB);
+            solrQuery.addFilterQuery(SearchUtils.RESOURCE_TYPE_FIELD + ":" + IndexableItem.TYPE);
+            String dateRangeFilter = SearchUtils.LAST_INDEXED_FIELD + ":[* TO " + maxTime + "]";
+            logDebugAndOut("Date range filter used; " + dateRangeFilter);
+            solrQuery.addFilterQuery(dateRangeFilter);
+            solrQuery.addField(SearchUtils.RESOURCE_ID_FIELD);
+            solrQuery.addField(SearchUtils.RESOURCE_UNIQUE_ID);
+
+            // Sort for consistency
+            solrQuery.setSort(SearchUtils.RESOURCE_ID_FIELD, SolrQuery.ORDER.asc);
+
+            // Always start from 0 since we're removing documents
+            solrQuery.setStart(0);
+            solrQuery.setRows(batchSize);
+
+            QueryResponse response = solrSearchCore.getSolr().query(solrQuery, solrSearchCore.REQUEST_METHOD);
+
+            if (response != null && response.getResults() != null && !response.getResults().isEmpty()) {
+                logInfoAndOut(response.getResults().size() + " items found to process");
+                performStatusUpdateOnNextBatch(context, solrQuery);
+                totalProcessed += response.getResults().size();
+
+                logDebugAndOut("Committing batch. Total processed: " + totalProcessed);
+                // solrSearchCore.getSolr().commit(true, true, true);
+                indexingService.commit();
+            } else {
+                // No more documents to process
+                break;
             }
         }
 
-        indexingService.commit();
+        logInfoAndOut("Processing completed. Total processed: " + totalProcessed);
     }
+
 
     private void performStatusUpdateOnNextBatch(Context context, SolrQuery solrQuery)
             throws SolrServerException, IOException {

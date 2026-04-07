@@ -17,12 +17,12 @@ import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.logging.log4j.Logger;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
@@ -34,9 +34,7 @@ import org.dspace.app.iiif.model.generator.ManifestGenerator;
 import org.dspace.app.iiif.model.generator.SearchResultGenerator;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
 import org.dspace.service.impl.HttpConnectionPoolService;
-import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dspace.solr.SolrClientFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +44,7 @@ import org.springframework.stereotype.Component;
  * <p>
  * https://github.com/dbmdz/solr-ocrhighlighting
  *
- *  @author Michael Spalti  mspalti@willamette.edu
+ * @author Michael Spalti  mspalti@willamette.edu
  */
 @Scope("prototype")
 @Component
@@ -57,22 +55,24 @@ public class WordHighlightSolrSearch implements SearchAnnotationService {
     private String endpoint;
     private String manifestId;
 
-    @Autowired
+    @Inject
     IIIFUtils utils;
 
-    @Autowired
+    @Inject
     ContentAsTextGenerator contentAsText;
 
-    @Autowired
+    @Inject
     SearchResultGenerator searchResult;
 
-    @Autowired
+    @Inject
     ManifestGenerator manifestGenerator;
 
-    @Autowired
-    ConfigurationService configurationService;
+    @Inject
+    @Named("ocrSolrClientFactory")
+    private SolrClientFactory solrClientFactory;
 
-    @Autowired @Named("solrHttpConnectionPoolService")
+    @Inject
+    @Named("solrHttpConnectionPoolService")
     protected HttpConnectionPoolService httpConnectionPoolService;
 
     @Override
@@ -89,36 +89,28 @@ public class WordHighlightSolrSearch implements SearchAnnotationService {
     @Override
     public String getSearchResponse(UUID uuid, String query) {
         String json = "";
-        ConfigurationService configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
-        String solrService = configurationService.getProperty("iiif.search.url");
-        boolean validationEnabled =  configurationService
-                .getBooleanProperty("discovery.solr.url.validation.enabled", true);
-        UrlValidator urlValidator = new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS);
-        if (urlValidator.isValid(solrService) || validationEnabled) {
-            HttpSolrClient solrServer =
-                new HttpSolrClient.Builder(solrService)
-                    .withHttpClient(httpConnectionPoolService.getClient())
-                    .build();
-            solrServer.setUseMultiPartPost(true);
-            SolrQuery solrQuery = getSolrQuery(adjustQuery(query), manifestId);
-            QueryRequest req = new QueryRequest(solrQuery);
-            // returns raw json response.
-            req.setResponseParser(new NoOpResponseParser("json"));
-            NamedList<Object> resp;
-            try {
-                resp = solrServer.request(req);
-                json =  (String) resp.get("response");
-            } catch (SolrServerException | IOException e) {
-                throw new RuntimeException("Unable to retrieve search response.", e);
-            }
-        } else {
-            log.error("Error while initializing solr, invalid url: " + solrService);
+        SolrClient solrServer = solrClientFactory
+            .getClient("iiif.search.url")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for IIIF search core"));
+
+        SolrQuery solrQuery = getSolrQuery(adjustQuery(query), manifestId);
+        QueryRequest req = new QueryRequest(solrQuery);
+        req.setResponseParser(new NoOpResponseParser("json"));
+
+        try {
+            NamedList<Object> resp = solrServer.request(req);
+            json = (String) resp.get("response");
+        } catch (SolrServerException | IOException e) {
+            throw new RuntimeException("Unable to retrieve IIIF search response.", e);
         }
+
         return getAnnotationList(uuid, json, query);
     }
 
+
     /**
      * Wraps multi-word queries in parens.
+     *
      * @param query the search query
      * @return
      */

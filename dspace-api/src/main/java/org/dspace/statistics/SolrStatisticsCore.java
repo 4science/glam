@@ -7,59 +7,27 @@
  */
 package org.dspace.statistics;
 
-import static org.apache.logging.log4j.LogManager.getLogger;
-
-import jakarta.inject.Named;
-import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.dspace.service.impl.HttpConnectionPoolService;
-import org.dspace.services.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.dspace.solr.SolrClientFactory;
 
 /**
  * Bean containing the {@link SolrClient} for the statistics core
  */
 public class SolrStatisticsCore {
 
-    private static final Logger log = getLogger();
+    private SolrClientFactory solrClientFactory;
 
-    protected SolrClient solr = null;
-
-    @Autowired
-    protected ConfigurationService configurationService;
-
-    @Autowired @Named("solrHttpConnectionPoolService")
-    protected HttpConnectionPoolService httpConnectionPoolService;
+    public void setSolrClientFactory(SolrClientFactory solrClientFactory) {
+        this.solrClientFactory = solrClientFactory;
+    }
 
     /**
-     * Returns the {@link SolrClient} for the Statistics core.
-     * Initializes it if needed.
      * @return The {@link SolrClient} for the Statistics core
      */
     public SolrClient getSolr() {
-        if (solr == null) {
-            initSolr();
-        }
-        return solr;
+        return solrClientFactory
+            .getClient("solr-statistics.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for statistics core"));
     }
 
-    /**
-     * Initializes the statistics {@link SolrClient}.
-     */
-    protected void initSolr() {
-
-        String solrService = configurationService.getProperty("solr-statistics.server");
-
-        log.info("solr-statistics.server:  {}", solrService);
-        log.info("usage-statistics.dbfile:  {}", configurationService.getProperty("usage-statistics.dbfile"));
-
-        try {
-            solr = new HttpSolrClient.Builder(solrService)
-                    .withHttpClient(httpConnectionPoolService.getClient())
-                    .build();
-        } catch (Exception e) {
-            log.error("Error accessing Solr server configured in 'solr-statistics.server'", e);
-        }
-    }
 }
