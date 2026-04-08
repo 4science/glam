@@ -420,6 +420,7 @@ pipelines:
       - step: *build-and-push-orc
       - step: *deploy-on-test
     build-images:
+      - step: *check-branch-name-allowed
       - step: *install
       - parallel: *parallel-build-and-push
     turn-on-dev:
