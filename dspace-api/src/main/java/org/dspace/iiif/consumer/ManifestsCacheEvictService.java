@@ -29,6 +29,11 @@ public class ManifestsCacheEvictService {
         Objects.requireNonNull(cacheManager.getCache(CACHE_NAME)).evictIfPresent(cacheKey);
     }
 
+    public void evictManifest(String uuid) {
+        evictSingleCacheValue(uuid + "_false");
+        evictSingleCacheValue(uuid + "_true");
+    }
+
     public void evictAllCacheValues() {
         Objects.requireNonNull(cacheManager.getCache(CACHE_NAME)).invalidate();
     }

@@ -2099,4 +2099,134 @@ public class IIIFControllerIT extends AbstractControllerIntegrationTest {
                            is("sc:AnnotationList")));
     }
 
+    /**
+     * Verifies that updating the Story item title evicts its manifest from cache,
+     * so the subsequent GET returns the updated label.
+     */
+    @Test
+    public void findOneStoryManifestCacheEvictedAfterStoryItemUpdateIT() throws Exception {
+        context.turnOffAuthorisationSystem();
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Publication Collection")
+                                           .withEntityType("Publication")
+                                           .build();
+        Collection col2 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Story Collection")
+                                           .withEntityType("Story")
+                                           .build();
+        Item item1 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 1")
+                                .enableIIIF()
+                                .build();
+
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream("dummy", CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, item1, is)
+                                         .withName("Image1.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .build();
+        }
+
+        Item storyItem = ItemBuilder.createItem(context, col2)
+                                    .withTitle("Original Story Title")
+                                    .withEntityType("Story")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas 1")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 1", item1.getID().toString(), 600)
+                                    .build();
+
+        context.restoreAuthSystemState();
+
+        // Populate the cache.
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.label", is("Original Story Title")));
+
+        String patchBody =
+                "[{\"op\": \"replace\",\"path\": \"/metadata/dc.title/0/value\",\"value\": \"Updated Story Title\"}]";
+
+        String token = getAuthToken(admin.getEmail(), password);
+        // Updating the Story item should evict its manifest from the cache.
+        getClient(token).perform(patch("/api/core/items/" + storyItem.getID())
+                        .content(patchBody)
+                        .contentType(MediaType.APPLICATION_JSON_PATCH_JSON))
+                        .andExpect(status().isOk());
+
+        // The manifest must reflect the new title, not the stale cached one.
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.label", is("Updated Story Title")));
+    }
+
+    /**
+     * Verifies that modifying a bitstream belonging to a child item also evicts the
+     * Story manifest from cache, not just the child item's own manifest.
+     */
+    @Test
+    public void findOneStoryManifestCacheEvictedAfterChildItemBitstreamUpdateIT() throws Exception {
+        context.turnOffAuthorisationSystem();
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Publication Collection")
+                                           .withEntityType("Publication")
+                                           .build();
+        Collection col2 = CollectionBuilder.createCollection(context, parentCommunity)
+                                           .withName("Story Collection")
+                                           .withEntityType("Story")
+                                           .build();
+
+        Item item1 = ItemBuilder.createItem(context, col1)
+                                .withTitle("Publication 1")
+                                .enableIIIF()
+                                .build();
+
+        Bitstream bitstream1;
+        try (InputStream is = IOUtils.toInputStream("dummy", CharEncoding.UTF_8)) {
+            bitstream1 = BitstreamBuilder.createBitstream(context, item1, is)
+                                         .withName("Image1.jpg")
+                                         .withMimeType("image/jpeg")
+                                         .build();
+        }
+
+        // StoryCanvasConsumer will set dc.relation.story on item1 when the Story is installed.
+        Item storyItem = ItemBuilder.createItem(context, col2)
+                                    .withTitle("Test Story")
+                                    .withEntityType("Story")
+                                    .withMetadata("glam", "bitstream", "name", "Canvas 1")
+                                    .withMetadata("glam", "bitstream", "canvasid", bitstream1.getID().toString())
+                                    .withMetadata("glam", "bitstream", "relatedItem", null,
+                                                  "Publication 1", item1.getID().toString(), 600)
+                                    .build();
+
+        context.restoreAuthSystemState();
+
+        // Populate the cache; default canvas width is 64.
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(64)));
+
+        // Patch the bitstream to set an explicit canvas width; the Story manifest should reflect it.
+        String patchBody = "[{\"op\": \"add\",\"path\": \"/metadata/iiif.image.width/-\"," +
+                           "\"value\": {\"value\": \"200\"}}]";
+
+        String token = getAuthToken(admin.getEmail(), password);
+        // Updating the child bitstream should evict the parent Story manifest via
+        // the dc.relation.story lookup in IIIFCacheEventConsumer.evictManifestAndParentStories().
+        getClient(token).perform(patch("/api/core/bitstreams/" + bitstream1.getID())
+                        .content(patchBody)
+                        .contentType(MediaType.APPLICATION_JSON_PATCH_JSON))
+                        .andExpect(status().isOk());
+
+        // The Story manifest must be regenerated with the new canvas width.
+        getClient().perform(get("/iiif/" + storyItem.getID() + "/manifest"))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.sequences[0].canvases[0].width", is(200)));
+    }
+
 }
