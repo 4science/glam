@@ -1246,6 +1246,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Testing, Works")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/search/objects")
@@ -1349,6 +1350,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("DSpace & friends")
                    .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(
@@ -1377,6 +1379,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("DSpace & friends")
                    .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(
@@ -2027,6 +2030,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                                       .withSubject("ExtraEntry")
                                       .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         //** WHEN **
@@ -6752,6 +6756,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                        .withAuthor("Smith, Donald")
                        .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6829,6 +6834,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                        .withAuthor("Smith, Donald")
                        .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6888,6 +6894,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withSubject("ExtraEntry")
                    .makeUnDiscoverable().build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6956,6 +6963,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withSubject("ExtraEntry")
                    .makeUnDiscoverable().build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8721,6 +8729,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Smith, Donald")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8787,6 +8796,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Smith, Donald")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8874,6 +8884,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("0 AD").withIssueDate("0000-01-01").build();
         ItemBuilder.createItem(context, col).withTitle("1 AD").withIssueDate("0001-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/search/objects")
@@ -8895,6 +8906,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("1 AD").withIssueDate("0001-01-01").build();
         ItemBuilder.createItem(context, col).withTitle("0 AD").withIssueDate("0000-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
         String adminToken = getAuthToken(admin.getEmail(), password);
 
@@ -8937,6 +8949,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("Item 2").withIssueDate("-0010-11-17").build();
         ItemBuilder.createItem(context, col).withTitle("Item 3").withIssueDate("-0009-01-19").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/facets/graphpubldate"))
@@ -8955,6 +8968,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("Bad Date 1").withIssueDate("-20-13-40").build();
         ItemBuilder.createItem(context, col).withTitle("Bad Date 2").withIssueDate("-201A-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         // They should not show up in a valid query
