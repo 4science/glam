@@ -37,6 +37,7 @@ RUN mkdir -p $AUDIT_CONFIGSET_PATH $AUTHORITY_CONFIGSET_PATH $DEDUP_CONFIGSET_PA
     $OCR_LIB_PATH $JTS_CORE_LIB_PATH
 
 COPY --chown=solr:solr ./dspace/solr/ocr/lib/* /opt/solr/lib
+COPY --chown=solr:solr ./dspace/solr/search/lib/* /opt/solr/server/solr-webapp/webapp/WEB-INF/lib
 
 COPY --chown=solr:solr ./dspace/solr/audit/conf/* $AUDIT_CONFIGSET_PATH/
 COPY --chown=solr:solr ./dspace/solr/authority/conf/* $AUTHORITY_CONFIGSET_PATH/
@@ -49,5 +50,7 @@ COPY --chown=solr:solr ./dspace/solr/statistics/conf/* $STATISTICS_CONFIGSET_PAT
 COPY --chown=solr:solr ./dspace/solr/suggestion/conf/* $SUGGESTION_CONFIGSET_PATH/
 
 USER solr
+
+RUN mkdir -p /var/solr/data
 
 CMD ["solr-foreground"]
