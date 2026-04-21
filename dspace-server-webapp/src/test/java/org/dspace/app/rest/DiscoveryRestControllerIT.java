@@ -8919,10 +8919,10 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                                                  is("-12 BC")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[1]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("1 AD")))
+                                                 is("0 AD")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[2]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("0 AD")));
+                                                 is("1 AD")));
 
         // DESC sort
         getClient(adminToken).perform(get("/api/discover/search/objects")
