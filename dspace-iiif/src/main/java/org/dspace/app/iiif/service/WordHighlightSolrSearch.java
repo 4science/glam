@@ -35,6 +35,7 @@ import org.dspace.app.iiif.model.generator.SearchResultGenerator;
 import org.dspace.app.iiif.service.utils.IIIFUtils;
 import org.dspace.service.impl.HttpConnectionPoolService;
 import org.dspace.solr.SolrClientFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -71,7 +72,7 @@ public class WordHighlightSolrSearch implements SearchAnnotationService {
     @Named("ocrSolrClientFactory")
     private SolrClientFactory solrClientFactory;
 
-    @Inject
+    @Autowired
     @Named("solrHttpConnectionPoolService")
     protected HttpConnectionPoolService httpConnectionPoolService;
 
