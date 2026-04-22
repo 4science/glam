@@ -252,6 +252,7 @@
                 <entry key="RELATION.Fonds.publications" value-ref="relationFondsPublicationsConfiguration"/>
                 <entry key="RELATION.Fonds.children" value-ref="relationFondsFondsChildrenConfiguration"/>
                 <!-- Journal Fonds Related items -->
+                <entry key="RELATION.JournalFonds.items" value-ref="relationJournalFondsItemsConfiguration"/>
                 <entry key="RELATION.JournalFonds.children" value-ref="relationJournalFondsJournalFondsChildrenConfiguration"/>
                 <!-- Aggregation Related items -->
                 <entry key="RELATION.Aggregation.items" value-ref="relationAggregationItemsConfiguration"/>
@@ -3312,6 +3313,37 @@
             <list>
                 <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
                 <value>glamfonds.parent_authority:{0}</value>
+                <value>-withdrawn:true AND -discoverable:false</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- journal file items related to a journal fonds -->
+    <bean id="relationJournalFondsItemsConfiguration" class="org.dspace.discovery.configuration.DiscoveryRelatedItemConfiguration">
+        <!--The sort filters for the discovery search-->
+        <property name="searchSortConfiguration">
+            <bean class="org.dspace.discovery.configuration.DiscoverySortConfiguration">
+                <!--<property name="defaultSort" ref="sortDateIssued"/>-->
+                <!--DefaultSortOrder can either be desc or asc (desc is default)-->
+                <property name="sortFields">
+                    <list>
+                        <ref bean="sortScore" />
+                        <ref bean="sortTitleAsc" />
+                        <ref bean="sortTitleDesc" />
+                        <ref bean="sortDateIssuedDesc" />
+                        <ref bean="sortDateIssuedAsc" />
+                        <ref bean="sortLastModifiedDesc" />
+                        <ref bean="sortLastModifiedAsc" />
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!--Any default filter queries, these filter queries will be used for all
+                queries done by discovery for this configuration -->
+        <property name="defaultFilterQueries">
+            <list>
+                <!--Only find related items. The placeholder {0} will be replaced with scope (UUID of item)-->
+                <value>dc.relation.journalfonds_authority:{0}</value>
                 <value>-withdrawn:true AND -discoverable:false</value>
             </list>
         </property>
