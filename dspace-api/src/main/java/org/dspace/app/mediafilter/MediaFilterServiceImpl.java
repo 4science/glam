@@ -292,7 +292,7 @@ public class MediaFilterServiceImpl implements MediaFilterService, InitializingB
             List<String> fmts = filterFormats.get(filterClass.getClass().getName() +
                                                       (pluginName != null ? FILTER_PLUGIN_SEPARATOR + pluginName : ""));
 
-            if (fmts.contains(myBitstream.getFormat(context).getShortDescription())) {
+            if (fmts != null && fmts.contains(myBitstream.getFormat(context).getShortDescription())) {
                 try {
                     // only update item if bitstream not skipped
                     if (processBitstream(context, myItem, myBitstream, filterClass)) {

@@ -44,6 +44,7 @@
         <jetty.version>9.4.57.v20241219</jetty.version>
         <log4j.version>2.24.3</log4j.version>
         <pdfbox-version>3.0.5</pdfbox-version>
+        <twelvemonkeys.version>3.13.1</twelvemonkeys.version>
         <rome.version>1.19.0</rome.version>
         <slf4j.version>2.0.17</slf4j.version>
         <tika.version>3.2.3</tika.version>

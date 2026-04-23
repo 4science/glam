@@ -25,7 +25,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
@@ -92,12 +96,18 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
             if (directory != null && directory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
                 return convertRotationToDegrees(directory.getInt(ExifIFD0Directory.TAG_ORIENTATION));
             }
-        } catch (MetadataException | ImageProcessingException | IOException e) {
+        } catch (MetadataException | ImageProcessingException | IOException | OutOfMemoryError e) {
             log.error("Error reading image metadata", e);
         }
         return 0;
     }
 
+    /**
+     * Converts EXIF orientation tag value to rotation degrees.
+     *
+     * @param valueNode EXIF orientation value
+     * @return rotation angle in degrees
+     */
     public static int convertRotationToDegrees(int valueNode) {
         // Common orientation values:
         // 1 = Normal (0°)
@@ -117,7 +127,7 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
     }
 
     /**
-     * Rotates an image by the specified angle
+     * Rotates an image by the specified angle.
      *
      * @param image The original image
      * @param angle The rotation angle in degrees
@@ -151,7 +161,7 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
     }
 
     /**
-     * Calculates scaled dimension while maintaining aspect ratio
+     * Calculates scaled dimension while maintaining aspect ratio.
      *
      * @param imgSize  Original image dimensions
      * @param boundary Maximum allowed dimensions
@@ -199,6 +209,15 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
         return getThumb(currentItem, source, verbose);
     }
 
+    /**
+     * Creates a thumbnail from the given source image stream.
+     *
+     * @param currentItem the current item
+     * @param source      the source image input stream
+     * @param verbose     verbose mode
+     * @return InputStream the thumbnail as an input stream
+     * @throws Exception if error
+     */
     public InputStream getThumb(Item currentItem, InputStream source, boolean verbose)
         throws Exception {
         // get config params
@@ -216,6 +235,99 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
         return getThumb(currentItem, source, verbose, xmax, ymax, blurring, hqscaling, 0, 0, null);
     }
 
+    /**
+     * Reads an image, optionally using subsampling to reduce memory usage for large images.
+     * Uses ImageReader directly instead of ImageIO.read() to control subsampling.
+     *
+     * <p>Subsampling is controlled by two configuration properties:
+     * <ul>
+     *   <li>{@code thumbnail.subsample.minpixels} - minimum total pixels (width * height) to trigger
+     *       subsampling. Images smaller than this are read at full resolution. Default: 0 (disabled).</li>
+     *   <li>{@code thumbnail.subsample.factor} - fixed subsampling factor (read every Nth pixel).
+     *       If set to 0 or less, the factor is calculated automatically from the image and target
+     *       dimensions. Default: 0 (auto).</li>
+     * </ul>
+     *
+     * @param input     the input stream to read from (e.g. FileInputStream from temp file)
+     * @param maxWidth  the target maximum width (used for auto factor calculation)
+     * @param maxHeight the target maximum height (used for auto factor calculation)
+     * @return the (possibly subsampled) BufferedImage
+     * @throws IOException if reading fails
+     */
+    private BufferedImage readWithOptionalSubsampling(InputStream input, int maxWidth, int maxHeight)
+        throws IOException {
+
+        final ConfigurationService configurationService
+            = DSpaceServicesFactory.getInstance().getConfigurationService();
+
+        // Minimum image size (in total pixels) to activate subsampling; 0 = disabled
+        long subsampleMinPixels = configurationService
+            .getLongProperty("thumbnail.subsample.minpixels", 0);
+        // Fixed subsampling factor; 0 = auto-calculate based on dimensions
+        int configuredFactor = configurationService
+            .getIntProperty("thumbnail.subsample.factor", 0);
+
+        try (ImageInputStream iis = ImageIO.createImageInputStream(input)) {
+            if (iis == null) {
+                throw new IOException("Could not create ImageInputStream from source");
+            }
+
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                throw new IOException("No ImageReader found for this image format");
+            }
+
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(iis, true, true);
+                int srcWidth = reader.getWidth(0);
+                int srcHeight = reader.getHeight(0);
+                long totalPixels = (long) srcWidth * srcHeight;
+
+                int subsample = 1;
+                if (subsampleMinPixels > 0 && totalPixels >= subsampleMinPixels) {
+                    if (configuredFactor > 1) {
+                        subsample = configuredFactor;
+                    } else {
+                        // Auto-calculate: read only enough pixels to produce ~2x the target size
+                        int subsampleX = Math.max(1, srcWidth / (maxWidth * 2));
+                        int subsampleY = Math.max(1, srcHeight / (maxHeight * 2));
+                        subsample = Math.max(subsampleX, subsampleY);
+                    }
+                    log.info("Subsampling large image ({}x{}, {} pixels) with factor {}",
+                             srcWidth, srcHeight, totalPixels, subsample);
+                }
+
+                ImageReadParam param = reader.getDefaultReadParam();
+                if (subsample > 1) {
+                    param.setSourceSubsampling(subsample, subsample, 0, 0);
+                }
+
+                return reader.read(0, param);
+            } finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    /**
+     * Creates a thumbnail with the specified parameters.
+     * Preserves the original temp-file approach so the stream can be read twice:
+     * once for EXIF rotation metadata, once for actual image decoding.
+     *
+     * @param currentItem    the current item
+     * @param source         the source image input stream
+     * @param verbose        verbose mode
+     * @param xmax           max width
+     * @param ymax           max height
+     * @param blurring       whether to apply blur
+     * @param hqscaling      whether to use high-quality scaling
+     * @param brandHeight    brand bar height (0 for none)
+     * @param brandFontPoint brand font size
+     * @param brandFont      brand font name
+     * @return InputStream the thumbnail
+     * @throws Exception if error
+     */
     protected InputStream getThumb(
         Item currentItem,
         InputStream source,
@@ -229,9 +341,10 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
         String brandFont
     ) throws Exception {
 
+        // Write source to a temp file so we can read it twice
+        // (once for rotation metadata, once for image data)
         File tempFile = File.createTempFile("temp", ".tmp");
 
-        // Write to temp file
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             byte[] buffer = new byte[8192];
             int len;
@@ -240,30 +353,41 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
             }
         }
 
-        try {
-            int rotation;
-            try (FileInputStream fis = new FileInputStream(tempFile)) {
-                rotation = getImageRotationUsingImageReader(fis);
-            }
+        // First pass: read EXIF rotation metadata
+        int rotation = 0;
+        try (FileInputStream fis = new FileInputStream(tempFile)) {
+            rotation = getImageRotationUsingImageReader(fis);
+        }
 
-            try (FileInputStream fis = new FileInputStream(tempFile)) {
-                BufferedImage buf = ImageIO.read(fis);
-                if (buf == null) {
-                    throw new IOException("No image reader found for bitstream");
-                }
-
-                return getThumbDim(
-                    currentItem, buf, verbose, xmax, ymax, blurring, hqscaling, brandHeight, brandFontPoint, rotation,
-                    brandFont
-                );
-            }
+        // Second pass: read image data (with optional subsampling for large images)
+        BufferedImage buf;
+        try (FileInputStream fis = new FileInputStream(tempFile)) {
+            buf = readWithOptionalSubsampling(fis, xmax, ymax);
         } finally {
-            if (tempFile != null && tempFile.exists()) {
-                tempFile.delete();
+            if (!tempFile.delete()) {
+                log.warn("Could not delete temp file: {}", tempFile.getAbsolutePath());
             }
         }
+
+        if (buf == null) {
+            throw new IOException("Could not read image from source");
+        }
+
+        return getThumbDim(
+            currentItem, buf, verbose, xmax, ymax, blurring, hqscaling, brandHeight, brandFontPoint, rotation,
+            brandFont
+        );
     }
 
+    /**
+     * Creates a thumbnail from an already-loaded BufferedImage.
+     *
+     * @param currentItem the current item
+     * @param buf         the source image
+     * @param verbose     verbose mode
+     * @return InputStream the thumbnail
+     * @throws Exception if error
+     */
     public InputStream getThumb(Item currentItem, BufferedImage buf, boolean verbose)
         throws Exception {
         // get config params
@@ -281,6 +405,23 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
         return getThumbDim(currentItem, buf, verbose, xmax, ymax, blurring, hqscaling, 0, 0, 0, null);
     }
 
+    /**
+     * Core thumbnail generation from a BufferedImage with all options.
+     *
+     * @param currentItem    the current item
+     * @param buf            the source image
+     * @param verbose        verbose mode
+     * @param xmax           max width
+     * @param ymax           max height
+     * @param blurring       whether to apply blur
+     * @param hqscaling      whether to use high-quality scaling
+     * @param brandHeight    brand bar height
+     * @param brandFontPoint brand font size
+     * @param rotation       rotation angle in degrees
+     * @param brandFont      brand font name
+     * @return InputStream the thumbnail
+     * @throws Exception if error
+     */
     public InputStream getThumbDim(Item currentItem, BufferedImage buf, boolean verbose, int xmax, int ymax,
                                    boolean blurring, boolean hqscaling, int brandHeight, int brandFontPoint,
                                    int rotation, String brandFont)
@@ -378,6 +519,12 @@ public class JPEGFilter extends MediaFilter implements SelfRegisterInputFormats 
         return null;
     }
 
+    /**
+     * Creates a normalized instance of the given image.
+     *
+     * @param buf the source image
+     * @return normalized BufferedImage
+     */
     public BufferedImage getNormalizedInstance(BufferedImage buf) {
         int type = (buf.getTransparency() == Transparency.OPAQUE) ?
             BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB_PRE;

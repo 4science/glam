@@ -761,7 +761,33 @@
                     <groupId>org.glassfish.jaxb</groupId>
                     <artifactId>jaxb-runtime</artifactId>
                 </exclusion>
+                <!-- Exclude jai-imageio-core: its TIFF reader allocates full-tile buffers
+                     before subsampling, causing OOM on high-resolution images.
+                     TwelveMonkeys imageio-tiff replaces it with memory-efficient decoding. -->
+                <exclusion>
+                    <groupId>com.github.jai-imageio</groupId>
+                    <artifactId>jai-imageio-core</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- TwelveMonkeys ImageIO: memory-efficient reading for thumbnail generation.
+             JDK TIFF reader allocates full-tile buffers before subsampling, causing OOM on
+             high-resolution images. TwelveMonkeys applies subsampling during decode. -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-tiff</artifactId>
+            <version>${twelvemonkeys.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>${twelvemonkeys.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-bmp</artifactId>
+            <version>${twelvemonkeys.version}</version>
         </dependency>
 
         <dependency>
