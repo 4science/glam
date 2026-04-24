@@ -8902,9 +8902,11 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         parentCommunity = CommunityBuilder.createCommunity(context).build();
         Collection col = CollectionBuilder.createCollection(context, parentCommunity).build();
 
+        // Date 0AD is handled like the year 1BC, must use 1 AD 2 AD
         ItemBuilder.createItem(context, col).withTitle("-12 BC").withIssueDate("-0012-05-01").build();
+        ItemBuilder.createItem(context, col).withTitle("-1 BC").withIssueDate("-0001-01-01").build();
         ItemBuilder.createItem(context, col).withTitle("1 AD").withIssueDate("0001-01-01").build();
-        ItemBuilder.createItem(context, col).withTitle("0 AD").withIssueDate("0000-01-01").build();
+        ItemBuilder.createItem(context, col).withTitle("2 AD").withIssueDate("0002-01-01").build();
 
         context.commit();
         context.restoreAuthSystemState();
@@ -8919,10 +8921,13 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                                                  is("-12 BC")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[1]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("1 AD")))
+                                                 is("-1 BC")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[2]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("0 AD")));
+                                                 is("1 AD")))
+                             .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[3]" +
+                                                     "._embedded.indexableObject.metadata['dc.title'][0].value",
+                                                 is("2 AD")));
 
         // DESC sort
         getClient(adminToken).perform(get("/api/discover/search/objects")
@@ -8930,11 +8935,14 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                              .andExpect(status().isOk())
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[0]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("1 AD")))
+                                                 is("2 AD")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[1]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("0 AD")))
+                                                 is("1 AD")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[2]" +
+                                                     "._embedded.indexableObject.metadata['dc.title'][0].value",
+                                                 is("-1 BC")))
+                             .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[3]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
                                                  is("-12 BC")));
     }
