@@ -55,7 +55,7 @@ public class BrandedPreviewJPEGFilter extends JPEGFilter {
         throws Exception {
         // get config params
         ConfigurationService configurationService
-                = DSpaceServicesFactory.getInstance().getConfigurationService();
+            = DSpaceServicesFactory.getInstance().getConfigurationService();
         int xmax = configurationService.getIntProperty("webui.preview.maxwidth");
         int ymax = configurationService.getIntProperty("webui.preview.maxheight");
         boolean blurring = configurationService.getBooleanProperty("webui.preview.blurring");
@@ -64,7 +64,8 @@ public class BrandedPreviewJPEGFilter extends JPEGFilter {
         String brandFont = configurationService.getProperty("webui.preview.brand.font");
         int brandFontPoint = configurationService.getIntProperty("webui.preview.brand.fontpoint");
 
-        return getThumb(
+        JPEGFilter jpegFilter = new JPEGFilter();
+        return jpegFilter.getThumb(
             currentItem, source, verbose, xmax, ymax, blurring, hqscaling, brandHeight, brandFontPoint, brandFont
         );
     }
