@@ -27,31 +27,29 @@ import com.maxmind.geoip2.record.MaxMind;
 import com.maxmind.geoip2.record.Postal;
 import com.maxmind.geoip2.record.RepresentedCountry;
 import com.maxmind.geoip2.record.Traits;
-import org.dspace.solr.MockSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
+import org.dspace.solr.SolrClientFactory;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 /**
  * Mock service that uses an embedded SOLR server for the statistics core.
+ * Supports both standalone and SolrCloud modes based on configuration.
  */
 @Service
-public class MockSolrLoggerServiceImpl
-        extends SolrLoggerServiceImpl
-        implements InitializingBean, DisposableBean {
+@Profile("test")
+public class MockSolrLoggerServiceImpl extends SolrLoggerServiceImpl {
 
-    private MockSolrServer mockSolrServer;
+    private SolrClientFactory solrClientFactory;
 
-    public MockSolrLoggerServiceImpl() {
+    public void setSolrClientFactory(SolrClientFactory solrClientFactory) {
+        this.solrClientFactory = solrClientFactory;
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        // Initialize our service with a Mock Solr statistics core
-        mockSolrServer = new MockSolrServer("statistics");
-        solr = mockSolrServer.getSolrServer();
-
+        super.afterPropertiesSet();
         // Mock GeoIP's DatabaseReader
         DatabaseReader reader = mock(DatabaseReader.class);
         // Ensure that any tests requesting a city() get a mock/fake CityResponse
@@ -80,17 +78,14 @@ public class MockSolrLoggerServiceImpl
         Postal postal = new Postal("10036", 1);
 
         return new CityResponse(city, new Continent(), country, location, new MaxMind(), postal,
-                                                 country,  new RepresentedCountry(), new ArrayList<>(0),
-                                                 new Traits());
+                                country, new RepresentedCountry(), new ArrayList<>(0),
+                                new Traits());
     }
 
-    /** Reset the core for the next test.  See {@link MockSolrServer#reset()}. */
-    public void reset() {
-        mockSolrServer.reset();
+    public SolrClient getSolr() {
+        return solrClientFactory
+            .getClient("solr-statistics.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for statistics core"));
     }
 
-    @Override
-    public void destroy() throws Exception {
-        mockSolrServer.destroy();
-    }
 }

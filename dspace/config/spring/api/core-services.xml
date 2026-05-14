@@ -31,6 +31,13 @@
     <bean class="org.dspace.authority.AuthorityValueServiceImpl"/>
     <bean class="org.dspace.authority.AuthorityServiceImpl"/>
 
+    <!-- DROID related services -->
+    <bean class="org.dspace.checker.service.DroidValidationMapper"/>
+    <bean class="org.dspace.checker.service.impl.DroidValidationServiceImpl"/>
+    <bean class="org.dspace.checker.service.impl.DroidHistoryServiceImpl"/>
+    <bean class="org.dspace.checker.service.impl.DroidCheckResultServiceImpl"/>
+    <bean class="org.dspace.checker.service.impl.DroidCheckStatusServiceImpl"/>
+
     <bean class="org.dspace.browse.ItemCounter"/>
     <bean id="itemCountDAO" class="org.dspace.browse.ItemCountDAOSolr" scope="prototype"/>
 
@@ -221,6 +228,7 @@
 
     <bean class="org.dspace.app.policy.PolicyUpdaterServiceImpl" />
     <bean class="org.dspace.app.policy.MediaFilterRelatedPolicyUpdater" />
+    <bean class="org.dspace.curate.CurationTaskScheduler" />
 
 </beans>
 

@@ -33,7 +33,7 @@ import org.dspace.content.authority.service.MetadataAuthorityService;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.service.ItemService;
 import org.dspace.core.Context;
-import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.event.ConsumerProfile;
 import org.dspace.event.Dispatcher;
 import org.dspace.event.factory.EventServiceFactory;
@@ -49,7 +49,7 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
 
     private ItemService itemService;
     private EventService eventService;
-    private MockSolrSearchCore searchService;
+    private SolrSearchCore searchService;
     private ConfigurationService configurationService;
     private MetadataAuthorityService metadataAuthorityService;
 
@@ -62,7 +62,7 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
         ServiceManager serviceManager = DSpaceServicesFactory.getInstance().getServiceManager();
         itemService = ContentServiceFactory.getInstance().getItemService();
         eventService = EventServiceFactory.getInstance().getEventService();
-        searchService = serviceManager.getServiceByName(null, MockSolrSearchCore.class);
+        searchService = serviceManager.getServiceByName(null, SolrSearchCore.class);
         configurationService = DSpaceServicesFactory.getInstance().getConfigurationService();
         metadataAuthorityService = ContentAuthorityServiceFactory.getInstance().getMetadataAuthorityService();
 
@@ -70,8 +70,8 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
                                          "dc.relation.publication");
         configurationService.setProperty("ItemAuthority.reciprocalMetadata.Product.dc.relation.publication",
                                          "dc.relation.product");
-        configurationService.setProperty("ItemAuthority.reciprocalMetadata.WebAnnotation.dc.relation.annotation",
-                                         "dc.relation.annotation");
+        configurationService.setProperty("ItemAuthority.reciprocalMetadata.WebAnnotation.dc.relation.webannotation",
+                                         "dc.relation.webannotation");
         configurationService.setProperty("ItemAuthority.reciprocalMetadata.Publication.dc.relation.path",
                                          "dc.relation.haspartofpath");
         configurationService.setProperty("ItemAuthority.reciprocalMetadata.Person.dc.relation.path",
@@ -367,7 +367,7 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
     @Test
     public void testAnnotationItemWithReciprocal() throws Exception {
         try {
-            configurationService.setProperty("authority.controlled.dc.relation.annotation", "true");
+            configurationService.setProperty("authority.controlled.dc.relation.webannotation", "true");
             metadataAuthorityService.clearCache();
 
             context.turnOffAuthorisationSystem();
@@ -386,23 +386,23 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
                 ItemBuilder.createItem(context, annotationCollection)
                            .withTitle(relatedAnnotation)
                            .withMetadata(
-                               "dc", "relation", "annotation", null, relatedAnnotation,
+                               "dc", "relation", "webannotation", null, relatedAnnotation,
                                annotationItem.getID().toString(), Choices.CF_ACCEPTED
                            )
                            .build();
             context.commit();
 
             List<MetadataValue> metadataValues =
-                itemService.getMetadataByMetadataString(annotationWithRelation, "dc.relation.annotation");
+                itemService.getMetadataByMetadataString(annotationWithRelation, "dc.relation.webannotation");
             Assert.assertEquals(1, metadataValues.size());
 
             List<MetadataValue> annotationMetadataValues =
-                itemService.getMetadataByMetadataString(annotationItem, "dc.relation.annotation");
+                itemService.getMetadataByMetadataString(annotationItem, "dc.relation.webannotation");
             Assert.assertEquals(1, annotationMetadataValues.size());
 
             assertThat(annotationMetadataValues, hasItem(
                 MetadataValueMatcher.with(
-                    "dc.relation.annotation",
+                    "dc.relation.webannotation",
                     relatedAnnotation,
                     annotationWithRelation.getID().toString(),
                     Choices.CF_ACCEPTED
@@ -413,10 +413,10 @@ public class ReciprocalItemAuthorityConsumerIT extends AbstractIntegrationTestWi
             Assert.assertEquals(1, solrDocumentList.size());
             SolrDocument solrDoc = solrDocumentList.get(0);
 
-            List<String> annotationTitles = (List<String>) solrDoc.get("dc.relation.annotation");
+            List<String> annotationTitles = (List<String>) solrDoc.get("dc.relation.webannotation");
             assertThat(annotationTitles, hasItem(relatedAnnotation));
 
-            List<String> annotationAuthorities = (List<String>) solrDoc.get("dc.relation.annotation_authority");
+            List<String> annotationAuthorities = (List<String>) solrDoc.get("dc.relation.webannotation_authority");
             assertThat(annotationAuthorities, hasItem(annotationWithRelation.getID().toString()));
 
             Item foundRelatedAnnotation =

@@ -7,7 +7,7 @@
 	    "@glam.link.dbpedia@",
 	],
 	"wikipedialink": [
-	    "@glam.link.dbpedia@",
+	    "@glam.link.wikipedia@",
 	],
 	"aggregations": [
         @group.dc-relation-aggregation.start@

@@ -11,7 +11,51 @@
     <Appenders>
         <!-- JSON console appender for org.dspace -->
         <Appender name="ConsoleJson" type="Console">
-            <Layout type="JsonLayout" complete="false" compact="true" eventEol="true"/>
+            <!--<Layout
+                    type="JsonLayout"
+                    complete="false"
+                    compact="true"
+                    eventEol="true"
+                    properties="true"
+            />-->
+            <JsonTemplateLayout
+                maxStringLength="131072"
+                locationInfoEnabled="true"
+                eventTemplate='{
+                    "timestamp": {
+                      "$resolver": "timestamp",
+                      "pattern": {
+                        "format": "yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&apos;Z&apos;",
+                        "timeZone": "UTC",
+                        "locale": "en_US"
+                      }
+                    },
+                    "status": { "$resolver": "level", "field": "name" },
+                    "logger.name": { "$resolver": "logger", "field": "name" },
+                    "message": { "$resolver": "message", "stringified": true },
+                    "error.kind": { "$resolver": "exception", "field": "className" },
+                    "error.message": { "$resolver": "exception", "field": "message", "stringified": true },
+                    "error.stack": {
+                      "$resolver": "exception",
+                      "field": "stackTrace",
+                      "stackTrace": { "stringified": true }
+                    },
+                    "error_root.kind": { "$resolver": "exceptionRootCause", "field": "className" },
+                    "error_root.message": { "$resolver": "exceptionRootCause", "field": "message", "stringified": true },
+                    "error_root.stack": {
+                      "$resolver": "exceptionRootCause",
+                      "field": "stackTrace",
+                      "stackTrace": { "stringified": true }
+                    },
+                    "thread_name": { "$resolver": "thread", "field": "name" },
+                    "correlationID": { "$resolver": "mdc", "key": "correlationID" },
+                    "requestID": { "$resolver": "mdc", "key": "requestID" },
+                    "source": "java",
+                    "dd.trace_id": { "$resolver": "mdc", "key": "dd.trace_id" },
+                    "dd.span_id": { "$resolver": "mdc", "key": "dd.span_id" },
+                    "dd.service": { "$resolver": "mdc", "key": "dd.service" }
+              }'
+            />
         </Appender>
 
     </Appenders>
@@ -24,6 +68,28 @@
                 additivity="false">
             <AppenderRef ref="ConsoleJson"/>
         </Logger>
+
+        <!-- Add DEBUG logging for troubleshooting leader election -->
+<!--        <Logger name="org.springframework.cloud.kubernetes"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.integration"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.boot.autoconfigure"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="io.fabric8"-->
+<!--                level="TRACE"-->
+<!--                additivity="false">-->
+<!--            <AppenderRef ref="ConsoleJson"/>-->
+<!--        </Logger>-->
 
         <!-- Block beanutil logging except on exceptions -->
         <Logger name="org.apache.commons.beanutils"
@@ -48,7 +114,8 @@
         <!-- Block passwords from being exposed in Axis logs -->
         <Logger name="org.apache.axis.handlers.http.HTTPAuthHandler"
                 level="INFO"/>
-
+        <Logger name="org.dspace.solr.SolrCloudClientDecorator"
+                level="DEBUG"/>
         <!-- Anything not a part of DSpace -->
         <Root level="${loglevel.other}">
             <AppenderRef ref="ConsoleJson"/>

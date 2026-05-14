@@ -27,7 +27,7 @@ public class ViafSubjectIcshProcessor extends AbstractJsonPathMetadataProcessor 
 
     private final static Logger log = LogManager.getLogger(ViafNationalityProcessor.class);
 
-    private static final String TEXT_PATH = "/ns1:text";
+    private static final String TEXT_PATH = "/text";
     private static final String LC_SOURCE = "LC";
 
     @Override
@@ -69,7 +69,7 @@ public class ViafSubjectIcshProcessor extends AbstractJsonPathMetadataProcessor 
     }
 
     private Set<String> getSourceNames(JsonNode sourceNode) {
-        JsonNode sNode = sourceNode.at("/ns1:sources/ns1:s");
+        JsonNode sNode = sourceNode.at("/sources/s");
         if (sNode.isArray()) {
             Set<String> names = new HashSet<>();
             Iterator<JsonNode> sourceNames = sNode.iterator();

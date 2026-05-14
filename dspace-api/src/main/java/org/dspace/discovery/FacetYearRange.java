@@ -116,7 +116,7 @@ public class FacetYearRange {
         //Set our query to anything that has this value
         yearRangeQuery.addFieldPresentQueries(dateFacet);
         //Set sorting so our last value will appear on top
-        yearRangeQuery.setSortField(dateFacet, DiscoverQuery.SORT_ORDER.asc);
+        yearRangeQuery.setSortField(dateFacet + "_sort", DiscoverQuery.SORT_ORDER.asc);
         yearRangeQuery.addFilterQueries(filterQueries.toArray(new String[filterQueries.size()]));
         yearRangeQuery.addSearchField(dateFacet);
         boolean isRelatedEntity =
@@ -137,7 +137,7 @@ public class FacetYearRange {
             }
         }
         //Now get the first year
-        yearRangeQuery.setSortField(dateFacet, DiscoverQuery.SORT_ORDER.desc);
+        yearRangeQuery.setSortField(dateFacet + "_sort", DiscoverQuery.SORT_ORDER.desc);
         DiscoverResult firstYearResult = null;
         if (isRelatedEntity) {
             firstYearResult = searchService.search(context, yearRangeQuery);

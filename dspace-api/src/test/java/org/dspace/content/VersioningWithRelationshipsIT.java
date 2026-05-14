@@ -60,7 +60,7 @@ import org.dspace.content.virtual.Collected;
 import org.dspace.content.virtual.VirtualMetadataConfiguration;
 import org.dspace.content.virtual.VirtualMetadataPopulator;
 import org.dspace.core.Constants;
-import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.kernel.ServiceManager;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
@@ -83,8 +83,8 @@ public class VersioningWithRelationshipsIT extends AbstractIntegrationTestWithDa
         ContentServiceFactory.getInstance().getInstallItemService();
     private final ItemService itemService =
         ContentServiceFactory.getInstance().getItemService();
-    private final MockSolrSearchCore solrSearchCore =
-        DSpaceServicesFactory.getInstance().getServiceManager().getServiceByName(null, MockSolrSearchCore.class);
+    private final SolrSearchCore solrSearchCore =
+        DSpaceServicesFactory.getInstance().getServiceManager().getServiceByName(null, SolrSearchCore.class);
 
     protected ConfigurationService configurationService =
             DSpaceServicesFactory.getInstance().getConfigurationService();

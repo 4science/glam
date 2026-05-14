@@ -268,7 +268,7 @@
     <field name="fulltext.video" type="text" indexed="true" stored="true" multiValued="true"/>
 
     <!-- Internal DSpace Object ID -->
-    <field name="search.resourceid" type="string" indexed="true" stored="true" required="true" omitNorms="true" />
+    <field name="search.resourceid" type="string" indexed="true" stored="true" required="true" omitNorms="true" docValues="true"/>
 
     <!-- Internal DSpaceObject Type ID -->
     <field name="search.resourcetype" type="string" indexed="true" stored="true" required="true" omitNorms="true" />
@@ -284,6 +284,7 @@
     <field name="discoverable" type="string" indexed="true" stored="true" omitNorms="true" docValues="true" />
 
     <field name="read" type="string" indexed="true" stored="true" omitNorms="true" multiValued="true" docValues="true" />
+    <field name="admin" type="string" indexed="true" stored="true" omitNorms="true" multiValued="true" docValues="true" />
 
     <!-- used to track who submitted an item -->
     <field name="submitter" type="string" indexed="true" stored="true" omitNorms="true" multiValued="true" docValues="true" />
@@ -352,7 +353,6 @@
     <dynamicField name="*_hl" type="text" indexed="true" stored="true" multiValued="true" omitNorms="true"/>
 
     <dynamicField name="*_sort" type="lowerCaseSort" indexed="true" stored="true" multiValued="false" omitNorms="true"/>
-    <dynamicField name="*_sint" type="sint" indexed="true" stored="true" multiValued="false" omitNorms="true"/>
     <dynamicField name="*_min" type="text" indexed="true" stored="true" multiValued="false" omitNorms="true"/>
     <dynamicField name="*_max" type="text" indexed="true" stored="true" multiValued="false" omitNorms="true"/>
 
@@ -360,6 +360,7 @@
     <dynamicField name="*_mlt" type="text" indexed="true" stored="true" multiValued="true" omitNorms="true" termVectors="true" termPositions="true" termOffsets="true"/>
 
     <!--Date matching-->
+    <dynamicField name="*_year" type="sint" indexed="true" stored="true" multiValued="true" omitNorms="true" />
     <dynamicField name="*.year" type="sint" indexed="true" stored="true" multiValued="true" omitNorms="true" />
     <dynamicField name="*_dt" type="date" indexed="true" stored="true" multiValued="false" omitNorms="true"  docValues="true"/>
 
@@ -396,6 +397,7 @@
 
     <dynamicField name="random_*" type="random" />
     <dynamicField name="*geo_p" type="geojson_rptgeom" indexed="true" stored="true"/>
+    <dynamicField name="*_sint" type="sint" indexed="true" stored="true" multiValued="false" omitNorms="true" docValues="true"/>
 
     <!-- Item authority lookup -->
      <field name="itemauthoritylookup" type="itemLookup" indexed="true" stored="true" multiValued="true"/>

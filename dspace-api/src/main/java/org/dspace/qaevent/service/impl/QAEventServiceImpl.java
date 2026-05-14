@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import jakarta.inject.Named;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +36,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
@@ -62,9 +62,8 @@ import org.dspace.qaevent.service.QAEventActionService;
 import org.dspace.qaevent.service.QAEventSecurityService;
 import org.dspace.qaevent.service.QAEventService;
 import org.dspace.services.ConfigurationService;
-import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.solr.SolrClientFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 
 /**
@@ -78,44 +77,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
  */
 public class QAEventServiceImpl implements QAEventService {
 
-    private static final Logger log = LogManager.getLogger();
-
     public static final String QAEVENTS_SOURCES = "qaevents.sources";
-
-    @Autowired(required = true)
-    protected ConfigurationService configurationService;
-
-    @Autowired(required = true)
-    protected QAEventSecurityService qaSecurityService;
-
-    @Autowired(required = true)
-    protected ItemService itemService;
-
-    @Autowired
-    private HandleService handleService;
-
-    @Autowired
-    private QAEventsDAOImpl qaEventsDao;
-
-    @Autowired(required = false)
-    @Qualifier("qaAutomaticProcessingMap")
-    private Map<String, QAEventAutomaticProcessingEvaluation> qaAutomaticProcessingMap;
-
-    @Autowired
-    private QAEventActionService qaEventActionService;
-
-    private ObjectMapper jsonMapper;
-
-    public QAEventServiceImpl() {
-        jsonMapper = new JsonMapper();
-        jsonMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
-
-    /**
-     * Non-Static CommonsHttpSolrServer for processing indexing events.
-     */
-    protected SolrClient solr = null;
-
     public static final String SOURCE = "source";
     public static final String ORIGINAL_ID = "original_id";
     public static final String TITLE = "title";
@@ -126,14 +88,35 @@ public class QAEventServiceImpl implements QAEventService {
     public static final String RESOURCE_UUID = "resource_uuid";
     public static final String LAST_UPDATE = "last_update";
     public static final String RELATED_UUID = "related_uuid";
+    private static final Logger log = LogManager.getLogger();
+    @Autowired(required = true)
+    protected ConfigurationService configurationService;
+    @Autowired(required = true)
+    protected QAEventSecurityService qaSecurityService;
+    @Autowired(required = true)
+    protected ItemService itemService;
+    @Autowired
+    private HandleService handleService;
+    @Autowired
+    private QAEventsDAOImpl qaEventsDao;
+    @Autowired(required = false)
+    @Named("qaAutomaticProcessingMap")
+    private Map<String, QAEventAutomaticProcessingEvaluation> qaAutomaticProcessingMap;
+    @Autowired
+    private QAEventActionService qaEventActionService;
+    @Autowired
+    @Named("qaeventSolrClientFactory")
+    private SolrClientFactory solrClientFactory;
+    private ObjectMapper jsonMapper;
+    public QAEventServiceImpl() {
+        jsonMapper = new JsonMapper();
+        jsonMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     public SolrClient getSolr() {
-        if (solr == null) {
-            String solrService = DSpaceServicesFactory.getInstance().getConfigurationService()
-                    .getProperty("qaevents.solr.server", "http://localhost:8983/solr/qaevent");
-            return new HttpSolrClient.Builder(solrService).build();
-        }
-        return solr;
+        return solrClientFactory
+            .getClient("qaevents.solr.server")
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for qaevents core"));
     }
 
     @Override
@@ -180,13 +163,14 @@ public class QAEventServiceImpl implements QAEventService {
     public QATopic findTopicBySourceAndNameAndTarget(Context context, String sourceName, String topicName,
                                                      UUID target) {
         if (isNotSupportedSource(sourceName)
-                || !qaSecurityService.canSeeSource(context, context.getCurrentUser(), sourceName)) {
+            || !qaSecurityService.canSeeSource(context, context.getCurrentUser(), sourceName)) {
             return null;
         }
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.setRows(0);
         Optional<String> securityQuery = qaSecurityService.generateQAEventFilterQuery(context,
-                context.getCurrentUser(), sourceName);
+                                                                                      context.getCurrentUser(),
+                                                                                      sourceName);
         solrQuery.setQuery(securityQuery.orElse("*:*"));
 
         solrQuery.addFilterQuery(SOURCE + ":\"" + sourceName + "\"");
@@ -220,8 +204,8 @@ public class QAEventServiceImpl implements QAEventService {
     @Override
     public void deleteEventByEventId(String id) {
         try {
-            getSolr().deleteById(id);
-            getSolr().commit();
+            getSolr().deleteById(id, 1000);
+            getSolr().commit(true, true, true);
         } catch (SolrServerException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -271,15 +255,15 @@ public class QAEventServiceImpl implements QAEventService {
 
     @Override
     public List<QATopic> findAllTopicsBySource(Context context, String source, long offset,
-        long count, String orderField, boolean ascending) {
+                                               long count, String orderField, boolean ascending) {
         return findAllTopicsBySourceAndTarget(context, source, null, offset, count, orderField, ascending);
     }
 
     @Override
     public List<QATopic> findAllTopicsBySourceAndTarget(Context context, String source, UUID target, long offset,
-        long pageSize, String orderField, boolean ascending) {
+                                                        long pageSize, String orderField, boolean ascending) {
         if (isNotSupportedSource(source)
-                || !qaSecurityService.canSeeSource(context, context.getCurrentUser(), source)) {
+            || !qaSecurityService.canSeeSource(context, context.getCurrentUser(), source)) {
             return List.of();
         }
         SolrQuery solrQuery = new SolrQuery();
@@ -289,7 +273,7 @@ public class QAEventServiceImpl implements QAEventService {
             solrQuery.setFacetSort(FacetParams.FACET_SORT_INDEX);
         }
         Optional<String> securityQuery = qaSecurityService.generateQAEventFilterQuery(context,
-                context.getCurrentUser(), source);
+                                                                                      context.getCurrentUser(), source);
         solrQuery.setQuery(securityQuery.orElse("*:*"));
         solrQuery.setFacet(true);
         solrQuery.setFacetMinCount(1);
@@ -552,9 +536,9 @@ public class QAEventServiceImpl implements QAEventService {
     public List<QASource> findAllSources(Context context, long offset, int pageSize) {
         return Arrays.stream(getSupportedSources())
                      .map((sourceName) -> findSource(context, sourceName))
-            .filter(Objects::nonNull)
+                     .filter(Objects::nonNull)
                      .sorted(comparing(QASource::getTotalEvents)
-                     .reversed())
+                                 .reversed())
                      .skip(offset)
                      .limit(pageSize)
                      .collect(Collectors.toList());
@@ -563,19 +547,19 @@ public class QAEventServiceImpl implements QAEventService {
     @Override
     public long countSources(Context context) {
         return Arrays.stream(getSupportedSources())
-                .map((sourceName) -> findSource(context, sourceName))
-                .filter(Objects::nonNull)
-                .filter(source -> source.getTotalEvents() > 0)
-                .count();
+                     .map((sourceName) -> findSource(context, sourceName))
+                     .filter(Objects::nonNull)
+                     .filter(source -> source.getTotalEvents() > 0)
+                     .count();
     }
 
     @Override
     public long countSourcesByTarget(Context context, UUID target) {
         return Arrays.stream(getSupportedSources())
-                .map((sourceName) -> findSource(context, sourceName, target))
-                .filter(Objects::nonNull)
-                .filter(source -> source.getTotalEvents() > 0)
-                .count();
+                     .map((sourceName) -> findSource(context, sourceName, target))
+                     .filter(Objects::nonNull)
+                     .filter(source -> source.getTotalEvents() > 0)
+                     .count();
     }
 
     @Override
@@ -690,7 +674,7 @@ public class QAEventServiceImpl implements QAEventService {
 
     @Override
     public List<QAEvent> findEventsByTopicAndTarget(Context context, String source, String topic, UUID target,
-            long offset, int pageSize) {
+                                                    long offset, int pageSize) {
         var currentUser = context.getCurrentUser();
         if (isNotSupportedSource(source) || !qaSecurityService.canSeeSource(context, currentUser, source)) {
             return List.of();
@@ -730,7 +714,8 @@ public class QAEventServiceImpl implements QAEventService {
 
     private String[] getSupportedSources() {
         return configurationService.getArrayProperty(QAEVENTS_SOURCES,
-            new String[] { QAEvent.OPENAIRE_SOURCE, QAEvent.COAR_NOTIFY_SOURCE });
+                                                     new String[] {QAEvent.OPENAIRE_SOURCE,
+                                                         QAEvent.COAR_NOTIFY_SOURCE});
     }
 
     @Override

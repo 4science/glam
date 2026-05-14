@@ -96,11 +96,7 @@
  </types>
 
  <fields>
-     <field name="_version_"
-            type="long"
-            indexed="true"
-            stored="true"
-            multiValued="false"/>
+     <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
      <field name="id" type="string" multiValued="false" indexed="true" stored="true" required="true"/>
      <field name="field" type="string" multiValued="false" indexed="true" stored="true" required="true" />
      <field name="email" type="string" multiValued="true" indexed="true" stored="true" required="false"/>

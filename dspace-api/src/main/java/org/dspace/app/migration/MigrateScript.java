@@ -87,13 +87,15 @@ public class MigrateScript extends DSpaceRunnable<MigrateScriptConfiguration<Mig
 
     private HashMap<String, HashMap<String, String[]>> linkMapping = new HashMap();
 
-    public static final String RP_CSV = "/config/migration/rp_prop.csv";
+    private String RP_CSV;
 
-    public static final String OU_CSV = "/config/migration/ou_prop.csv";
+    private String OU_CSV;
 
-    public static final String PJ_CSV = "/config/migration/pj_prop.csv";
+    private String PJ_CSV;
 
-    public static final String DO_CSV = "/config/migration/do_prop.csv";
+    private String DO_CSV;
+
+    private String logPath;
 
     private String restrictionEntityType;
 
@@ -147,6 +149,21 @@ public class MigrateScript extends DSpaceRunnable<MigrateScriptConfiguration<Mig
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        String outputPath = commandLine.getOptionValue('o');
+        if (StringUtils.isBlank(outputPath)) {
+            String dspaceDir = configurationService.getProperty("dspace.dir");
+            RP_CSV = dspaceDir + "/config/migration/rp_prop.csv";
+            OU_CSV = dspaceDir + "/config/migration/ou_prop.csv";
+            PJ_CSV = dspaceDir + "/config/migration/pj_prop.csv";
+            DO_CSV = dspaceDir + "/config/migration/do_prop.csv";
+            logPath = dspaceDir + "/log";
+        } else {
+            RP_CSV = outputPath + "/rp_prop.csv";
+            OU_CSV = outputPath + "/ou_prop.csv";
+            PJ_CSV = outputPath + "/pj_prop.csv";
+            DO_CSV = outputPath + "/do_prop.csv";
+            logPath = outputPath;
+        }
     }
 
     @Override
@@ -162,7 +179,7 @@ public class MigrateScript extends DSpaceRunnable<MigrateScriptConfiguration<Mig
             getDoTypes(workbook);
             getMetadataVisibility(workbook);
             getLinkMapping(workbook);
-            MigrateConnectionManager.getAllProperties();
+            MigrateConnectionManager.getAllProperties(RP_CSV, PJ_CSV, OU_CSV, DO_CSV);
             doMigrate(RP_CSV, "Person", "rp");
             doMigrate(OU_CSV, "OrgUnit", "ou");
             doMigrate(PJ_CSV, "Project", "pj");
@@ -201,13 +218,12 @@ public class MigrateScript extends DSpaceRunnable<MigrateScriptConfiguration<Mig
     }
 
     private void printReportMetadata() {
-        String logPath = configurationService.getProperty("dspace.dir") + "/log/";
-        try (PrintWriter out = new PrintWriter(logPath + "missing_metadata.report")) {
+        try (PrintWriter out = new PrintWriter(logPath + "/missing_metadata.report")) {
             missingMetadata.forEach(metadata -> out.println(metadata));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        try (PrintWriter out = new PrintWriter(logPath + "missing_authority.report")) {
+        try (PrintWriter out = new PrintWriter(logPath + "/missing_authority.report")) {
             missingAuthority.forEach(metadata -> out.println(metadata));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -215,7 +231,7 @@ public class MigrateScript extends DSpaceRunnable<MigrateScriptConfiguration<Mig
     }
 
     private void doMigrate(String csvPath, String entityType, String prefix) throws Exception {
-        Reader in = new FileReader(configurationService.getProperty("dspace.dir") + csvPath);
+        Reader in = new FileReader(csvPath);
         @SuppressWarnings("deprecation")
         Iterable<CSVRecord> records = CSVFormat.EXCEL.withHeader("crisid",
             "shortname", "parent_id", "positiondef",

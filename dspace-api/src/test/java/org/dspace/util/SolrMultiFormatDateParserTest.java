@@ -9,6 +9,7 @@
 package org.dspace.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.time.ZonedDateTime;
@@ -91,6 +92,14 @@ public class SolrMultiFormatDateParserTest {
             {"-2010-02-13", "uuuu-MM-dd", "-2010-02-13T00:00Z"},
             {"-2010-02-13T00:01:01Z", "uuuu-MM-dd'T'HH:mm:ss'Z'", "-2010-02-13T00:01:01Z"},
 
+            {"1", "u", "0001-01-01T00:00Z"},
+            {"10", "u", "0010-01-01T00:00Z"},
+            {"010", "uuu", "0010-01-01T00:00Z"},
+            {"0010", "uuuu", "0010-01-01T00:00Z"},
+            {"100", "uuu", "0100-01-01T00:00Z"},
+            {"0100", "uuuu", "0100-01-01T00:00Z"},
+            {"1000", "uuuu", "1000-01-01T00:00Z"},
+
             // Edge cases
             {"0001-01-01", "yyyy-MM-dd", "0001-01-01T00:00Z"},
             {"0000", "uuuu", "0000-01-01T00:00Z"},
@@ -121,7 +130,8 @@ public class SolrMultiFormatDateParserTest {
         formats.put("\\d{4}\\s[a-z]{3}\\s\\d{1,2}", "uuuu MMM dd");
         formats.put("\\d{14}", "uuuuMMddHHmmss");
         formats.put("\\d{6}", "uuuuMM");
-        formats.put("\\d{1,4}", "uuuu");
+        formats.put("\\d{1,3}$", "u");
+        formats.put("\\d{4}$", "uuuu");
         formats.put("\\d{8}\\s\\d{6}", "uuuuMMdd HHmmss");
         formats.put("\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}", "dd-MM-uuuu HH:mm:ss");
         formats.put("\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}", "uuuu-MM-dd HH:mm:ss");
@@ -151,6 +161,7 @@ public class SolrMultiFormatDateParserTest {
         ZonedDateTime result = SolrMultiFormatDateParser.parse(toParseDate);
         // Verify that the parsed ZonedDateTime is equal to the expected String result (or null if result is empty)
         if (!expectedResult.isEmpty()) {
+            assertNotNull("Shouldn't be null, parsed: ( " + toParseDate + " ), expected: " + expectedResult, result);
             assertEquals("Should parse: " + expectedFormat, expectedResult, result.toString());
         } else {
             assertNull("Should not parse: " + expectedFormat, result);

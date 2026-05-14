@@ -1,0 +1,7 @@
+Title = dc.title
+Subjects = group.glam-subject
+Corporate bodies = group.dc-contributor-corporatebody
+Authors = group.dc-contributor-author
+Places = group.dc-relation-place
+Date issued = dc.date.issued
+Audio/Video = group.dc-relation-audiovideo

@@ -10,6 +10,9 @@ package org.dspace.app.deduplication.service.impl;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -24,14 +27,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -61,200 +64,118 @@ import org.dspace.discovery.SearchServiceException;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.solr.SolrClientFactory;
 import org.dspace.utils.DSpace;
 import org.dspace.versioning.service.VersioningService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-@Service
 public class SolrDedupServiceImpl implements DedupService {
 
-    private static Logger log = LogManager.getLogger(SolrDedupServiceImpl.class);
+    private static final Logger log = LogManager.getLogger(SolrDedupServiceImpl.class);
 
-    public static final String COLUMN_ADMIN_NOTE = "note";
-
-    public static final String COLUMN_READER_NOTE = "reader_note";
-
-    public static final String COLUMN_ADMIN_DECISION = "admin_decision";
-
-    public static final String COLUMN_WORKFLOW_DECISION = "workflow_decision";
-
-    public static final String COLUMN_SUBMITTER_DECISION = "submitter_decision";
+    private static final String DEDUPLICATION_CORE_PROPERTY = "deduplication.search.server";
 
     public static final String LAST_INDEXED_FIELD = "SolrIndexer.lastIndexed";
-
     public static final String UNIQUE_ID_FIELD = "dedup.uniqueid";
-
     public static final String RESOURCE_RESOURCETYPE_FIELD = "dedup.resourcetype";
-
     public static final String RESOURCE_SIGNATURETYPE_FIELD = "dedup.signaturetype";
-
     public static final String RESOURCE_SIGNATURE_FIELD = "dedup.signature";
-
     public static final String RESOURCE_ID_FIELD = "dedup.id";
-
     /***
      * Identify the couple of UUID.
      */
     public static final String RESOURCE_IDS_FIELD = "dedup.ids";
-
     /**
      * Identify the deduplication status
-     * 
+     *
      * @See DeduplicationFlag
      */
     public static final String RESOURCE_FLAG_FIELD = "dedup.flag";
-
     public static final String RESOURCE_NOTE_FIELD = "dedup.note";
-
     public static final String RESOURCE_WITHDRAWN_FIELD = "dedup.withdrawn";
-
-    /**
-     * Non-Static CommonsHttpSolrServer for processing indexing events.
-     */
-    protected SolrClient solr = null;
+    public static final String SUBQUERY_STORED_DECISION = UNIQUE_ID_FIELD + ":{0}-*_{1}" + " AND " + "-("
+        + UNIQUE_ID_FIELD + "{0}-match)";
+    public static final String QUERY_REMOVE = RESOURCE_IDS_FIELD + ":{0}" + " AND " + RESOURCE_RESOURCETYPE_FIELD
+        + ":{1}";
 
     private DSpace dspace = new DSpace();
 
-    public static final String SUBQUERY_NOT_IN_REJECTED = "-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_admin)";
-
-    public static final String SUBQUERY_IN_REJECTEDWS = "-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject*)";
-
-    public static final String SUBQUERY_IN_REJECTEDWF = "-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_admin) OR " + "-({!join from="
-            + RESOURCE_ID_FIELD + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_wf)";
-
-    public static final String SUBQUERY_NOT_IN_REJECTED_OR_VERIFY = "-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify*) OR " + "-({!join from=" + RESOURCE_ID_FIELD
-            + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject*)";
-
-    public static final String SUBQUERY_WF_MATCH_OR_REJECTED_OR_VERIFY = "(({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify_wf) OR " + "({!join from=" + RESOURCE_ID_FIELD
-            + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_wf) OR dedup.flag:match)";
-    public static final String SUBQUERY_WS_MATCH_OR_REJECTED_OR_VERIFY = "(({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify_ws) OR " + "({!join from=" + RESOURCE_ID_FIELD
-            + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_ws) OR dedup.flag:match)";
-
-    public static final String SUBQUERY_MATCH_NOT_IN_REJECTED_OR_VERIFY = "(-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify*) OR " + "-({!join from=" + RESOURCE_ID_FIELD
-            + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject*) OR dedup.flag:match)";
-    /*
-     * (({!join from=dedup.id to=dedup.id}dedup.flag:verify* AND -dedup.flag:match)
-     * OR ({!join from=dedup.id to=dedup.id}dedup.flag:reject* AND
-     * -dedup.flag:match))
-     */
-    public static final String SUBQUERY_IN_REJECTED_OR_VERIFY = "(({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify* AND -dedup.flag:match) OR " + "({!join from="
-            + RESOURCE_ID_FIELD + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD
-            + ":reject* AND -dedup.flag:match))";
-
-    public static final String SUBQUERY_NOT_IN_REJECTED_OR_VERIFYWF = "-({!join from=" + RESOURCE_ID_FIELD + " to="
-            + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":verify_wf) OR " + "-({!join from=" + RESOURCE_ID_FIELD
-            + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_wf) OR " + "-({!join from="
-            + RESOURCE_ID_FIELD + " to=" + RESOURCE_ID_FIELD + "}" + RESOURCE_FLAG_FIELD + ":reject_admin)";
-
-    public static final String SUBQUERY_STORED_DECISION = UNIQUE_ID_FIELD + ":{0}-*_{1}" + " AND " + "-("
-            + UNIQUE_ID_FIELD + "{0}-match)";
-
-    public static final String QUERY_REMOVE = RESOURCE_IDS_FIELD + ":{0}" + " AND " + RESOURCE_RESOURCETYPE_FIELD
-            + ":{1}";
-
-    @Autowired(required = true)
+    @Inject
     protected ItemService itemService;
-
-    @Autowired(required = true)
-    private DeduplicationService deduplicationService;
-
-    @Autowired(required = true)
+    @Inject
     protected ConfigurationService configurationService;
-
-    @Autowired(required = true)
+    @Inject
     protected VersioningService versioningService;
-
-    @Autowired(required = true)
+    @Inject
     protected IDedupUtils dedupUtils;
+    @Inject
+    private DeduplicationService deduplicationService;
+    @Inject
+    @Named("dedupSolrClientFactory")
+    private SolrClientFactory solrClientFactory;
 
-    /***
-     * Deduplication status
-     * <p>
-     * MATCH, there is a match between dedup.ids items. REJECTWS and REJECTWF, the
-     * match was rejected by the user. REJECTADMIN, the match was rejected by the
-     * administrator. VERIFYWS and VERIFYWF, the match has to be verified.
-     */
-    public enum DeduplicationFlag {
-
-        FAKE("fake", 0), MATCH("match", 1), REJECTWS("reject_ws", 2), REJECTWF("reject_wf", 3),
-        REJECTADMIN("reject_admin", 4), VERIFYWS("verify_ws", 5), VERIFYWF("verify_wf", 6);
-
-        String description;
-
-        int identifier;
-
-        private DeduplicationFlag(String desc, int identifier) {
-            this.description = desc;
-            this.identifier = identifier;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public int getIdentifier() {
-            return identifier;
-        }
-
-        public static DeduplicationFlag getEnum(String description) {
-            switch (description) {
-                case "reject_admin":
-                    return DeduplicationFlag.REJECTADMIN;
-                case "reject_ws":
-                    return DeduplicationFlag.REJECTWS;
-                case "reject_wf":
-                    return DeduplicationFlag.REJECTWF;
-                case "match":
-                    return DeduplicationFlag.MATCH;
-                case "verify_ws":
-                    return DeduplicationFlag.VERIFYWS;
-                case "verify_wf":
-                    return DeduplicationFlag.VERIFYWF;
-                default:
-                    return DeduplicationFlag.FAKE;
-            }
+    // Helper for join subqueries
+    private static String buildJoinSubquery(String fromField, String toField, String flagValue, String fromIndex) {
+        boolean isSolrCloud = DSpaceServicesFactory.getInstance()
+                                                   .getConfigurationService()
+                                                   .getBooleanProperty("solr.cloud.enabled", false);
+        if (isSolrCloud) {
+            return String.format("{!join method=\"crossCollection\" fromIndex=\"%s\" from=\"%s\" to=\"%s\"}%s:%s",
+                                 fromIndex, fromField, toField, RESOURCE_FLAG_FIELD, flagValue);
+        } else {
+            return String.format("{!join from=%s to=%s}%s:%s", fromField, toField, RESOURCE_FLAG_FIELD, flagValue);
         }
     }
 
-    public SolrClient getSolr() {
-        if (solr == null) {
-            String solrService = DSpaceServicesFactory.getInstance().getConfigurationService()
-                    .getProperty("deduplication.search.server");
-
-            UrlValidator urlValidator = new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS);
-            if (urlValidator.isValid(solrService)
-                    || configurationService.getBooleanProperty("deduplication.solr.url.validation.enabled", true)) {
-                try {
-                    log.debug("Solr URL: " + solrService);
-                    solr = new HttpSolrClient.Builder(solrService).build();
-
-                    ((HttpSolrClient) solr).setBaseURL(solrService);
-
-                    // Dummy/test query to search for Item (type=2) of ID=1
-                    SolrQuery solrQuery = new SolrQuery()
-                            .setQuery(RESOURCE_RESOURCETYPE_FIELD + ":2 AND " + RESOURCE_ID_FIELD + ":1");
-                    // Only return obj identifier fields in result doc
-                    solrQuery.setFields(RESOURCE_RESOURCETYPE_FIELD, RESOURCE_ID_FIELD);
-                    solr.query(solrQuery);
-
-                } catch (Exception e) {
-                    log.error("Error while initializing solr server", e);
-                }
-            } else {
-                log.error("Error while initializing solr, invalid url: " + solrService);
-            }
+    private static String getFromIndex() {
+        String coreUrl = DSpaceServicesFactory.getInstance()
+                                              .getConfigurationService()
+                                              .getProperty(DEDUPLICATION_CORE_PROPERTY);
+        try {
+            return Path.of(new URL(coreUrl).getPath())
+                       .getFileName()
+                       .toString();
+        } catch (MalformedURLException ex) {
+            log.warn("Unable to extract core name from URI '{}':  {}",
+                     coreUrl, ex.getMessage());
         }
+        return null;
+    }
 
-        return solr;
+    // Subquery methods
+    public static String getSubqueryNotInRejected() {
+        return "-(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject_admin", getFromIndex())
+            + ")";
+    }
+
+    public static String getSubqueryNotInRejectedOrVerify() {
+        return "-(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "verify*", getFromIndex())
+            + ") OR -(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject*", getFromIndex())
+            + ")";
+    }
+
+    public static String getSubqueryWFMatchOrRejectedOrVerify() {
+        return "(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "verify_wf", getFromIndex())
+            + " OR " + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject_wf", getFromIndex())
+            + " OR dedup.flag:match)";
+    }
+
+    public static String getSubqueryWSMatchOrRejectedOrVerify() {
+        return "(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "verify_ws", getFromIndex())
+            + " OR " + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject_ws", getFromIndex())
+            + " OR dedup.flag:match)";
+    }
+
+    public static String getSubqueryNotInRejectedOrVerifyWF() {
+        return "-(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "verify_wf", getFromIndex())
+            + ") OR -(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject_wf", getFromIndex())
+            + ") OR -(" + buildJoinSubquery(RESOURCE_ID_FIELD, RESOURCE_ID_FIELD, "reject_admin", getFromIndex())
+            + ")";
+    }
+
+    public SolrClient getSolr() {
+        return solrClientFactory
+            .getClient(DEDUPLICATION_CORE_PROPERTY)
+            .orElseThrow(() -> new RuntimeException("Unable to get Solr client for dedup core"));
     }
 
     @Override
@@ -497,13 +418,16 @@ public class SolrDedupServiceImpl implements DedupService {
         // write the document to the index
         try {
             writeDocument(doc);
-            log.info("Wrote " + flag.description + " duplicate: " + dedupID + " to Index");
-        } catch (RuntimeException e) {
-            log.error("Error while writing a " + flag.description + " to deduplication index: " + dedupID + " message:"
-                    + e.getMessage(), e);
-        } catch (IOException e) {
-            log.error("Error while writing a " + flag.description + " to deduplication index: " + dedupID + " message:"
-                    + e.getMessage(), e);
+            log.info("Wrote {} duplicate: {} to Index", flag.description, dedupID);
+            if (!flag.equals(DeduplicationFlag.VERIFYWF)
+                && !flag.equals(DeduplicationFlag.VERIFYWS)
+                && !flag.equals(DeduplicationFlag.MATCH)) {
+                log.debug("Committing deduplication index changes for {} duplicate: {}", flag.description, dedupID);
+                getSolr().commit(true, true, true);
+            }
+        } catch (RuntimeException | IOException | SolrServerException e) {
+            log.error("Error while writing a {} to deduplication index: {} message:{}", flag.description, dedupID,
+                      e.getMessage(), e);
         }
     }
 
@@ -542,6 +466,7 @@ public class SolrDedupServiceImpl implements DedupService {
         try {
             return getSolr().query(solrQuery);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new org.dspace.discovery.SearchServiceException(e.getMessage(), e);
         }
     }
@@ -594,6 +519,7 @@ public class SolrDedupServiceImpl implements DedupService {
     public UpdateResponse delete(String query) throws SearchServiceException {
         try {
             return getSolr().deleteByQuery(query);
+            // Hard commit to make sure the rejection is stored
         } catch (Exception e) {
             throw new org.dspace.discovery.SearchServiceException(e.getMessage(), e);
         }
@@ -783,65 +709,12 @@ public class SolrDedupServiceImpl implements DedupService {
         }
     }
 
-    class IndexerThread extends Thread {
-        private boolean onlyFake;
-
-        private List<UUID> itemids;
-
-        public IndexerThread(List<UUID> itemids, boolean onlyFake) {
-            this.onlyFake = onlyFake;
-            this.itemids = itemids;
-        }
-
-        @Override
-        public void run() {
-            Context context = null;
-            try {
-                context = new Context();
-                context.turnOffAuthorisationSystem();
-                int idx = 1;
-                final String head = this.getName() + "#" + this.getId();
-                final int size = itemids.size();
-                for (UUID id : itemids) {
-                    try {
-                        Item item = ContentServiceFactory.getInstance().getItemService().find(context, id);
-                        Map<String, List<String>> tmpMapFilter = new HashMap<String, List<String>>();
-                        List<String> tmpFilter = new ArrayList<String>();
-                        fillSignature(context, (DSpaceObject) item, tmpMapFilter, tmpFilter);
-                        if (!tmpFilter.isEmpty()) {
-                            // retrieve all search plugin to build search document in the same index
-                            SearchDeduplication searchSignature = dspace.getServiceManager().getServiceByName(
-                                    "item".toUpperCase() + "SearchDeduplication", SearchDeduplication.class);
-                            if (onlyFake) {
-                                buildFromDedupReject(context, item, tmpMapFilter, tmpFilter, searchSignature);
-                                build(context, item.getID(), item.getID(), DeduplicationFlag.FAKE, tmpMapFilter,
-                                        searchSignature, null);
-                            } else {
-                                buildPotentialMatch(context, item, tmpMapFilter, tmpFilter, searchSignature);
-                            }
-                        }
-                    } catch (Exception ex) {
-                        System.out.println("ERROR: identifier item:" + id + " identifier thread:" + head + " error:"
-                                + ex.getMessage());
-                    }
-                    System.out.println(head + ":" + (idx++) + " / " + size);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (context != null) {
-                    context.abort();
-                }
-            }
-        }
-    }
-
     private void buildFromDedupReject(Context ctx, DSpaceObject iu, Map<String, List<String>> tmpMapFilter,
-            List<String> tmpFilter, SearchDeduplication searchSignature) {
+                                      List<String> tmpFilter, SearchDeduplication searchSignature) {
 
         try {
             List<Deduplication> tri = deduplicationService.getDeduplicationByFirstAndSecond(ctx, iu.getID(),
-                    iu.getID());
+                                                                                            iu.getID());
 
             for (Deduplication row : tri) {
 
@@ -901,4 +774,108 @@ public class SolrDedupServiceImpl implements DedupService {
     public void setItemService(ItemService itemService) {
         this.itemService = itemService;
     }
+
+
+    /***
+     * Deduplication status
+     * <p>
+     * MATCH, there is a match between dedup.ids items. REJECTWS and REJECTWF, the
+     * match was rejected by the user. REJECTADMIN, the match was rejected by the
+     * administrator. VERIFYWS and VERIFYWF, the match has to be verified.
+     */
+    public enum DeduplicationFlag {
+
+        FAKE("fake", 0), MATCH("match", 1), REJECTWS("reject_ws", 2), REJECTWF("reject_wf", 3),
+        REJECTADMIN("reject_admin", 4), VERIFYWS("verify_ws", 5), VERIFYWF("verify_wf", 6);
+
+        String description;
+
+        int identifier;
+
+        private DeduplicationFlag(String desc, int identifier) {
+            this.description = desc;
+            this.identifier = identifier;
+        }
+
+        public static DeduplicationFlag getEnum(String description) {
+            switch (description) {
+                case "reject_admin":
+                    return DeduplicationFlag.REJECTADMIN;
+                case "reject_ws":
+                    return DeduplicationFlag.REJECTWS;
+                case "reject_wf":
+                    return DeduplicationFlag.REJECTWF;
+                case "match":
+                    return DeduplicationFlag.MATCH;
+                case "verify_ws":
+                    return DeduplicationFlag.VERIFYWS;
+                case "verify_wf":
+                    return DeduplicationFlag.VERIFYWF;
+                default:
+                    return DeduplicationFlag.FAKE;
+            }
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public int getIdentifier() {
+            return identifier;
+        }
+    }
+
+    class IndexerThread extends Thread {
+        private boolean onlyFake;
+
+        private List<UUID> itemids;
+
+        public IndexerThread(List<UUID> itemids, boolean onlyFake) {
+            this.onlyFake = onlyFake;
+            this.itemids = itemids;
+        }
+
+        @Override
+        public void run() {
+            Context context = null;
+            try {
+                context = new Context();
+                context.turnOffAuthorisationSystem();
+                int idx = 1;
+                final String head = this.getName() + "#" + this.getId();
+                final int size = itemids.size();
+                for (UUID id : itemids) {
+                    try {
+                        Item item = ContentServiceFactory.getInstance().getItemService().find(context, id);
+                        Map<String, List<String>> tmpMapFilter = new HashMap<String, List<String>>();
+                        List<String> tmpFilter = new ArrayList<String>();
+                        fillSignature(context, (DSpaceObject) item, tmpMapFilter, tmpFilter);
+                        if (!tmpFilter.isEmpty()) {
+                            // retrieve all search plugin to build search document in the same index
+                            SearchDeduplication searchSignature = dspace.getServiceManager().getServiceByName(
+                                    "item".toUpperCase() + "SearchDeduplication", SearchDeduplication.class);
+                            if (onlyFake) {
+                                buildFromDedupReject(context, item, tmpMapFilter, tmpFilter, searchSignature);
+                                build(context, item.getID(), item.getID(), DeduplicationFlag.FAKE, tmpMapFilter,
+                                        searchSignature, null);
+                            } else {
+                                buildPotentialMatch(context, item, tmpMapFilter, tmpFilter, searchSignature);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("ERROR: identifier item:" + id + " identifier thread:" + head + " error:"
+                                + ex.getMessage());
+                    }
+                    System.out.println(head + ":" + (idx++) + " / " + size);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (context != null) {
+                    context.abort();
+                }
+            }
+        }
+    }
+
 }

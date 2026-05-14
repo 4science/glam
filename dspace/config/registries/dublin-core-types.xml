@@ -366,6 +366,14 @@
         <qualifier>viaf</qualifier>
         <scope_note>VIAF Identifier</scope_note>
   </dc-type>
+
+  <dc-type>
+    <schema>dc</schema>
+    <element>identifier</element>
+    <qualifier>cnmd</qualifier>
+    <scope_note>CNMD Identifier</scope_note>
+  </dc-type>
+
   <!-- Used by system: do not remove -->
   <dc-type>
 	<schema>dc</schema>
@@ -629,6 +637,12 @@
     <element>relation</element>
     <qualifier>conference</qualifier>
     <scope_note>References conference for related item.</scope_note>
+  </dc-type>
+
+  <dc-type>
+    <schema>dc</schema>
+    <element>relation</element>
+    <qualifier>webannotation</qualifier>
   </dc-type>
 
   <dc-type>
@@ -1601,7 +1615,7 @@
   <dc-type>
     <schema>dc</schema>
     <element>relation</element>
-    <qualifier>annotation</qualifier>
+    <qualifier>webannotation</qualifier>
     <scope_note></scope_note>
   </dc-type>
 
@@ -1624,6 +1638,19 @@
     <element>relation</element>
     <qualifier>haspartofpath</qualifier>
     <scope_note></scope_note>
+  </dc-type>
+
+  <dc-type>
+    <schema>dc</schema>
+    <element>relation</element>
+    <qualifier>personrole</qualifier>
+    <scope_note></scope_note>
+  </dc-type>
+
+  <dc-type>
+    <schema>dc</schema>
+    <element>relation</element>
+    <qualifier>story</qualifier>
   </dc-type>
 
 </dspace-dc-types>

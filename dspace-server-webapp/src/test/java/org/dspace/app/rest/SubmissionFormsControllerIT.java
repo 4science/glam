@@ -75,7 +75,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(content().contentType(contentType))
                    //The configuration file for the test env includes PAGE_TOTAL_ELEMENTS forms
                    .andExpect(jsonPath("$.page.size", is(20)))
-                   .andExpect(jsonPath("$.page.totalElements", equalTo(44)))
+                   .andExpect(jsonPath("$.page.totalElements", equalTo(47)))
                    .andExpect(jsonPath("$.page.totalPages", equalTo(3)))
                    .andExpect(jsonPath("$.page.number", is(0)))
                    .andExpect(
@@ -92,7 +92,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(contentType))
                 .andExpect(jsonPath("$.page.size", is(20)))
-                .andExpect(jsonPath("$.page.totalElements", equalTo(44)))
+                .andExpect(jsonPath("$.page.totalElements", equalTo(47)))
                 .andExpect(jsonPath("$.page.totalPages", equalTo(3)))
                 .andExpect(jsonPath("$.page.number", is(0)))
                 .andExpect(jsonPath("$._links.self.href", Matchers.startsWith(REST_SERVER_URL
@@ -123,7 +123,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                    // check the first two rows
                    .andExpect(jsonPath("$.rows[0].fields", contains(
                         SubmissionFormFieldMatcher.matchFormFieldDefinition("name", "Author",
-                        null, true, "Add an author", null, "dc.contributor.author", "PersonAuthority"))))
+                        null, true, "Add an author", null, "dc.contributor.author", "ViafAuthority"))))
                    .andExpect(jsonPath("$.rows[1].fields", contains(
                         SubmissionFormFieldMatcher.matchFormFieldDefinition("onebox", "Title",
                                 "You must enter a main title for this item.", false,
@@ -156,7 +156,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                        .startsWith(REST_SERVER_URL + "config/submissionforms/traditionalpageone")))
                    .andExpect(jsonPath("$.rows[0].fields", contains(
                         SubmissionFormFieldMatcher.matchFormFieldDefinition("name", "Author",
-                          null, true,"Add an author", null, "dc.contributor.author", "PersonAuthority"))))
+                          null, true,"Add an author", null, "dc.contributor.author", "ViafAuthority"))))
                    .andExpect(jsonPath("$.rows[1].fields", contains(
                         SubmissionFormFieldMatcher.matchFormFieldDefinition("onebox", "Title",
                                 "You must enter a main title for this item.", false,
@@ -306,7 +306,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                         .andExpect(jsonPath("$.rows[0].fields", contains(
                             SubmissionFormFieldMatcher.matchFormFieldDefinition("name",
                         "Author", null, true,"Add an author", null,
-                        "dc.contributor.author", "PersonAuthority"))))
+                        "dc.contributor.author", "ViafAuthority"))))
         ;
     }
 
@@ -364,7 +364,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                             .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                      .matchFormFieldDefinition("name", "Autore", "\u00C8" + " richiesto almeno un autore", true,
-                                             "Aggiungi un autore", null, "dc.contributor.author", "PersonAuthority"))))
+                                             "Aggiungi un autore", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                             .matchFormFieldDefinition("onebox", "Titolo",
                             "\u00C8" + " necessario inserire un titolo principale per questo item", false,
@@ -388,7 +388,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                            .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                            .matchFormFieldDefinition("name", "Автор", "Потрібно ввести хочаб одного автора!",
-                                            true, "Додати автора", null, "dc.contributor.author", "PersonAuthority"))))
+                                            true, "Додати автора", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                            .matchFormFieldDefinition("onebox", "Заголовок",
                            "Заговолок файла обов'язковий !", false,
@@ -443,7 +443,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                             .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                     .matchFormFieldDefinition("name", "Autore", "\u00C8" + " richiesto almeno un autore", true,
-                                             "Aggiungi un autore", null, "dc.contributor.author", "PersonAuthority"))))
+                                             "Aggiungi un autore", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                             .matchFormFieldDefinition("onebox", "Titolo",
                             "\u00C8" + " necessario inserire un titolo principale per questo item", false,
@@ -467,7 +467,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                            .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                            .matchFormFieldDefinition("name", "Автор", "Потрібно ввести хочаб одного автора!",
-                                           true, "Додати автора", null, "dc.contributor.author", "PersonAuthority"))))
+                                           true, "Додати автора", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                            .matchFormFieldDefinition("onebox", "Заголовок",
                            "Заговолок файла обов'язковий !", false,
@@ -517,7 +517,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                            .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                     .matchFormFieldDefinition("name", "Autore", "\u00C8" + " richiesto almeno un autore", true,
-                                             "Aggiungi un autore", null, "dc.contributor.author", "PersonAuthority"))))
+                                             "Aggiungi un autore", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                            .matchFormFieldDefinition("onebox", "Titolo",
                            "\u00C8" + " necessario inserire un titolo principale per questo item", false,
@@ -559,7 +559,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                             .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                     .matchFormFieldDefinition("name", "Autore", "\u00C8 richiesto almeno un autore", true,
-                                              "Aggiungi un autore", null, "dc.contributor.author", "PersonAuthority"))))
+                                              "Aggiungi un autore", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                             .matchFormFieldDefinition("onebox", "Titolo",
                             "\u00C8 necessario inserire un titolo principale per questo item", false,
@@ -594,7 +594,7 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                             .startsWith(REST_SERVER_URL + "config/submissionforms/languagetest")))
                  .andExpect(jsonPath("$.rows[0].fields", contains(SubmissionFormFieldMatcher
                             .matchFormFieldDefinition("name", "Autore", "\u00C8 richiesto almeno un autore", true,
-                                        "Aggiungi un autore", null, "dc.contributor.author", "PersonAuthority"))))
+                                        "Aggiungi un autore", null, "dc.contributor.author", "ViafAuthority"))))
                  .andExpect(jsonPath("$.rows[1].fields", contains(SubmissionFormFieldMatcher
                             .matchFormFieldDefinition("onebox", "Titolo",
                             "\u00C8 necessario inserire un titolo principale per questo item", false,
@@ -675,10 +675,10 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                          Matchers.containsString("page=1"), Matchers.containsString("size=2"))))
                  .andExpect(jsonPath("$._links.last.href", Matchers.allOf(
                          Matchers.containsString("/api/config/submissionforms?"),
-                         Matchers.containsString("page=21"), Matchers.containsString("size=2"))))
+                         Matchers.containsString("page=23"), Matchers.containsString("size=2"))))
                  .andExpect(jsonPath("$.page.size", is(2)))
-                 .andExpect(jsonPath("$.page.totalElements", equalTo(44)))
-                 .andExpect(jsonPath("$.page.totalPages", equalTo(22)))
+                 .andExpect(jsonPath("$.page.totalElements", equalTo(47)))
+                 .andExpect(jsonPath("$.page.totalPages", equalTo(24)))
                  .andExpect(jsonPath("$.page.number", is(0)));
 
         getClient(tokenAdmin).perform(get("/api/config/submissionforms")
@@ -686,8 +686,8 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                  .param("page", "15"))
                  .andExpect(status().isOk())
                  .andExpect(content().contentType(contentType))
-                 .andExpect(jsonPath("$._embedded.submissionforms[0].id", is("qualdrop-with-languages")))
-                 .andExpect(jsonPath("$._embedded.submissionforms[1].id", is("traditionalpagethree-cris-collapsed")))
+                 .andExpect(jsonPath("$._embedded.submissionforms[0].id", is("controlled-vocabulary-test")))
+                 .andExpect(jsonPath("$._embedded.submissionforms[1].id", is("traditionalpagethree-cris-open")))
                  .andExpect(jsonPath("$._links.first.href", Matchers.allOf(
                          Matchers.containsString("/api/config/submissionforms?"),
                          Matchers.containsString("page=0"), Matchers.containsString("size=2"))))
@@ -702,10 +702,10 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                          Matchers.containsString("page=16"), Matchers.containsString("size=2"))))
                  .andExpect(jsonPath("$._links.last.href", Matchers.allOf(
                          Matchers.containsString("/api/config/submissionforms?"),
-                         Matchers.containsString("page=21"), Matchers.containsString("size=2"))))
+                         Matchers.containsString("page=23"), Matchers.containsString("size=2"))))
                  .andExpect(jsonPath("$.page.size", is(2)))
-                 .andExpect(jsonPath("$.page.totalElements", equalTo(44)))
-                 .andExpect(jsonPath("$.page.totalPages", equalTo(22)))
+                 .andExpect(jsonPath("$.page.totalElements", equalTo(47)))
+                 .andExpect(jsonPath("$.page.totalPages", equalTo(24)))
                  .andExpect(jsonPath("$.page.number", is(15)));
     }
 
@@ -749,10 +749,10 @@ public class SubmissionFormsControllerIT extends AbstractControllerIntegrationTe
                                  Matchers.containsString("page=4"), Matchers.containsString("size=2"))))
                              .andExpect(jsonPath("$._links.last.href", Matchers.allOf(
                                  Matchers.containsString("/api/config/submissionforms?"),
-                                 Matchers.containsString("page=21"), Matchers.containsString("size=2"))))
+                                 Matchers.containsString("page=23"), Matchers.containsString("size=2"))))
                              .andExpect(jsonPath("$.page.size", is(2)))
-                             .andExpect(jsonPath("$.page.totalElements", equalTo(44)))
-                             .andExpect(jsonPath("$.page.totalPages", equalTo(22)))
+                             .andExpect(jsonPath("$.page.totalElements", equalTo(47)))
+                             .andExpect(jsonPath("$.page.totalPages", equalTo(24)))
                              .andExpect(jsonPath("$.page.number", is(4)));
     }
 

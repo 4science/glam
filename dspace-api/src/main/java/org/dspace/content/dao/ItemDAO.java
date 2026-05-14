@@ -250,5 +250,5 @@ public interface ItemDAO extends DSpaceObjectLegacySupportDAO<Item> {
      */
     Iterator<Item> findByIds(Context context, List<UUID> ids) throws SQLException;
 
-
+    Iterator<Item> findByBitstream(Context context, UUID bitstreamId) throws SQLException;
 }

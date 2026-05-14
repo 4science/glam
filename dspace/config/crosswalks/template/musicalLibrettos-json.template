@@ -1,0 +1,21 @@
+{
+    "title": "@dc.title@",
+    "authors": [
+        @group.dc-contributor-author.start@
+        {
+            "name": "@dc.contributor.author@"
+        },
+        @group.dc-contributor-author.end@
+    ],
+    "dateIssued": "@dc.date.issued@",
+    "sourceContent": "@dc.source.content@",
+    "abstract": "@dc.description.abstract@",
+    "otherLinks": [
+        @group.dc-relation-otherlinks.start@
+        {
+            "link": "@dc.relation.otherlinks@"
+        },
+        @group.dc-relation-otherlinks.end@
+    ],
+    "license": "@dc.rights.license@"
+}

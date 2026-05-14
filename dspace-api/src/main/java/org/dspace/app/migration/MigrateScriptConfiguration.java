@@ -57,6 +57,11 @@ public class MigrateScriptConfiguration<T extends MigrateScript> extends ScriptC
             options.getOption("b").setType(String.class);
             options.getOption("b").setRequired(true);
 
+            options.addOption("o", "output", true, "optional folder where the " +
+                "generated reports will be saved");
+            options.getOption("o").setType(String.class);
+            options.getOption("o").setRequired(false);
+
             super.options = options;
         }
         return options;

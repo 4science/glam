@@ -50,9 +50,10 @@ public class IIIFController {
      * @return manifest as JSON
      */
     @RequestMapping(method = RequestMethod.GET, value = "/{id}/manifest", produces = "application/json")
-    public String findOne(@PathVariable UUID id) {
+    public String findOne(@PathVariable UUID id,
+                          @RequestParam(required = false, defaultValue = "false") boolean includeAnnotations) {
         Context context = ContextUtil.obtainCurrentRequestContext();
-        return iiifFacade.getManifest(context, id);
+        return iiifFacade.getManifest(context, id, includeAnnotations);
     }
 
     /**

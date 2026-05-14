@@ -1,0 +1,15 @@
+Name = dc.title
+Type = dc.type
+Acronym = oairecerif.acronym
+Place = oairecerif.event.place
+Country = oairecerif.event.country
+Start date = oairecerif.event.startDate
+End date = oairecerif.event.endDate
+Description = dc.description.abstract
+Keyword = dc.subject
+Organizer (Organization) = crisevent.organizerou
+Organizer (Project) = crisevent.organizerpj
+Sponsor (Organization) = crisevent.sponsorou
+Sponsor (Project) = crisevent.sponsorpj
+Partner (Organization) = crisevent.partnerou
+Partner (Project) = crisevent.partnerpj

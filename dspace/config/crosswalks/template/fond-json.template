@@ -25,7 +25,7 @@
     "custodian": "@glamfonds.custodian@",
     "shelfmark": "@glamfonds.shelfmark@",
     "description": "@dc.description.abstract@",
-    "DocumentQuantity": "@glamfonds.quantity@",
+    "documentQuantity": "@glamfonds.quantity@",
     "note": [
         @group.glamfonds-arrangement-note.start@
         {
@@ -48,7 +48,7 @@
         },
         @group.glamfonds-bibliography.end@
     ],
-    "IdentifierUri": "@dc.identifier.uri@",
+    "identifierUri": "@dc.identifier.uri@",
 	"editors": [
         @group.glamfonds-editor.start@
         {

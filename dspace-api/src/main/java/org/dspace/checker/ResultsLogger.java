@@ -84,20 +84,23 @@ public class ResultsLogger implements ChecksumResultsCollector {
     public void collect(Context context, MostRecentChecksum info) throws SQLException {
         Bitstream bitstream = info.getBitstream();
         LOG.info("******************************************************");
-        LOG.info(msg("bitstream-id") + ": " + bitstream.getID());
+        if (bitstream != null) {
+            LOG.info(msg("bitstream-id") + ": " + bitstream.getID());
+            LOG.info(msg("bitstream-marked-deleted") + ": " + bitstream.isDeleted());
+            LOG.info(msg("internal-id") + ": " + bitstream.getInternalId());
+            LOG.info(msg("name") + ": " + bitstream.getName());
+            LOG.info(msg("store-number") + ": " + bitstream.getStoreNumber());
+            LOG.info(msg("size") + ": " + bitstream.getSizeBytes());
+            LOG.info(msg("bitstream-format") + ": " +
+                         (bitstream.getFormat(context) != null ? bitstream.getFormat(context).getID() : "-1"));
+            LOG.info(msg("user-format-description") + ": "
+                         + bitstream.getUserFormatDescription());
+            LOG.info(msg("source") + ": " + bitstream.getSource());
+        }
+
         LOG.info(msg("bitstream-info-found") + ": " + info.isInfoFound());
-        LOG.info(msg("bitstream-marked-deleted") + ": " + bitstream.isDeleted());
         LOG.info(msg("bitstream-found") + ": " + info.isBitstreamFound());
         LOG.info(msg("to-be-processed") + ": " + info.isToBeProcessed());
-        LOG.info(msg("internal-id") + ": " + bitstream.getInternalId());
-        LOG.info(msg("name") + ": " + bitstream.getName());
-        LOG.info(msg("store-number") + ": " + bitstream.getStoreNumber());
-        LOG.info(msg("size") + ": " + bitstream.getSizeBytes());
-        LOG.info(msg("bitstream-format") + ": " + (bitstream.getFormat(context) != null ? bitstream.getFormat(context)
-                                                                                                   .getID() : "-1"));
-        LOG.info(msg("user-format-description") + ": "
-                     + bitstream.getUserFormatDescription());
-        LOG.info(msg("source") + ": " + bitstream.getSource());
         LOG
             .info(msg("checksum-algorithm") + ": "
                       + info.getChecksumAlgorithm());

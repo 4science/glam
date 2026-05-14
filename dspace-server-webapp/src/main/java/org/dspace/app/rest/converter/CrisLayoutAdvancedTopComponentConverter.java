@@ -52,6 +52,7 @@ public class CrisLayoutAdvancedTopComponentConverter implements CrisLayoutSectio
         rest.setShowAllResults(topComponent.isShowAllResults());
         rest.setShowThumbnails(showThumbnails);
         rest.setTemplate(template);
+        rest.setBundle(topComponent.getBundle());
         return rest;
     }
 }

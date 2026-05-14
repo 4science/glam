@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -409,10 +410,13 @@ public class IIIFUtils {
      * @return an integer from metadata value
      */
     private int getSizeFromMetadata(DSpaceObject dso, String metadata, int defaultValue) {
-        return dso.getMetadata().stream()
-                .filter(m -> m.getMetadataField().toString('.').contentEquals(metadata))
-                .findFirst().map(m -> castToInt(m, defaultValue))
-                  .orElse(defaultValue);
+        return Optional.ofNullable(dso)
+                        .flatMap(obj ->
+                                     obj.getMetadata()
+                                        .stream()
+                                        .filter(m -> m.getMetadataField().toString('.').contentEquals(metadata))
+                                        .findFirst().map(m -> castToInt(m, defaultValue))
+                        ).orElse(defaultValue);
     }
 
     /**

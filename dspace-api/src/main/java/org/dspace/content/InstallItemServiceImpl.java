@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.factory.ContentServiceFactory;
 import org.dspace.content.logic.Filter;
@@ -44,19 +42,21 @@ public class InstallItemServiceImpl implements InstallItemService {
 
     @Autowired(required = true)
     protected ContentServiceFactory contentServiceFactory;
+
     @Autowired(required = true)
     protected CollectionService collectionService;
+
     @Autowired(required = true)
     protected EmbargoService embargoService;
+
     @Autowired(required = true)
     protected IdentifierService identifierService;
+
     @Autowired(required = true)
     protected ItemService itemService;
+
     @Autowired(required = true)
     protected SupervisionOrderService supervisionOrderService;
-    @Autowired(required = false)
-
-    Logger log = LogManager.getLogger(InstallItemServiceImpl.class);
 
     @Autowired
     protected ConfigurationService configurationService;

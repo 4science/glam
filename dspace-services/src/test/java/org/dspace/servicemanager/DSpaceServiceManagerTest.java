@@ -21,6 +21,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.dspace.servicemanager.config.DSpaceConfigurationService;
 import org.dspace.servicemanager.example.ConcreteExample;
+import org.dspace.servicemanager.example.ServiceExample;
+import org.dspace.servicemanager.example.ServiceExampleImpl;
 import org.dspace.servicemanager.fakeservices.FakeService1;
 import org.dspace.servicemanager.spring.SpringAnnotationBean;
 import org.junit.After;
@@ -34,6 +36,7 @@ import org.junit.Test;
  */
 public class DSpaceServiceManagerTest {
     public static String SPRING_TEST_CONFIG_FILE = "spring/spring-test-services.xml";
+    public static String CUSTOMER_TEST_CONFIG_FILE = "config/customer/spring/customer-services.xml";
 
     DSpaceServiceManager dsm;
     DSpaceConfigurationService configurationService;
@@ -269,6 +272,28 @@ public class DSpaceServiceManagerTest {
 
         service = null;
         properties = null;
+    }
+
+    /**
+     * Checks that custom beans have been loaded from the customer-services.xml file.
+     */
+    @Test
+    public void testLoadCustomerSpringLoaderBean() {
+        dsm = new DSpaceServiceManager(
+            configurationService,
+            SPRING_TEST_CONFIG_FILE,
+            CUSTOMER_TEST_CONFIG_FILE
+        );
+        configurationService.clear();
+        dsm.startup();
+
+        ConcreteExample concrete = dsm.getServiceByName(ConcreteExample.class.getName(), ConcreteExample.class);
+        assertNotNull(concrete);
+        assertEquals("customer", concrete.getName());
+
+        ServiceExampleImpl sab = dsm.getServiceByName(ServiceExample.class.getName(), ServiceExampleImpl.class);
+        assertNotNull(sab);
+        assertEquals("aaronz", sab.getName());
     }
 
     public static class TestService {

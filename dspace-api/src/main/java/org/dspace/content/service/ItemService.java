@@ -43,7 +43,7 @@ import org.dspace.eperson.Group;
 public interface ItemService
         extends DSpaceObjectService<Item>, DSpaceObjectLegacySupportService<Item> {
 
-    Thumbnail getThumbnail(Context context, Item item, boolean requireOriginal) throws SQLException;
+    Thumbnail getThumbnail(Context context, Item item) throws SQLException;
 
     /**
      * Create a new item, with a new internal ID. Authorization is done
@@ -93,7 +93,7 @@ public interface ItemService
      * @param item    item to populate with template item specified metadata
      * @throws SQLException       if database error
      */
-    public void populateWithTemplateItemMetadata (Context context, Collection collection, boolean template, Item item)
+    void populateWithTemplateItemMetadata (Context context, Collection collection, boolean template, Item item)
         throws SQLException;
 
     /**
@@ -126,7 +126,8 @@ public interface ItemService
      * @return an iterator over the items in the archive.
      * @throws SQLException if database error
      */
-    @Deprecated Iterator<Item> findAllUnfiltered(Context context) throws SQLException;
+    @Deprecated
+    Iterator<Item> findAllUnfiltered(Context context) throws SQLException;
 
     /**
      * Find all items that are:
@@ -1013,7 +1014,7 @@ public interface ItemService
      * @param  item    the item
      * @return         the entity type as string, if any
      */
-    public String getEntityType(Item item);
+    String getEntityType(Item item);
 
     /**
      * Set the entity type of the given item with the provided value.
@@ -1021,7 +1022,7 @@ public interface ItemService
      * @param item       the item to update
      * @param entityType the entity type to set
      */
-    public void setEntityType(Context context, Item item, String entityType);
+    void setEntityType(Context context, Item item, String entityType);
 
     /**
      * Find all the items in the archive or not with a given authority key value in LIKE format.
@@ -1034,7 +1035,7 @@ public interface ItemService
      * @return
      * @throws SQLException   if database error
      */
-    public Iterator<Item> findByLikeAuthorityValue(Context context, String likeAuthority,
+    Iterator<Item> findByLikeAuthorityValue(Context context, String likeAuthority,
             Boolean inArchive) throws SQLException;
 
     /**
@@ -1080,8 +1081,18 @@ public interface ItemService
     void addDefaultPoliciesNotInPlace(Context context, DSpaceObject dso, List<ResourcePolicy> defaultCollectionPolicies)
         throws SQLException, AuthorizeException;
 
-    public Iterator<Item> findRelatedItemsByAuthorityControlledFields(Context context,
+    Iterator<Item> findRelatedItemsByAuthorityControlledFields(Context context,
                                                                       Item item, List<String> authorities);
+
+    /**
+     * Check whether the given item is the latest version. If the latest item cannot
+     * be determined, because either the version history or the latest version is
+     * not present, assume the item is latest.
+     * @param  context the DSpace context.
+     * @param  item    the item that should be checked.
+     * @return         true if the item is the latest version, false otherwise.
+     */
+    boolean isLatestVersion(Context context, Item item) throws SQLException;
 
     /**
      * Adds a resource policy to the specified item for the given action and EPerson.
@@ -1096,14 +1107,5 @@ public interface ItemService
     void addResourcePolicy(Context context, Item item, int actionID, EPerson eperson)
         throws SQLException, AuthorizeException;
 
-
-    /**
-     * Check whether the given item is the latest version. If the latest item cannot
-     * be determined, because either the version history or the latest version is
-     * not present, assume the item is latest.
-     * @param  context the DSpace context.
-     * @param  item    the item that should be checked.
-     * @return         true if the item is the latest version, false otherwise.
-     */
-    public boolean isLatestVersion(Context context, Item item) throws SQLException;
+    Item findByBitstream(Context context, Bitstream bitstream);
 }

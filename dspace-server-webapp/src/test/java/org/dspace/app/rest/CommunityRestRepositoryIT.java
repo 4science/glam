@@ -652,29 +652,31 @@ public class CommunityRestRepositoryIT extends AbstractControllerIntegrationTest
                                                         .param("embed", CommunityMatcher.getNonAdminEmbeds()))
                    .andExpect(status().isOk())
                    .andExpect(content().contentType(contentType))
-                   .andExpect(jsonPath("$._embedded.communities", Matchers.containsInAnyOrder(
-                       CommunityMatcher.matchCommunityEntryMultipleTitles(titles, parentCommunity.getID(),
-                                                                          parentCommunity.getHandle()),
-                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(childCommunity.getName(),
-                                                                          childCommunity.getID(),
-                                                                          childCommunity.getHandle())
-                       )))
+                   .andExpect(jsonPath("$._embedded.communities", Matchers.contains(
+                       CommunityMatcher.matchCommunityEntryMultipleTitles(
+                           titles, parentCommunity.getID(), parentCommunity.getHandle()),
+                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(
+                           childCommunity.getName(), childCommunity.getID(), childCommunity.getHandle())
+                   )))
                    .andExpect(jsonPath("$._links.self.href",
                                        Matchers.containsString("/api/core/communities")))
                    .andExpect(jsonPath("$.page", PageMatcher.pageEntryWithTotalPagesAndElements(0, 2,
                                                                                                 2, 4)));
 
-        getClient().perform(get("/api/core/communities").param("size", "2").param("page", "1")
+        getClient().perform(get("/api/core/communities").param("size", "2")
+                                                        .param("page", "1")
                       .param("embed", CommunityMatcher.getNonAdminEmbeds()))
                    .andExpect(status().isOk())
                    .andExpect(content().contentType(contentType))
-                   .andExpect(jsonPath("$._embedded.communities", Matchers.containsInAnyOrder(
-                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(secondParentCommunity.getName(),
-                                                                          secondParentCommunity.getID(),
-                                                                          secondParentCommunity.getHandle()),
-                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(thirdParentCommunity.getName(),
-                                                                          thirdParentCommunity.getID(),
-                                                                          thirdParentCommunity.getHandle())
+                   .andExpect(jsonPath("$._embedded.communities", Matchers.contains(
+                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(
+                           secondParentCommunity.getName(),
+                           secondParentCommunity.getID(),
+                           secondParentCommunity.getHandle()),
+                       CommunityMatcher.matchCommunityEntryNonAdminEmbeds(
+                           thirdParentCommunity.getName(),
+                           thirdParentCommunity.getID(),
+                           thirdParentCommunity.getHandle())
                    )))
                    .andExpect(jsonPath("$._links.self.href", Matchers.containsString("/api/core/communities")))
                    .andExpect(jsonPath("$.page", PageMatcher.pageEntryWithTotalPagesAndElements(1, 2,
@@ -725,7 +727,6 @@ public class CommunityRestRepositoryIT extends AbstractControllerIntegrationTest
 
         context.restoreAuthSystemState();
 
-        ObjectMapper mapper = new ObjectMapper();
         MvcResult result = getClient().perform(get("/api/core/communities")).andReturn();
         String response = result.getResponse().getContentAsString();
         JSONArray communities = new JSONObject(response).getJSONObject("_embedded").getJSONArray("communities");

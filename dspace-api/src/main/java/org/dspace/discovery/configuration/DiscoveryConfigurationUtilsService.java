@@ -6,6 +6,7 @@
  * http://www.dspace.org/license/
  */
 package org.dspace.discovery.configuration;
+
 import static org.apache.commons.collections4.iterators.EmptyIterator.emptyIterator;
 
 import java.text.MessageFormat;
@@ -45,7 +46,7 @@ public class DiscoveryConfigurationUtilsService {
         DiscoveryConfiguration discoveryConfiguration = findDiscoveryConfiguration(entityType, relationName);
         if (discoveryConfiguration == null) {
             log.warn("No discovery configuration found for relation " + relationName + " for item with id "
-                + item.getID() + " and type " + entityType + ". No related items is found.");
+                         + item.getID() + " and type " + entityType + ". No related items is found.");
             return emptyIterator();
         }
 
@@ -53,6 +54,18 @@ public class DiscoveryConfigurationUtilsService {
         discoverQuery.setDSpaceObjectFilter(IndexableItem.TYPE);
         discoverQuery.setDiscoveryConfigurationName(discoveryConfiguration.getId());
         discoverQuery.setScopeObject(new IndexableItem(item));
+
+        if (discoveryConfiguration.getSearchSortConfiguration() == null ||
+            discoveryConfiguration.getSearchSortConfiguration().getDefaultSortField() == null) {
+            // No sorting configured - add default chronological sort for consistency
+            discoverQuery.setSortField("dc.date.issued_dt", DiscoverQuery.SORT_ORDER.asc);
+        } else {
+            DiscoverySortFieldConfiguration sortField =
+                discoveryConfiguration.getSearchSortConfiguration().getDefaultSortField();
+            discoverQuery.setSortField(sortField.getMetadataField(),
+                                       DiscoverQuery.SORT_ORDER.valueOf(sortField.getDefaultSortOrder().name()));
+        }
+
         List<String> defaultFilterQueries = discoveryConfiguration.getDefaultFilterQueries();
         for (String defaultFilterQuery : defaultFilterQueries) {
             discoverQuery.addFilterQueries(MessageFormat.format(defaultFilterQuery, item.getID()));

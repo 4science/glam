@@ -1,0 +1,20 @@
+<Coin id="@virtual.id@">
+    <IdentifierInternal>@dc.identifier.internal@</IdentifierInternal>
+    <IdentifierNote>@dc.identifier.note@</IdentifierNote>
+    <Title>@dc.title@</Title>
+    <CoverageTemporal>@dc.coverage.temporal@</CoverageTemporal>
+    <Mint>@glamcoin.mint@</Mint>
+    <MaterialAndTechnique>@dc.type.materialandtechnique@</MaterialAndTechnique>
+    <FormatMisd>@dc.format.misd@</FormatMisd>
+    <FormatMisg>@dc.format.misg@</FormatMisg>
+    <Obverse>@glamcoin.obverse@</Obverse>
+    <Reverse>@glamcoin.reverse@</Reverse>
+    <OtherLinks>
+        @group.dc-relation-otherlink.start@
+        <OtherLink>
+            <DisplayName>@dc.relation.otherlink@</DisplayName>
+        </OtherLink>
+        @group.dc-relation-otherlink.end@
+    </OtherLinks>
+    <License>@dc.rights.license@</License>
+</Coin>

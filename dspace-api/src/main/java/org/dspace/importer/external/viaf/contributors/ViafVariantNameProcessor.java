@@ -34,11 +34,11 @@ public class ViafVariantNameProcessor extends AbstractJsonPathMetadataProcessor 
 
     private static final String UNSUPPORTED_TITLE_TYPE = "Unsupported type of title";
     private static final String DTYPE_PATH = "/dtype";
-    private static final String DATAFIELD_PATH = "/ns1:datafield";
-    private static final String SOURCE_NAME_PATH = "/ns1:sources/ns1:s";
+    private static final String DATAFIELD_PATH = "/datafield";
+    private static final String SOURCE_NAME_PATH = "/sources/s";
 
-    private static final String X400_PATH = "/ns1:VIAFCluster/ns1:x400s/ns1:x400";
-    private static final String MAIN_HEADING_EL_PATH = "/ns1:VIAFCluster/ns1:mainHeadings/ns1:mainHeadingEl";
+    private static final String X400_PATH = "/VIAFCluster/x400s/x400";
+    private static final String MAIN_HEADING_EL_PATH = "/VIAFCluster/mainHeadings/mainHeadingEl";
 
     private String separetor;
     private List<String> marc21codes;
@@ -126,7 +126,7 @@ public class ViafVariantNameProcessor extends AbstractJsonPathMetadataProcessor 
     }
 
     private String getSubfieldValueByCode(DocumentContext documentContext, String codeValue) {
-        String path = String.format("$.ns1:subfield.[?(@.code == '%s')].content", codeValue);
+        String path = String.format("$.subfield.[?(@.code == '%s')].content", codeValue);
         List<String> results = documentContext.read(path);
         return results.isEmpty() ? null : results.get(0);
     }

@@ -23,7 +23,7 @@
     this file, see http://wiki.apache.org/solr/SolrConfigXml.
 -->
 <config>
-    <luceneMatchVersion>8.8.1</luceneMatchVersion>
+    <luceneMatchVersion>9.8.0</luceneMatchVersion>
 
     <dataDir>${solr.data.dir:}</dataDir>
 
@@ -37,8 +37,8 @@
     <schemaFactory class="ClassicIndexSchemaFactory"/>
 
     <indexConfig>
-        <ramBufferSizeMB>32</ramBufferSizeMB>
-        <maxBufferedDocs>1000</maxBufferedDocs>
+        <ramBufferSizeMB>1024</ramBufferSizeMB>
+        <maxBufferedDocs>100000</maxBufferedDocs>
         <lockType>${solr.lock.type:native}</lockType>
         <!-- Set to true to "write detailed debug information from the
              indexing process as Solr log messages" -->
@@ -47,16 +47,14 @@
 
     <!-- Settings for how updates are done internally -->
     <updateHandler class="solr.DirectUpdateHandler2">
-        <!-- How often should commits be done automatically -->
-        <autoCommit>
-            <maxDocs>10000</maxDocs> <!--Commit every 10.000 documents-->
-            <maxTime>${solr.autoCommit.maxTime:10000}</maxTime> <!--Ten seconds-->
-            <openSearcher>true</openSearcher>
-        </autoCommit>
 
         <autoSoftCommit>
-            <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+            <maxTime>60000</maxTime>
         </autoSoftCommit>
+
+        <updateLog>
+            <str name="dir">${solr.ulog.dir:}</str>
+        </updateLog>
     </updateHandler>
 
     <!-- Settings for how Solr will process & respond to queries -->
@@ -67,27 +65,27 @@
              unordered sets of *all* documents that match a
              query. Caches results of 'fq' search param. -->
         <filterCache class="solr.search.CaffeineCache"
-                     size="512"
-                     initialSize="512"
+                     size="20000"
+                     initialSize="20000"
                      autowarmCount="0"/>
 
         <!-- Caches results of previous searches - ordered lists of
              document ids (DocList) based on a query, a sort, and the
              range of documents requested. -->
         <queryResultCache class="solr.search.CaffeineCache"
-                          size="512"
-                          initialSize="512"
+                          size="20000"
+                          initialSize="20000"
                           autowarmCount="0"/>
 
         <!-- Caches Lucene Document objects (the stored fields for each
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed. -->
         <documentCache class="solr.search.CaffeineCache"
-                       size="512"
-                       initialSize="512"
+                       size="10000"
+                       initialSize="10000"
                        autowarmCount="0"/>
 
-        <enableLazyFieldLoading>true</enableLazyFieldLoading>
+        <enableLazyFieldLoading>false</enableLazyFieldLoading>
         <queryResultWindowSize>20</queryResultWindowSize>
         <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
         <useColdSearcher>false</useColdSearcher>

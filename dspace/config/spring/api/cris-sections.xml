@@ -200,7 +200,7 @@
                     <property name="fitHeight" value="false" />
                     <property name="showBlurryBackdrop" value="true" />
                     <property name="keepAspectRatio" value="false" />
-                    <property name="carouselHeightPx" value="500" />
+                    <property name="carouselHeightPx" value="300" />
                     <property name="captionStyle" value="text-justify" />
                     <property name="titleStyle" value="text-center" />
                 </bean>
@@ -264,7 +264,30 @@
                     <property name="itemListStyle" value=""/>
                     <property name="showAllResults" value="true"/>
                     <property name="template" value="SLIDER"/>
+                    <property name="bundle" value="ORIGINAL" />
                 </bean>
+            </list>
+            <list>
+              <bean class="org.dspace.layout.CrisLayoutAdvancedTopComponent">
+                <property name="discoveryConfigurationName">
+                  <list>
+                    <value>storiesHomePage</value>
+                  </list>
+                </property>
+                <property name="sortField" value="cris.priority" />
+                <property name="order" value="asc" />
+                <property name="style" value="py-4"/>
+                <property name="numberOfItems" value="8"/>
+                <property name="showAsCard" value="true"/>
+                <property name="showLayoutSwitch" value="true"/>
+                <property name="defaultLayoutMode" value="CARD"/>
+                <property name="cardStyle" value="storytelling"/>
+                <property name="cardColumnStyle" value="col-6 col-lg-3"/>
+                <property name="itemListStyle" value=""/>
+                <property name="showAllResults" value="true"/>
+                <property name="template" value="SLIDER"/>
+                <property name="bundle" value="BRANDED_PREVIEW" />
+              </bean>
             </list>
             <list>
                 <bean class="org.dspace.layout.CrisGridComponent">
@@ -310,7 +333,27 @@
                         </list>
                     </property>
                 </bean>
-            </list> -->
+            </list>-->
+            <!--<list>
+	            <bean class="org.dspace.layout.CrisLayoutCarouselComponent">
+				    <property name="discoveryConfigurationName" value="person" />
+				    <property name="style" value="col-md-12" />
+				    <property name="title" value="dc.title" />
+				    <property name="bundle" value="ORIGINAL" />
+				    <property name="link" value="oairecerif.identifier.url" />
+				    <property name="description" value="dc.description.abstract" />
+				    <property name="order" value="desc" />
+                    <property name="targetBlank" value="true" />
+                    <property name="fitWidth" value="false" />
+                    <property name="fitHeight" value="false" />
+                    <property name="showBlurryBackdrop" value="false" />
+                    <property name="keepAspectRatio" value="false" />
+                    <property name="carouselHeightPx" value="500" />
+                    <property name="captionStyle" value="text-justify" />
+                    <property name="titleStyle" value="text-center" />
+                    <property name="numberOfItems" value="20" />
+                </bean>
+            </list>-->
           </list>
         </constructor-arg>
     </bean>

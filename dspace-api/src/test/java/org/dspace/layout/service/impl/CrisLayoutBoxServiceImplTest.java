@@ -326,6 +326,42 @@ public class CrisLayoutBoxServiceImplTest {
     }
 
     @Test
+    public void testAnnonaBoxHasContentWithMetadataTrue() {
+      Item item = item();
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn("test-uuid");
+
+      when(itemService.getEntityType(item)).thenReturn("Story");
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertTrue(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
+    public void testAnnonaBoxHasNoContentWithMetadataFalse() {
+      Item item = item();
+      when(itemService.getEntityType(item)).thenReturn("Story");
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn(null);
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertFalse(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
+    public void testAnnonaBoxIsNotStoryFalse() {
+      Item item = item();
+      when(itemService.getMetadataFirstValue(item, new MetadataFieldName("glam", "bitstream", "canvasid"),
+        Item.ANY)).thenReturn("test-uuid");
+
+      CrisLayoutBox box = crisLayoutBox("Box", "ANNONA");
+
+      assertFalse(crisLayoutBoxService.hasContent(context, box, item));
+    }
+
+    @Test
     public void testSingleMetadataboxBitstreamWithoutField() throws SQLException {
 
         CrisLayoutBox singleBitstreamBox = new CrisLayoutBox();

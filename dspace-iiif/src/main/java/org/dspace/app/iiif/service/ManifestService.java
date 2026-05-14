@@ -118,12 +118,16 @@ public class ManifestService extends AbstractResourceService {
      * @return manifest as JSON
      */
     public String getManifest(Item item, Context context) {
+        guessCanvasDimension = isGuessCanvasDimension();
+        populateManifest(item, context);
+        return utils.asJson(manifestGenerator.generateResource());
+    }
+
+    public boolean isGuessCanvasDimension() {
         // If default dimensions are provided via configuration do not guess the default dimension.
         String wid = configurationService.getProperty("iiif.canvas.default-width");
         String hgt = configurationService.getProperty("iiif.canvas.default-height");
-        guessCanvasDimension = (wid == null && hgt == null);
-        populateManifest(item, context);
-        return utils.asJson(manifestGenerator.generateResource());
+        return wid == null && hgt == null;
     }
 
     /**

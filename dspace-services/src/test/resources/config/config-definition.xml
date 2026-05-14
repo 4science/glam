@@ -27,6 +27,9 @@
         <!-- Load Environment variables (does not automatically reload) -->
         <env/>
 
+        <properties fileName="${CUSTOMER_DIR}/${CUSTOMER_CFG}" throwExceptionOnMissing="false" config-optional="true"
+                    encoding="UTF-8" config-reload="true" reloadingRefreshDelay="2000"/>
+
         <!-- Load test local.properties (for unit testing). Configured to check for reload every 2 seconds -->
         <properties fileName="local.properties" encoding="UTF-8" throwExceptionOnMissing="true" config-name="local"
                     config-reload="true" reloadingRefreshDelay="2000"/>

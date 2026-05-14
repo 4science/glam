@@ -154,7 +154,7 @@
                     </xsl:call-template>
 
                     <xsl:call-template name="print-values">
-                        <xsl:with-param name="label" select="'Documento collegato'" />
+                        <xsl:with-param name="label" select="'Fondo collegato'" />
                         <xsl:with-param name="values" select="Uses/Fond/Name" />
                     </xsl:call-template>
 

@@ -15,9 +15,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dspace.app.util.DSpaceObjectUtilsImpl;
+import org.dspace.app.util.service.DSpaceObjectUtils;
 import org.dspace.content.Collection;
 import org.dspace.content.Community;
 import org.dspace.content.DSpaceObject;
@@ -32,6 +35,7 @@ import org.dspace.core.factory.CoreServiceFactory;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 import org.dspace.scripts.handler.DSpaceRunnableHandler;
+import org.dspace.utils.DSpace;
 
 /**
  * Curator orchestrates and manages the application of a one or more curation
@@ -267,6 +271,9 @@ public class Curator {
             curationCtx.set(c);
 
             DSpaceObject dso = handleService.resolveToObject(c, id);
+            if (dso == null) {
+                dso = resolveByUUID(c, id);
+            }
             if (dso != null) {
                 curate(dso);
             } else {
@@ -286,6 +293,21 @@ public class Curator {
         } finally {
             curationCtx.remove();
         }
+    }
+
+    private DSpaceObject resolveByUUID(Context context, String id) throws SQLException {
+        UUID uuid = null;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException ex) {
+            // couldn't parse uuid
+        }
+        if (uuid != null) {
+            DSpaceObjectUtils dSpaceObjectUtils = new DSpace().getServiceManager()
+                                  .getServiceByName(DSpaceObjectUtilsImpl.class.getName(), DSpaceObjectUtilsImpl.class);
+            return dSpaceObjectUtils.findDSpaceObject(context, uuid);
+        }
+        return null;
     }
 
     /**
@@ -587,8 +609,8 @@ public class Curator {
                 if (dso == null) {
                     throw new IOException("DSpaceObject is null");
                 }
-                statusCode = task.perform(dso);
                 String id = (dso.getHandle() != null) ? dso.getHandle() : "workflow item: " + dso.getID();
+                statusCode = task.perform(dso);
                 logInfo(logMessage(id));
                 visit(dso);
                 return !suspend(statusCode);

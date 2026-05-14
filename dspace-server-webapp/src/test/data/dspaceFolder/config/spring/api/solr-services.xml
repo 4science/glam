@@ -19,33 +19,190 @@
 
     <context:annotation-config/> <!-- allows us to use spring annotations in beans -->
 
+    <bean id="solrAdminServiceFactory" class="org.dspace.solr.SolrAdminServiceFactory"
+          autowire-candidate="true"/>
+    <bean id="standaloneStatisticsSolrAdminService" class="org.dspace.solr.StandaloneStatisticsSolrAdminService"
+          autowire-candidate="true"/>
+    <bean id="cloudStatisticsSolrAdminService" class="org.dspace.solr.CloudStatisticsSolrAdminService"
+          autowire-candidate="true"/>
+
     <bean class="org.dspace.discovery.SolrServiceImpl"
           id="org.dspace.discovery.SearchService"/>
 
     <alias name="org.dspace.discovery.SearchService"
            alias="org.dspace.discovery.IndexingService"/>
 
-    <bean class="org.dspace.discovery.MockSolrSearchCore"
-          autowire-candidate="true"/>
+    <bean class="org.dspace.discovery.SolrSearchCore" autowire-candidate="true"/>
 
-    <!--<bean class="org.dspace.discovery.SolrServiceIndexOutputPlugin"
-          id="solrServiceIndexOutputPlugin"/>-->
+    <!-- ========== VALIDATION QUERIES FOR TESTING ========== -->
 
-    <!-- Statistics services are both lazy loaded (by name), as you are likely
-          just using ONE of them and not both -->
+    <!-- Discovery validation query -->
+    <bean id="discoveryValidationQuery" class="org.dspace.solr.SolrValidationQuery">
+        <constructor-arg value="*:*" /> <!-- query -->
+        <constructor-arg> <!-- filterQueries -->
+            <array>
+                <value>search.resourcetype:Item</value>
+                <value>search.resourceid:1</value>
+            </array>
+        </constructor-arg>
+        <constructor-arg> <!-- fields -->
+            <array>
+                <value>search.resourcetype</value>
+                <value>search.resourceid</value>
+            </array>
+        </constructor-arg>
+        <constructor-arg value="0" /> <!-- rows -->
+    </bean>
+
+    <!-- Simple ping validation query for most services -->
+    <bean id="simplePingValidationQuery" class="org.dspace.solr.SolrValidationQuery">
+        <constructor-arg value="*:*" /> <!-- query -->
+        <constructor-arg><null/></constructor-arg> <!-- filterQueries -->
+        <constructor-arg><null/></constructor-arg> <!-- fields -->
+        <constructor-arg value="0" /> <!-- rows -->
+    </bean>
+
+    <!-- Deduplication validation query -->
+    <bean id="dedupValidationQuery" class="org.dspace.solr.SolrValidationQuery">
+        <constructor-arg value="*:*" /> <!-- query -->
+        <constructor-arg>
+            <array>
+                <value>dedup.resourcetype:2</value>
+                <value>dedup.id:1</value>
+            </array>
+        </constructor-arg> <!-- filterQueries -->
+        <constructor-arg> <!-- fields -->
+            <array>
+                <value>dedup.resourcetype</value>
+                <value>dedup.id</value>
+            </array>
+        </constructor-arg>
+        <constructor-arg value="0" /> <!-- rows -->
+    </bean>
+
+    <!-- ========== VALIDATORS FOR TESTING ========== -->
+
+    <!-- Discovery validator -->
+    <bean id="discoveryValidator" class="org.dspace.solr.SolrClientValidator">
+        <constructor-arg ref="org.dspace.services.ConfigurationService" />
+        <constructor-arg ref="discoveryValidationQuery" />
+        <constructor-arg value="discovery.solr.url.validation.enabled" />
+    </bean>
+
+    <!-- Audit validator -->
+    <bean id="auditValidator" class="org.dspace.solr.SolrClientValidator">
+        <constructor-arg ref="org.dspace.services.ConfigurationService" />
+        <constructor-arg ref="simplePingValidationQuery" />
+        <constructor-arg value="audit.solr.url.validation.enabled" />
+    </bean>
+
+    <!-- Deduplication validator -->
+    <bean id="dedupValidator" class="org.dspace.solr.SolrClientValidator">
+        <constructor-arg ref="org.dspace.services.ConfigurationService" />
+        <constructor-arg ref="dedupValidationQuery" />
+        <constructor-arg value="deduplication.solr.url.validation.enabled" />
+    </bean>
+
+    <!-- Suggestion validator -->
+    <bean id="suggestionValidator" class="org.dspace.solr.SolrClientValidator">
+        <constructor-arg ref="org.dspace.services.ConfigurationService" />
+        <constructor-arg ref="simplePingValidationQuery" />
+        <constructor-arg value="suggestion.solr.url.validation.enabled" />
+    </bean>
+
+    <!-- ========== VALIDATOR FACTORIES ========== -->
+
+    <!-- Discovery validator factory (extends base class with custom setup) -->
+    <bean id="searchValidatorSolrClientCoreFactory"
+          class="org.dspace.discovery.SearchValidatorSolrClientCoreFactory">
+        <constructor-arg ref="baseHttpSolrClientFactory" />
+        <constructor-arg ref="org.dspace.services.ConfigurationService" />
+        <constructor-arg ref="org.dspace.discovery.IndexingService" />
+        <constructor-arg ref="discoveryValidator" />
+    </bean>
+
+    <!-- Simple validator factories (use base class directly) -->
+    <bean id="auditValidatorSolrClientFactory"
+          class="org.dspace.solr.BaseValidatingSolrClientFactory">
+        <constructor-arg ref="baseHttpSolrClientFactory"/>
+        <constructor-arg ref="org.dspace.services.ConfigurationService"/>
+        <constructor-arg ref="auditValidator"/>
+        <constructor-arg value="Audit"/>
+    </bean>
+
+    <bean id="dedupValidatorSolrClientFactory"
+          class="org.dspace.solr.BaseValidatingSolrClientFactory">
+        <constructor-arg ref="baseHttpSolrClientFactory"/>
+        <constructor-arg ref="org.dspace.services.ConfigurationService"/>
+        <constructor-arg ref="dedupValidator"/>
+        <constructor-arg value="Deduplication"/>
+    </bean>
+
+    <bean id="suggestionValidatorSolrClientFactory"
+          class="org.dspace.solr.BaseValidatingSolrClientFactory">
+        <constructor-arg ref="baseHttpSolrClientFactory"/>
+        <constructor-arg ref="org.dspace.services.ConfigurationService"/>
+        <constructor-arg ref="suggestionValidator"/>
+        <constructor-arg value="Suggestion"/>
+    </bean>
+
+    <!-- ========== CLOUD-ENABLED DECORATORS ========== -->
+
+    <!-- Cloud-enabled decorator -->
+    <bean id="searchSolrClientFactory"
+          class="org.dspace.solr.SolrCloudClientFactoryDecorator" autowire-candidate="true">
+        <constructor-arg ref="searchValidatorSolrClientCoreFactory"/>
+        <constructor-arg value="search.uniqueid"/>
+    </bean>
+
+    <!-- Base factory: handles runtime switching -->
+    <bean id="baseHttpSolrClientFactory"
+          class="org.dspace.statistics.MockSolrClientFactory">
+    </bean>
+
+    <!-- Dynamic decorator factory -->
+    <bean id="statisticsClientFactory"
+          class="org.dspace.solr.SolrCloudClientFactoryDecorator"
+          autowire-candidate="true">
+        <constructor-arg ref="baseHttpSolrClientFactory"/>
+        <constructor-arg value="uid"/>
+    </bean>
+
+    <!-- Other services with cloud support -->
+    <bean id="auditSolrClientFactory" class="org.dspace.solr.SolrCloudClientFactoryDecorator" autowire-candidate="true">
+        <constructor-arg ref="auditValidatorSolrClientFactory"/>
+        <constructor-arg value="uid"/>
+    </bean>
+
+    <bean id="dedupSolrClientFactory" class="org.dspace.solr.SolrCloudClientFactoryDecorator" autowire-candidate="true">
+        <constructor-arg ref="dedupValidatorSolrClientFactory"/>
+        <constructor-arg value="dedup.uniqueid"/>
+    </bean>
+
+    <bean id="suggestionSolrClientFactory" class="org.dspace.solr.SolrCloudClientFactoryDecorator" autowire-candidate="true">
+        <constructor-arg ref="suggestionValidatorSolrClientFactory"/>
+        <constructor-arg value="suggestion_fullid"/>
+    </bean>
+
+    <!-- ========== SERVICE BEANS ========== -->
+
     <bean id="solrLoggerService"
           class="org.dspace.statistics.MockSolrLoggerServiceImpl"
-          lazy-init="true"/>
+          lazy-init="true">
+        <property name="solrClientFactory" ref="statisticsClientFactory"/>
+    </bean>
 
+    <!-- SolrStatisticsCore uses the decorated factory -->
     <bean id="org.dspace.statistics.SolrStatisticsCore"
-          class="org.dspace.statistics.MockSolrStatisticsCore" autowire-candidate="true"/>
+          class="org.dspace.statistics.SolrStatisticsCore"
+          autowire-candidate="true">
+        <property name="solrClientFactory" ref="statisticsClientFactory"/>
+    </bean>
 
     <!-- Dedup core -->
-    <bean class="org.dspace.deduplication.MockSolrDedupCore" autowire-candidate="true"/>
+    <bean class="org.dspace.app.deduplication.service.impl.SolrDedupServiceImpl" id="org.dspace.app.deduplication.service.DedupService"/>
 
-    <bean class="org.dspace.app.audit.MockAuditService" autowire-candidate="true"/>
+    <!-- audit -->
+    <bean id="org.dspace.app.audit.AuditService" class="org.dspace.app.audit.AuditService"/>
 
-    <bean class="org.dspace.app.suggestion.MockSolrSuggestionStorageService" autowire-candidate="true"/>
-
-    <bean class="org.dspace.qaevent.MockQAEventService" autowire-candidate="true"/>
 </beans>

@@ -1246,6 +1246,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Testing, Works")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/search/objects")
@@ -1349,6 +1350,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("DSpace & friends")
                    .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(
@@ -1377,6 +1379,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("DSpace & friends")
                    .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(
@@ -2027,6 +2030,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                                       .withSubject("ExtraEntry")
                                       .build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         //** WHEN **
@@ -3013,6 +3017,62 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    //There always needs to be a self link available
                    .andExpect(jsonPath("$._links.self.href", containsString("/api/discover/search/objects")))
         ;
+
+    }
+
+    /**
+     * Tests if the config discovery.solr.fulltext.charLimit properly controls the max solr HitHighlights search
+     * character limits(hl.maxAnalyzedChars)
+     * @throws Exception
+     */
+    @Test
+    public void discoverSearchObjectsTestForHitHighlightsLength() throws Exception {
+        context.turnOffAuthorisationSystem();
+
+        int maxText = configurationService.getIntProperty("discovery.solr.fulltext.charLimit", 100000);
+        configurationService.setProperty("discovery.solr.fulltext.charLimit", "1000");
+
+        parentCommunity = CommunityBuilder.createCommunity(context)
+                                          .withName("Parent Community")
+                                          .build();
+        Collection col1 = CollectionBuilder.createCollection(context, parentCommunity).withName("Collection 1").build();
+        String query = "testhithighlights";
+        Item publicItem1 = ItemBuilder.createItem(context, col1)
+                                      .withTitle("testHitHighlightsShort")
+                                      .withIssueDate("2010-10-17")
+                                      .withAuthor("Wesker, Albert")
+                                      .withSubject("RPD Tunneling department")
+                                      .withDescriptionAbstract(StringUtils.repeat('a', 950) + " " + query)
+                                      .build();
+
+        Item publicItem2 = ItemBuilder.createItem(context, col1)
+                                      .withTitle("testHitHighlightsLong")
+                                      .withIssueDate("1990-02-13")
+                                      .withAuthor("Doe, Jane")
+                                      .withSubject("NEPS")
+                                      .withDescriptionAbstract(StringUtils.repeat('a', 1000) + " " + query)
+                                      .build();
+
+        getClient().perform(get("/api/discover/search/objects")
+                                .param("query", query))
+                   .andExpect(status().isOk())
+                   .andExpect(jsonPath("$.type", is("discover")))
+                   .andExpect(jsonPath("$._embedded.searchResult.page", is(
+                       PageMatcher.pageEntry(0, 20)
+                   )))
+                   .andExpect(jsonPath("$._embedded.searchResult._embedded.objects", Matchers.containsInAnyOrder(
+                       SearchResultMatcher
+                           .matchOnItemNameAndHitHighlight("item", "items",
+                                                           "testHitHighlightsShort", query, "dc.description.abstract"),
+                        SearchResultMatcher
+                            .matchOnItemNameAndNotHitHighlight("item", "items",
+                                                            "testHitHighlightsLong", query, "dc.description.abstract")
+                   )))
+                   .andExpect(jsonPath("$._links.self.href", containsString("/api/discover/search/objects")))
+        ;
+        configurationService.setProperty("discovery.solr.fulltext.charLimit", maxText);
+        CommunityBuilder.deleteCommunity(parentCommunity.getID());
+        context.restoreAuthSystemState();
 
     }
 
@@ -6696,6 +6756,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                        .withAuthor("Smith, Donald")
                        .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6773,6 +6834,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                        .withAuthor("Smith, Donald")
                        .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6832,6 +6894,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withSubject("ExtraEntry")
                    .makeUnDiscoverable().build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -6900,6 +6963,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withSubject("ExtraEntry")
                    .makeUnDiscoverable().build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8665,6 +8729,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Smith, Donald")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8731,6 +8796,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                    .withAuthor("Smith, Donald")
                    .withSubject("ExtraEntry").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         String adminToken = getAuthToken(admin.getEmail(), password);
@@ -8818,6 +8884,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("0 AD").withIssueDate("0000-01-01").build();
         ItemBuilder.createItem(context, col).withTitle("1 AD").withIssueDate("0001-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/search/objects")
@@ -8835,10 +8902,13 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         parentCommunity = CommunityBuilder.createCommunity(context).build();
         Collection col = CollectionBuilder.createCollection(context, parentCommunity).build();
 
+        // Date 0AD is handled like the year 1BC, must use 1 AD 2 AD
         ItemBuilder.createItem(context, col).withTitle("-12 BC").withIssueDate("-0012-05-01").build();
+        ItemBuilder.createItem(context, col).withTitle("-1 BC").withIssueDate("-0001-01-01").build();
         ItemBuilder.createItem(context, col).withTitle("1 AD").withIssueDate("0001-01-01").build();
-        ItemBuilder.createItem(context, col).withTitle("0 AD").withIssueDate("0000-01-01").build();
+        ItemBuilder.createItem(context, col).withTitle("2 AD").withIssueDate("0002-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
         String adminToken = getAuthToken(admin.getEmail(), password);
 
@@ -8851,10 +8921,13 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                                                  is("-12 BC")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[1]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("1 AD")))
+                                                 is("-1 BC")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[2]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("0 AD")));
+                                                 is("1 AD")))
+                             .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[3]" +
+                                                     "._embedded.indexableObject.metadata['dc.title'][0].value",
+                                                 is("2 AD")));
 
         // DESC sort
         getClient(adminToken).perform(get("/api/discover/search/objects")
@@ -8862,11 +8935,14 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
                              .andExpect(status().isOk())
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[0]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("1 AD")))
+                                                 is("2 AD")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[1]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
-                                                 is("0 AD")))
+                                                 is("1 AD")))
                              .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[2]" +
+                                                     "._embedded.indexableObject.metadata['dc.title'][0].value",
+                                                 is("-1 BC")))
+                             .andExpect(jsonPath("$._embedded.searchResult._embedded.objects[3]" +
                                                      "._embedded.indexableObject.metadata['dc.title'][0].value",
                                                  is("-12 BC")));
     }
@@ -8881,6 +8957,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("Item 2").withIssueDate("-0010-11-17").build();
         ItemBuilder.createItem(context, col).withTitle("Item 3").withIssueDate("-0009-01-19").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         getClient().perform(get("/api/discover/facets/graphpubldate"))
@@ -8899,6 +8976,7 @@ public class DiscoveryRestControllerIT extends AbstractControllerIntegrationTest
         ItemBuilder.createItem(context, col).withTitle("Bad Date 1").withIssueDate("-20-13-40").build();
         ItemBuilder.createItem(context, col).withTitle("Bad Date 2").withIssueDate("-201A-01-01").build();
 
+        context.commit();
         context.restoreAuthSystemState();
 
         // They should not show up in a valid query

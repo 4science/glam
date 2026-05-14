@@ -75,8 +75,22 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
 
     @Override
     public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context) throws SQLException {
-        Query query = createQuery(context, "SELECT b FROM MostRecentChecksum c RIGHT JOIN Bitstream b " +
-            "ON c.bitstream = b WHERE c IS NULL" );
+        return this.findBitstreamsWithNoRecentChecksum(context, 0, Integer.MAX_VALUE);
+    }
+
+
+    @Override
+    public List<Bitstream> findBitstreamsWithNoRecentChecksum(Context context, Integer offset, Integer limit)
+        throws SQLException {
+        Query query =
+            createQuery(
+                context,
+                "SELECT b FROM MostRecentChecksum c " +
+                    "RIGHT JOIN Bitstream b ON c.bitstream = b " +
+                    "WHERE c IS NULL "
+            )
+            .setFirstResult(offset)
+            .setMaxResults(limit);
 
         return query.getResultList();
     }
@@ -145,6 +159,37 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
     }
 
     @Override
+    public Iterator<Bitstream> findByItemAndBundle(Context context, UUID itemId,
+                                                    String bundleName) throws SQLException {
+        Query query = createQuery(
+            context,
+            "select b.id from Bitstream b " +
+            "join b.bundles bitBundle " +
+            "join bitBundle.items item " +
+            "WHERE item.id = :itemId " +
+            "AND (" +
+            "  :bundleName is null OR " +
+            "  EXISTS ( " +
+            "    select 1 from MetadataValue mvB " +
+            "    join mvB.metadataField mfB " +
+            "    join mfB.metadataSchema msB " +
+            "    where mvB.dSpaceObject = bitBundle and " +
+            "    msB.name = 'dc' and " +
+            "    mfB.element = 'title' and " +
+            "    mfB.qualifier is null and " +
+            "    mvB.value = :bundleName " +
+            "  )" +
+            ")"
+        );
+
+        query.setParameter("itemId", itemId);
+        query.setParameter("bundleName", bundleName);
+        @SuppressWarnings("unchecked")
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+    @Override
     public Iterator<Bitstream> findShowableByItem(Context context, UUID itemId, String bundleName) throws SQLException {
         Query query = createQuery(
             context,
@@ -184,6 +229,75 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
         List<UUID> uuids = query.getResultList();
         return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
     }
+
+    public Iterator<Bitstream> getThumbnail(
+        Context context, UUID itemId, String namePattern
+    ) throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bitstream b " +
+            "JOIN b.bundles bundle " +
+            "JOIN bundle.items item " +
+            "JOIN bundle.metadata bundleMeta " +
+            "JOIN bundleMeta.metadataField bundleMF " +
+            "JOIN bundleMF.metadataSchema bundleMS " +
+            "JOIN b.metadata bitstreamMeta " +
+            "WHERE item.id = :itemId " +
+            "AND bundleMS.name = 'dc' " +
+            "AND bundleMF.element = 'title' " +
+            "AND bundleMF.qualifier IS NULL " +
+            "AND bundleMeta.value IN ('THUMBNAIL', 'PREVIEW') " +
+            "AND bitstreamMeta.value LIKE :namePattern";
+
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("itemId", itemId);
+        query.setParameter("namePattern", namePattern);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+    /**
+     * Corrected DAO version using proper Hibernate mapping for bundle names
+     */
+    public Iterator<Bitstream> getPrimaryBitstream(Context context, UUID bundleId)
+        throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bundle bundle " +
+            "JOIN bundle.bitstreams b " +
+            "WHERE bundle.id = :bundleId " +
+            "AND (bundle.primaryBitstream = b OR bundle.primaryBitstream IS NULL)";
+
+        // Note: Using entityManager instead of hibernateTemplate (modern approach)
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("bundleId", bundleId);
+        query.setMaxResults(1);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
+    public Iterator<Bitstream> getPrimaryBitstreamByItem(Context context, UUID itemId)
+        throws SQLException {
+        String hql = "SELECT DISTINCT b.id FROM Bundle bundle " +
+            "JOIN bundle.bitstreams b " +
+            "JOIN bundle.items item " +
+            "JOIN bundle.metadata bundleMeta " +
+            "JOIN bundleMeta.metadataField mf " +
+            "JOIN mf.metadataSchema ms " +
+            "WHERE item.id = :itemId " +
+            "AND ms.name = 'dc' " +
+            "AND mf.element = 'title' " +
+            "AND mf.qualifier IS NULL " +
+            "AND bundleMeta.value = 'ORIGINAL' " +
+            "AND (bundle.primaryBitstream = b OR bundle.primaryBitstream IS NULL)";
+
+        // Note: Using entityManager instead of hibernateTemplate (modern approach)
+        Query query = getHibernateSession(context).createQuery(hql);
+        query.setParameter("itemId", itemId);
+        query.setMaxResults(1);
+
+        List<UUID> uuids = query.getResultList();
+        return new UUIDIterator<Bitstream>(context, uuids, Bitstream.class, this);
+    }
+
 
     @Override
     public Iterator<Bitstream> findByStoreNumber(Context context, Integer storeNumber) throws SQLException {
@@ -240,5 +354,77 @@ public class BitstreamDAOImpl extends AbstractHibernateDSODAO<Bitstream> impleme
         Map<String, Object> map = new HashMap<>();
         return findByX(context, Bitstream.class, map, true, limit, offset).iterator();
 
+    }
+
+    @Override
+    public Iterator<Bitstream> findByMetadataValueInBundle(Context context, UUID itemId, String bundleName,
+                                                           String metadataField, String metadataValue)
+        throws SQLException {
+        // Parse the metadata field (format: schema.element.qualifier)
+        String[] parts = metadataField.split("\\.");
+        if (parts.length < 2 || parts.length > 3) {
+            throw new IllegalArgumentException(
+                "Metadata field must be in format 'schema.element' or 'schema.element.qualifier'");
+        }
+
+        String schema = parts[0];
+        String element = parts[1];
+        String qualifier = parts.length == 3 ? parts[2] : null;
+
+        String jpql = "select b.id from Bitstream b " +
+            "join b.bundles bundle " +
+            "join bundle.items item " +
+            "WHERE item.id = :itemId " +
+            "AND EXISTS ( " +
+            "  select 1 from MetadataValue mvBundle " +
+            "  join mvBundle.metadataField mfBundle " +
+            "  join mfBundle.metadataSchema msBundle " +
+            "  where mvBundle.dSpaceObject = bundle and " +
+            "  msBundle.name = 'dc' and " +
+            "  mfBundle.element = 'title' and " +
+            "  mfBundle.qualifier is null and " +
+            "  mvBundle.value = :bundleName " +
+            ") " +
+            "AND EXISTS ( " +
+            "  select 1 from MetadataValue mv " +
+            "  join mv.metadataField mf " +
+            "  join mf.metadataSchema ms " +
+            "  where mv.dSpaceObject = b and " +
+            "  ms.name = :schema and " +
+            "  mf.element = :element and " +
+            (qualifier != null ? "  mf.qualifier = :qualifier and " : "  mf.qualifier is null and ") +
+            "  mv.value = :metadataValue " +
+            ")";
+
+
+        Query query = createQuery(context, jpql);
+        query.setParameter("itemId", itemId);
+        query.setParameter("schema", schema);
+        query.setParameter("element", element);
+        if (qualifier != null) {
+            query.setParameter("qualifier", qualifier);
+        }
+        query.setParameter("metadataValue", metadataValue);
+        query.setParameter("bundleName", bundleName);
+
+        return new UUIDIterator<Bitstream>(context, query.getResultList(), Bitstream.class, this);
+    }
+
+    @Override
+    public Item findItemByBitstreamId(Context context, UUID bitstreamId) throws SQLException {
+        CriteriaBuilder criteriaBuilder = getCriteriaBuilder(context);
+        CriteriaQuery<Item> criteriaQuery = criteriaBuilder.createQuery(Item.class);
+
+        Root<Bitstream> bitstreamRoot = criteriaQuery.from(Bitstream.class);
+        Join<Bitstream, Bundle> joinBundle = bitstreamRoot.join(Bitstream_.bundles);
+        Join<Bundle, Item> joinItem = joinBundle.join(Bundle_.items);
+
+        criteriaQuery.select(joinItem);
+        criteriaQuery.where(criteriaBuilder.equal(bitstreamRoot.get(Bitstream_.id), bitstreamId));
+
+        Query query = createQuery(context, criteriaQuery);
+        query.setMaxResults(1);
+        List<Item> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
     }
 }

@@ -9,6 +9,7 @@ package org.dspace.checker;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Optional;
 
 import org.dspace.checker.factory.CheckerServiceFactory;
 import org.dspace.checker.service.MostRecentChecksumService;
@@ -26,21 +27,24 @@ import org.dspace.core.Context;
 public class SimpleDispatcher implements BitstreamDispatcher {
 
     /**
+     * Access for bitstream information
+     */
+    protected final MostRecentChecksumService checksumService =
+        CheckerServiceFactory.getInstance().getMostRecentChecksumService();
+
+    /**
      * Should this dispatcher keep on dispatching around the collection?
      */
-    protected boolean loopContinuously = false;
+    protected final boolean loopContinuously;
 
     /**
      * Date this dispatcher started dispatching.
      */
-    protected Date processStartTime = null;
+    protected final Date processStartTime;
 
-    /**
-     * Access for bitstream information
-     */
-    protected MostRecentChecksumService checksumService;
+    protected final boolean fetchByDate;
 
-    protected Context context;
+    protected final Context context;
 
     /**
      * Creates a new SimpleDispatcher.
@@ -51,16 +55,40 @@ public class SimpleDispatcher implements BitstreamDispatcher {
      *                  most_recent_checksum table
      */
     public SimpleDispatcher(Context context, Date startTime, boolean looping) {
-        checksumService = CheckerServiceFactory.getInstance().getMostRecentChecksumService();
         this.context = context;
-        this.processStartTime = (startTime == null ? null : new Date(startTime.getTime()));
+        this.processStartTime =
+            Optional.ofNullable(startTime)
+                    .map(time -> new Date(time.getTime()))
+                    .orElse(null);
         this.loopContinuously = looping;
+        this.fetchByDate = !this.loopContinuously && (processStartTime != null);
     }
 
-    /**
-     * Blanked off, no-op constructor. Do not use.
-     */
-    private SimpleDispatcher() {
+
+    protected Bitstream loop(Context context) {
+        Bitstream found = null;
+        try {
+            MostRecentChecksum checksum = checksumService.findOldestRecord(context);
+            if (checksum != null) {
+                found = checksum.getBitstream();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return found;
+    }
+
+    protected Bitstream findByDate(Context context, Date date) {
+        Bitstream found = null;
+        try {
+            MostRecentChecksum checksum = checksumService.findOldestRecord(context, date);
+            if (checksum != null) {
+                found = checksum.getBitstream();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return found;
     }
 
     /**
@@ -73,21 +101,10 @@ public class SimpleDispatcher implements BitstreamDispatcher {
     public synchronized Bitstream next() throws SQLException {
         // should process loop infinitely through the
         // bitstreams in most_recent_checksum table?
-        if (!loopContinuously && (processStartTime != null)) {
-            MostRecentChecksum oldestRecord = checksumService.findOldestRecord(context, processStartTime);
-            if (oldestRecord != null) {
-                return oldestRecord.getBitstream();
-            } else {
-                return null;
-            }
+        if (fetchByDate) {
+            return findByDate(context, processStartTime);
         } else {
-            MostRecentChecksum oldestRecord = checksumService.findOldestRecord(context);
-            if (oldestRecord != null) {
-                return oldestRecord.getBitstream();
-            } else {
-                return null;
-            }
+            return loop(context);
         }
-
     }
 }

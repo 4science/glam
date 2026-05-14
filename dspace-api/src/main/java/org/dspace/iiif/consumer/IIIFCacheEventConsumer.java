@@ -8,13 +8,19 @@
 package org.dspace.iiif.consumer;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.content.Bitstream;
 import org.dspace.content.Bundle;
 import org.dspace.content.DSpaceObject;
+import org.dspace.content.Item;
+import org.dspace.content.MetadataValue;
+import org.dspace.content.factory.ContentServiceFactory;
+import org.dspace.content.service.ItemService;
 import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.event.Consumer;
@@ -22,13 +28,12 @@ import org.dspace.event.Event;
 import org.dspace.services.ConfigurationService;
 import org.dspace.utils.DSpace;
 
-
 /**
  * This consumer is used to evict modified items from the manifests cache.
  */
 public class IIIFCacheEventConsumer implements Consumer {
 
-    private final static Logger log = org.apache.logging.log4j.LogManager.getLogger(IIIFCacheEventConsumer.class);
+    private final static Logger log = LogManager.getLogger(IIIFCacheEventConsumer.class);
 
     // When true all entries will be cleared from cache.
     private boolean clearAll = false;
@@ -39,11 +44,13 @@ public class IIIFCacheEventConsumer implements Consumer {
     // Collects modified bitstreams for individual removal from canvas dimension cache.
     private final Set<DSpaceObject> toEvictFromCanvasCache = new HashSet<>();
 
+    private ItemService itemService;
     private ConfigurationService configurationService;
 
     @Override
     public void initialize() throws Exception {
         configurationService = new DSpace().getConfigurationService();
+        itemService = ContentServiceFactory.getInstance().getItemService();
     }
 
     @Override
@@ -131,6 +138,29 @@ public class IIIFCacheEventConsumer implements Consumer {
         }
     }
 
+    private void evictManifestAndParentStories(ManifestsCacheEvictService evictService, DSpaceObject dso) {
+        UUID uuid = dso.getID();
+        evictService.evictManifest(uuid.toString());
+
+        if (!(dso instanceof Item item)) {
+            return;
+        }
+
+        // dc.relation.story is populated by StoryCanvasConsumer on each item referenced by a Story canvas.
+        // Evict the Story manifest too, since it embeds content from this item.
+        try {
+            List<MetadataValue> storyRefs = itemService.getMetadata(item, "dc", "relation", "story", Item.ANY);
+            for (MetadataValue mv : storyRefs) {
+                String storyAuthority = mv.getAuthority();
+                if (storyAuthority != null && !storyAuthority.isBlank()) {
+                    evictService.evictManifest(storyAuthority);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not evict Story manifests for item {}: {}", uuid, e.getMessage());
+        }
+    }
+
     private void addToCacheEviction(DSpaceObject subject, DSpaceObject subject2, int type) {
         if (type == Constants.BITSTREAM) {
             if (subject2 != null) {
@@ -156,8 +186,7 @@ public class IIIFCacheEventConsumer implements Consumer {
                 manifestsCacheEvictService.evictAllCacheValues();
             } else {
                 for (DSpaceObject dso : toEvictFromManifestCache) {
-                    UUID uuid = dso.getID();
-                    manifestsCacheEvictService.evictSingleCacheValue(uuid.toString());
+                    evictManifestAndParentStories(manifestsCacheEvictService, dso);
                 }
             }
         }

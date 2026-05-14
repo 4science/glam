@@ -139,4 +139,19 @@
         <property name="dspaceRunnableClass" value="org.dspace.app.metadataupdate.MetadataUpdateScript"/>
     </bean>
 
+    <bean id="checksum-checker" class="org.dspace.app.checker.ChecksumCheckerScriptConfiguration" primary="true">
+        <property name="description" value="Verifies the checksum of every item within DSpace"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.checker.ChecksumCheckerScript"/>
+    </bean>
+
+    <bean id="generate-submission-forms" class="org.dspace.app.submissionform.script.SubmissionFormGeneratorScriptConfiguration" primary="true">
+        <property name="description" value="Generate submission XML forms from XLS"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.submissionform.script.SubmissionFormGenerator"/>
+    </bean>
+
+    <bean id="solr-core-management" class="org.dspace.app.solr.SolrCoreExportImportScriptConfiguration" primary="true">
+        <property name="description" value="Export and import complete SOLR cores with multithreading support"/>
+        <property name="dspaceRunnableClass" value="org.dspace.app.solr.SolrCoreExportImport"/>
+    </bean>
+
 </beans>

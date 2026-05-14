@@ -1,0 +1,5 @@
+<PersonalAnnotation id="@virtual.id@">
+    <Title>@dc.title@</Title>
+    <Abstract>@dc.description.abstract@</Abstract>
+    <AnnotationType>@glam.annotation.type@</AnnotationType>
+</PersonalAnnotation>

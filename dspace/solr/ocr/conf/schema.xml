@@ -51,9 +51,9 @@
             <analyzer type="index">
                 <!-- For loading external files as field values during indexing. If not
                      loading OCR files from disk, you must comment out this filter. -->
-                <!-- <charFilter class="de.digitalcollections.solrocr.lucene.filters.ExternalUtf8ContentFilterFactory" /> -->
+                <!-- <charFilter class="solrocr.filters.ExternalUtf8ContentFilterFactory" /> -->
                 <!-- For converting OCR to plaintext -->
-                <charFilter class="de.digitalcollections.solrocr.lucene.filters.OcrCharFilterFactory" />
+                <charFilter class="solrocr.OcrCharFilterFactory" />
                 <tokenizer class="solr.StandardTokenizerFactory"/>
                 <filter class="solr.LowerCaseFilterFactory"/>
                 <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
@@ -77,7 +77,7 @@
 
 
     <fields>
-        <field name="_version_" type="long" indexed="true" stored="false" docValues="true" multiValued="false"/>
+        <field name="_version_" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
         <field name="id" type="string" multiValued="false" indexed="true" stored="true" required="true"/>
         <field name="ocr_text" type="text_ocr" multiValued="false" indexed="true" stored="true" />
         <field name="manifest_url" type="text_general" multiValued="false" indexed="true" stored="true" required="true"/>

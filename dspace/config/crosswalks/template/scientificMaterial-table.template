@@ -1,0 +1,10 @@
+Title = dc.title
+Authors = group.dc-contributor-author
+Description = dc.description
+Description collection = dc.description.collection
+Is part of = group.dc-relation-ispartof
+Has part = group.dc-relation-haspart
+Type = dc.type
+Coverage shelfmark = dc.coverage.shelfmark
+Material and technique = dc.type.materialandtechnique
+Other links = group.dc-relation-otherlink

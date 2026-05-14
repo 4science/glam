@@ -142,7 +142,7 @@ public class MetadataExportSearch extends DSpaceRunnable<MetadataExportSearchScr
             handler.logDebug("building query");
             DiscoverQuery discoverQuery =
                 queryBuilder.buildQuery(context, dso, discoveryConfiguration, query, queryBuilderSearchFilters,
-                "Item", 10, Long.getLong("0"), null, SortOption.DESCENDING);
+                "Item", 10, Long.getLong("0"), "dc.title", SortOption.DESCENDING);
 
             handler.logDebug("creating iterator");
             Iterator<Item> itemIterator = searchService.iteratorSearch(context, dso, discoverQuery);
