@@ -834,6 +834,92 @@
           <hint>Enter any linked documents</hint>
         </field>
       </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <label>Bibliography</label>
+          <input-type>group</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Enter the bibliography related to the resource</hint>
+        </field>
+      </row>
+    </form>
+    <form name="archival_material-glam-bibliography">
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <label>Title</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Enter the title of the bibliographic resource</required>
+          <hint>Enter the title of the bibliographic resource</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>year</dc-qualifier>
+          <label>Year of publication</label>
+          <input-type>number</input-type>
+          <repeatable>false</repeatable>
+          <required>Enter the year of publication of the bibliographic resource</required>
+          <hint>Enter the year of publication of the bibliographic resource</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>publisher</dc-qualifier>
+          <label>Publisher</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Enter the publisher of the bibliographic resource</required>
+          <hint>Enter the publisher of the bibliographic resource</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>place</dc-qualifier>
+          <label>Place of publication</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Enter the place of publication of the bibliographic resource</required>
+          <hint>Enter the place of publication of the bibliographic resource</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>author</dc-qualifier>
+          <label>Author(s)</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Enter the author(s) of the bibliographic resource</required>
+          <hint>Enter the author(s) of the bibliographic resource</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>glam</dc-schema>
+          <dc-element>bibliography</dc-element>
+          <dc-qualifier>type</dc-qualifier>
+          <label>Bibliography type</label>
+          <input-type>onebox</input-type>
+          <repeatable>false</repeatable>
+          <required>Indicate the bibliography type</required>
+          <hint>Enter the type of bibliography</hint>
+          <language value-pairs-name="common_18n_languages">true</language>
+        </field>
+      </row>
     </form>
     <form name="archival_material_indexing">
       <row>
@@ -3474,6 +3560,18 @@
           <repeatable>true</repeatable>
           <required />
           <hint>If the resource is related to a Place, enter the Place name</hint>
+        </field>
+      </row>
+      <row>
+        <field>
+          <dc-schema>dc</dc-schema>
+          <dc-element>language</dc-element>
+          <dc-qualifier>iso</dc-qualifier>
+          <label>Language</label>
+          <input-type value-pairs-name="common_iso_languages">dropdown</input-type>
+          <repeatable>true</repeatable>
+          <required />
+          <hint>Language of the resource. If the language does not appear in the list, select Other". If the content does not really have a language (e.g., if it is a dataset or an image), select "None”</hint>
         </field>
       </row>
     </form>
