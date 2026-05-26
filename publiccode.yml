@@ -8,7 +8,7 @@ organisation:
   uri: https://4science.com
   name: 4Science
 developmentStatus: stable
-softwareType: standalone/web
+softwareType: standalone/backend
 description:
   it:
     shortDescription: DSpace-GLAM is an open-source DSpace extension for managing,
