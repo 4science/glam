@@ -54,7 +54,12 @@ description:
 legal:
   license: BSD-3-Clause
 maintenance:
-  type: none
+  type: community
+  contacts:
+    - name: 4Science S.p.A.
+      email: info@4science.com
+      phone: +39 0544 288-711
+      affiliation: 4Science S.p.A.
 localisation:
   localisationReady: true
   availableLanguages:
