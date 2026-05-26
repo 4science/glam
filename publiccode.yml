@@ -1,0 +1,86 @@
+publiccodeYmlVersion: 0.5.0
+name: DSpace GLAM
+url: https://github.com/4Science/glam.git
+platforms:
+  - web
+  - linux
+organisation:
+  uri: https://4science.com
+  name: 4Science
+developmentStatus: stable
+softwareType: standalone/web
+description:
+  it:
+    shortDescription: DSpace-GLAM is an open-source DSpace extension for managing,
+      preserving, and sharing digital cultural heritage collections.
+    longDescription: >-
+      DSpace-GLAM è una piattaforma open source gratuita per la creazione, la
+      conservazione e la diffusione di collezioni digitali del patrimonio
+      culturale.
+
+      È un’estensione di DSpace con un modello dati avanzato e può essere
+      facilmente integrata con visualizzatori di immagini, media server e un
+      modulo OCR.
+
+      È conforme ai principali standard internazionali che facilitano
+      l’interoperabilità e il trasferimento dei dati tra gallerie, biblioteche,
+      archivi e musei.
+    features:
+      - Gestione di collezioni digitali del patrimonio culturale.
+      - Modello dati esteso per persone, eventi, luoghi e concetti.
+      - Integrazione con image viewer, media server e OCR.
+      - Visualizzazione e analisi dei dati con grafici, mappe e reti.
+      - Supporto a standard internazionali per interoperabilità e scambio dati.
+  en:
+    shortDescription: DSpace-GLAM is an open-source DSpace extension for managing,
+      preserving, and sharing digital cultural heritage collections.
+    longDescription: >-
+      DSpace-GLAM is a free open-source platform for the creation, preservation
+      and dissemination of Digital Collections of Cultural Heritage.
+
+      It is an extension of DSpace with an enhanced data model and can be easily
+      integrated with image viewers, media servers and a OCR module.
+
+      It is compliant with the key international standards that facilitate
+      interoperability and data transfer among Galleries, Libraries, Archives
+      and Museums.
+    features:
+      - Management of digital cultural heritage collections.
+      - Extended data model for people, events, places, and concepts.
+      - Integration with image viewers, media servers, and OCR.
+      - Data visualization and analysis with charts, maps, and networks.
+      - Support for international standards for interoperability and data
+        exchange.
+legal:
+  license: BSD-3-Clause
+maintenance:
+  type: none
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
+    - ar
+    - bn
+    - ca
+    - cs
+    - de
+    - el
+    - es
+    - fi
+    - fr
+    - gd
+    - hi
+    - hu
+    - it
+    - kk
+    - lv
+    - nl
+    - pl
+    - pt-PT
+    - pt-BR
+    - sr-lat
+    - sr-cyr
+    - sv
+    - tr
+    - uk
+    - vi
